@@ -1346,6 +1346,8 @@ async function handleTelegramWebhook(body, db) {
       order.status = 'Dibatalkan Pengguna';
       await saveDb(db);
     }
+    pendingOrderLocks.delete(String(chatId));
+
     if (callbackQuery?.id) {
       fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
         method: 'POST',
@@ -1353,10 +1355,46 @@ async function handleTelegramWebhook(body, db) {
         body: JSON.stringify({
           callback_query_id: callbackQuery.id,
           text: `❌ Pesanan ${code} telah dibatalkan.`,
-          show_alert: true
         })
       }).catch(() => {});
     }
+
+    const cancelCaption = [
+      '❌ <b>TRANSAKSI TELAH DIBATALKAN</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `🆔 <b>Kode Pesanan:</b> <code>${code}</code>`,
+      `📦 <b>Produk      :</b> ${order?.product?.name || 'Produk Digital'}`,
+      `⚡ <b>Status      :</b> 🔴 <b>Dibatalkan Pengguna</b>`,
+      '',
+      '<i>Tagihan QRIS ini sudah tidak berlaku lagi. Anda dapat memilih produk lain untuk melakukan pemesanan baru.</i>'
+    ].join('\n');
+
+    const cancelButtons = [
+      [{ text: '🛍️ Belanja Produk Baru', callback_data: 'menu_products', style: 'success' }],
+      [{ text: '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
+    ];
+
+    if (messageId) {
+      try {
+        const editRes = await fetch(`https://api.telegram.org/bot${token}/editMessageCaption`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            message_id: messageId,
+            caption: cancelCaption,
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard: cancelButtons }
+          })
+        });
+        const editData = await editRes.json();
+        if (editData.ok) return { ok: true };
+      } catch {}
+
+      await deleteTelegramMessage(chatId, messageId, token);
+    }
+
+    await sendTelegramMessage(chatId, cancelCaption, { inline_keyboard: cancelButtons }, token);
     return { ok: true };
   }
 
