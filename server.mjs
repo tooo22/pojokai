@@ -597,7 +597,7 @@ async function deleteTelegramMessages(chatId, messageIds, botToken = null) {
   }
 }
 
-async function clearTelegramChatHistory(chatId, lastMessageId, token, count = 100) {
+async function clearTelegramChatHistory(chatId, lastMessageId, token, count = 50) {
   if (!chatId || !lastMessageId) return;
   const startId = Number(lastMessageId);
   const minId = Math.max(1, startId - count);
@@ -605,15 +605,52 @@ async function clearTelegramChatHistory(chatId, lastMessageId, token, count = 10
   for (let id = startId; id >= minId; id--) {
     ids.push(id);
   }
-  for (let i = 0; i < ids.length; i += 100) {
-    const chunk = ids.slice(i, i + 100);
-    const ok = await deleteTelegramMessages(chatId, chunk, token);
-    if (!ok) {
-      for (let j = 0; j < chunk.length; j += 15) {
-        const sub = chunk.slice(j, j + 15);
-        await Promise.allSettled(sub.map((mId) => deleteTelegramMessage(chatId, mId, token)));
-      }
-    }
+  const ok = await deleteTelegramMessages(chatId, ids, token);
+  if (!ok) {
+    const recent = ids.slice(0, 30);
+    await Promise.allSettled(recent.map((mId) => deleteTelegramMessage(chatId, mId, token)));
+  }
+}
+
+let _teleCommandsSynced = false;
+async function syncTelegramCommands(token) {
+  if (!token) return { ok: false, error: 'No token' };
+  try {
+    const commandsId = [
+      { command: 'start', description: 'Menu Utama' },
+      { command: 'clear', description: 'Bersihkan Riwayat Chat' },
+      { command: 'produk', description: 'Katalog Produk Digital' },
+      { command: 'bahasa', description: 'Ganti Bahasa Navigasi' },
+      { command: 'bantuan', description: 'Pusat Bantuan & Admin' }
+    ];
+    const commandsEn = [
+      { command: 'start', description: 'Main Menu' },
+      { command: 'clear', description: 'Clear Chat Messages' },
+      { command: 'produk', description: 'Browse Products' },
+      { command: 'bahasa', description: 'Change Language' },
+      { command: 'bantuan', description: 'Help & Support' }
+    ];
+
+    const r1 = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commands: commandsId })
+    });
+    await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commands: commandsEn, language_code: 'en' })
+    }).catch(() => {});
+    await fetch(`https://api.telegram.org/bot${token}/setChatMenuButton`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ menu_button: { type: 'commands' } })
+    }).catch(() => {});
+
+    _teleCommandsSynced = true;
+    return await r1.json();
+  } catch (err) {
+    return { ok: false, error: err.message };
   }
 }
 
@@ -1191,6 +1228,9 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
 async function handleTelegramWebhook(body, dbData) {
   const token = getTelegramToken(null, dbData);
   if (!token) return { ok: false };
+  if (!_teleCommandsSynced) {
+    syncTelegramCommands(token).catch(() => {});
+  }
   const message = body.message;
   const callbackQuery = body.callback_query;
 
@@ -2404,6 +2444,16 @@ async function api(req, res, url) {
 
     await handleTelegramWebhook(body, db);
     return send(res, 200, { ok: true });
+  }
+  if ((method === 'GET' || method === 'POST') && p === '/api/telegram/sync-commands') {
+    const secretToken = req.headers['x-telegram-bot-api-secret-token'] || '';
+    const expectedSecret = getTelegramSecret(db);
+    if (expectedSecret && secretToken !== expectedSecret) {
+      return send(res, 403, { error: 'Akses ditolak: Secret token bot tidak valid' });
+    }
+    const token = getTelegramToken(null, db);
+    const resSync = await syncTelegramCommands(token);
+    return send(res, 200, { success: true, result: resSync });
   }
 
 
