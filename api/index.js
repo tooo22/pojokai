@@ -1059,7 +1059,7 @@ async function handleTelegramWebhook(body, db) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: chatId,
-          animation: 'CgACAgQAAxkDAAICrWrRghN4MajcD7WGidBFHUK0uIwDAAIODAACX5CNUu9UBHm6W6s3PQQ',
+          animation: 'CgACAgQAAxkDAAIECmrRjjpQwpu3yFWgLrmww9VLe99-AAIODAACX5CNUu9UBHm6W6s3PQQ',
           caption: msgText,
           parse_mode: 'HTML',
           reply_markup: { inline_keyboard: inlineKeyboard }
