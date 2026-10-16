@@ -3044,7 +3044,12 @@ function initChatbox() {
   const getStoredMessages = () => {
     try {
       const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0].html || parsed[0].text)) {
+          return parsed;
+        }
+      }
     } catch {}
     return null;
   };
