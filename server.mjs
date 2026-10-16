@@ -710,102 +710,6 @@ function formatTransactionSuccessMessage(order) {
   ].filter(Boolean).join('\n');
 }
 
-
-async function createDepositQris(userId, amount) {
-  const apiKey = getWistapayApiKey(null);
-  const wistapayUrl = (process.env.WISTAPAY_BASE_URL || 'https://wistapay.shop/wistapay/api') + '/create-payment.php';
-  const depCode = `DEP-${userId}-${Date.now().toString().slice(-6)}`;
-
-  // Khusus deposit saldo: Biaya admin QRIS dikenakan ke customer
-  const adminFee = Math.ceil(Number(amount) * 0.007 + 250);
-  const totalCharge = Number(amount) + adminFee;
-
-  try {
-    const res = await fetch(wistapayUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKey,
-      },
-      body: JSON.stringify({
-        amount: totalCharge,
-        description: `Deposit Saldo Bot PojokAI - ${userId} (Rp${amount})`,
-        external_id: depCode,
-        fee_bearer: 'MERCHANT',
-        callback_url: 'https://pojokai.my.id',
-      }),
-    });
-    const json = await res.json();
-    if (json.success && json.data) {
-      return { ok: true, code: depCode, data: json.data, adminFee, totalCharge, saldoAmount: Number(amount) };
-    }
-    return { ok: false, error: json.message || 'Gagal membuat QRIS' };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
-}
-
-async function handleCreateDeposit(chatId, userId, username, amount, dbData, token) {
-  await sendTelegramMessage(chatId, '⏳ <i>Sedang membuat tagihan QRIS instan WistaPay…</i>', null, token);
-
-  const qrisResult = await createDepositQris(userId, amount);
-  if (!qrisResult.ok || !qrisResult.data) {
-    await sendTelegramMessage(chatId, '❌ Gagal membuat QRIS deposit: ' + (qrisResult.error || 'Server gateway sibuk. Coba sesaat lagi.'), {
-      inline_keyboard: [[{ text: '◀️ Kembali ke Dompet', callback_data: 'menu_wallet', style: 'danger' }]]
-    }, token);
-    return { ok: true };
-  }
-
-  const q = qrisResult.data;
-  const adminFee = qrisResult.adminFee || Math.ceil(Number(amount) * 0.007 + 250);
-  const finalTotal = qrisResult.totalCharge || q.charge_amount || (Number(amount) + adminFee);
-
-  if (!dbData.deposits) dbData.deposits = [];
-  dbData.deposits.unshift({
-    code: qrisResult.code,
-    reference: q.reference,
-    userId: String(userId),
-    username: String(username),
-    amount: Number(amount), // Saldo murni yang masuk ke dompet user
-    chargeAmount: finalTotal, // Total yang ditagihkan termasuk fee
-    fee: adminFee,
-    status: 'PENDING',
-    createdAt: new Date().toISOString(),
-    expiresAt: q.expires_at
-  });
-  if (dbData.deposits.length > 500) dbData.deposits.pop();
-  await save();
-
-  const caption = [
-    '💳 <b>TAGIHAN DEPOSIT SALDO QRIS</b>',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-    '📋 <b>Rincian Deposit:</b>',
-    `├ <b>Kode Referensi :</b> <code>${q.reference}</code>`,
-    `├ <b>Nominal Saldo  :</b> Rp${Number(amount).toLocaleString('id-ID')} <i>(Masuk ke Dompet)</i>`,
-    `├ <b>Biaya Admin    :</b> Rp${Number(adminFee).toLocaleString('id-ID')} <i>(Biaya Layanan QRIS)</i>`,
-    `└ <b>Total Tagihan  :</b> <b>Rp${Number(finalTotal).toLocaleString('id-ID')}</b>`,
-    '',
-    '⏰ <b>Masa Berlaku :</b> <b>5 Menit</b> <i>(Otomatis Hangus)</i>',
-    '⚡ <b>Metode Bayar :</b> QRIS All Payment <i>(BCA, Mandiri, Dana, GoPay, OVO, ShopeePay)</i>',
-    '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '📱 <b>Cara Pembayaran:</b>',
-    '1️⃣ Simpan atau screenshot barcode QRIS di atas.',
-    '2️⃣ Buka aplikasi M-Banking atau E-Wallet apa pun.',
-    '3️⃣ Scan barcode QRIS & bayar nominal yang tertera.',
-    `4️⃣ Saldo otomatis masuk Rp${Number(amount).toLocaleString('id-ID')} ke akun Anda setelah pembayaran terdeteksi!`
-  ].join('\n');
-
-  const buttons = [
-    [{ text: '🔄 Cek Status Pembayaran', callback_data: `check_dep_${q.reference}`, style: 'success' }],
-    [{ text: '💬 Konfirmasi via WA Admin', url: `https://wa.me/${dbData.wa || '6283171982973'}?text=${encodeURIComponent(`Halo admin, saya sudah bayar deposit ${q.reference} sebesar Rp${amount}`)}` }],
-    [{ text: '◀️ Batalkan / Kembali', callback_data: 'menu_wallet', style: 'danger' }]
-  ];
-
-  await sendTelegramPhoto(chatId, q.qris_image, caption, { inline_keyboard: buttons }, token);
-  return { ok: true };
-}
 const pendingOrderLocks = new Map();
 
 async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, dbData, token, callbackQuery = null) {
@@ -1174,28 +1078,6 @@ async function handleTelegramWebhook(body, dbData) {
   const userLang = dbData.userLanguages[userId] || userWallet.lang || 'id';
   const isEn = userLang === 'en';
 
-  // A. Handle input nominal custom deposit
-  if (dbData.userStates?.[chatId]?.action === 'awaiting_custom_deposit' && text && !text.startsWith('/')) {
-    delete dbData.userStates[chatId];
-    await save();
-
-    const cleanNum = text.replace(/\D/g, '');
-    const amount = Number(cleanNum);
-
-    if (!amount || amount < 1000) {
-      await sendTelegramMessage(chatId, '⚠️ Nominal deposit minimal adalah <b>Rp1.000</b>. Silakan coba lagi dari menu Dompet.', {
-        inline_keyboard: [[{ text: '◀️ Kembali ke Dompet', callback_data: 'menu_wallet', style: 'danger' }]]
-      }, token);
-      return { ok: true };
-    }
-
-    if (amount > 10000000) {
-      await sendTelegramMessage(chatId, '⚠️ Nominal deposit maksimal adalah <b>Rp10.000.000</b>.', null, token);
-      return { ok: true };
-    }
-
-    return await handleCreateDeposit(chatId, userId, username, amount, dbData, token);
-  }
   // B. Handle input order code when user is awaiting_order_code OR types POJOK-
   if ((dbData.userStates?.[chatId]?.action === 'awaiting_order_code' && text && !text.startsWith('/')) || (text && text.toUpperCase().includes('POJOK-') && !text.startsWith('/'))) {
     if (dbData.userStates?.[chatId]) {
@@ -1221,6 +1103,12 @@ async function handleTelegramWebhook(body, dbData) {
       return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
     }).length;
     const totalSold = (dbData.products || []).reduce((sum, p) => sum + (Number(p.sold) || 0), 0) + completedOrders;
+    const userOrders = orders.filter((o) => String(o.buyer?.telegramUserId || o.buyer?.telegramChatId) === String(userId));
+    const userSpent = userOrders.filter((o) => {
+      const s = String(o.status || '').toLowerCase();
+      return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
+    }).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const userOrderCount = userOrders.length;
 
     const msgText = isEn ? [
       '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
@@ -1231,9 +1119,9 @@ async function handleTelegramWebhook(body, dbData) {
       '',
       '💰 <tg-emoji emoji-id="5904655415735492625"><b>SUMMARY</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Account Balance :</b> <code>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</code>`,
-      `├ <b>Total Spent     :</b> <code>Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Total Orders    :</b> <code>${userWallet.totalDeposit ? 1 : 0} Orders</code>`,
+      `├ <b>Account Status :</b> 🟢 <b>Verified</b>`,
+      `├ <b>Total Spent    :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
+      `└ <b>Total Orders   :</b> <code>${userOrderCount} Orders</code>`,
       '',
       '📊 <tg-emoji emoji-id="5904715266104762882"><b>STORE STATISTICS</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
@@ -1250,9 +1138,9 @@ async function handleTelegramWebhook(body, dbData) {
       '',
       '💰 <tg-emoji emoji-id="5904655415735492625"><b>RINGKASAN</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Saldo Akun    :</b> <code>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</code>`,
-      `├ <b>Total Belanja :</b> <code>Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Total Order   :</b> <code>${userWallet.totalDeposit ? 1 : 0} Transaksi</code>`,
+      `├ <b>Status Akun   :</b> 🟢 <b>Terverifikasi</b>`,
+      `├ <b>Total Belanja :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
+      `└ <b>Total Pesanan :</b> <code>${userOrderCount} Pesanan</code>`,
       '',
       '📊 <tg-emoji emoji-id="5904715266104762882"><b>STATISTIK TOKO</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
@@ -1265,13 +1153,10 @@ async function handleTelegramWebhook(body, dbData) {
     const inlineKeyboard = isEn ? [
       [{ text: '🛍️ Products', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
       [
-        { text: '🤝 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
-        { text: '💼 Wallet', callback_data: 'menu_wallet', style: 'primary', icon_custom_emoji_id: '5904655415735492625' }
+        { text: '📦 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+        { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
       ],
-      [
-        { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' },
-        { text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }
-      ],
+      [{ text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
       [
         { text: '🌐 Language', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
         { text: '⚠️ Help', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
@@ -1279,13 +1164,10 @@ async function handleTelegramWebhook(body, dbData) {
     ] : [
       [{ text: '🛍️ Produk', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
       [
-        { text: '🤝 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
-        { text: '💼 Dompet', callback_data: 'menu_wallet', style: 'primary', icon_custom_emoji_id: '5904655415735492625' }
+        { text: '📦 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+        { text: '👤 Profil', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
       ],
-      [
-        { text: '👤 Profil', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' },
-        { text: '🤝 Ajak Teman', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }
-      ],
+      [{ text: '🤝 Ajak Teman', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
       [
         { text: '🌐 Bahasa', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
         { text: '⚠️ Bantuan', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
@@ -1661,182 +1543,16 @@ async function handleTelegramWebhook(body, dbData) {
     return await handleCheckOrderInput(chatId, text, dbData, token);
   }
 
-  // 6. Menu Dompet & Pilihan Deposit
-  if (cbData === 'menu_wallet') {
-    const msgText = isEn ? [
-      '💼 <b>WALLET &amp; ACCOUNT BALANCE</b>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      '',
-      '👤 <b>Account Details:</b>',
-      `├ <b>Username :</b> <code>${username}</code>`,
-      `└ <b>User ID  :</b> <code>${userId}</code>`,
-      '',
-      '💰 <b>Balance Details:</b>',
-      `├ <b>Active Balance :</b> <b>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</b>`,
-      `├ <b>Total Deposit  :</b> Rp${Number(userWallet.totalDeposit || 0).toLocaleString('id-ID')}`,
-      `└ <b>Total Spent    :</b> Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}`,
-      '',
-      '💡 <i>Choose instant deposit amount below, or click Custom Amount for other amounts:</i>'
-    ].join('\n') : [
-      '💼 <b>DOMPET &amp; SALDO AKUN</b>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      '',
-      '👤 <b>Informasi Akun:</b>',
-      `├ <b>Username :</b> <code>${username}</code>`,
-      `└ <b>User ID  :</b> <code>${userId}</code>`,
-      '',
-      '💰 <b>Rincian Saldo:</b>',
-      `├ <b>Saldo Aktif    :</b> <b>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</b>`,
-      `├ <b>Total Deposit  :</b> Rp${Number(userWallet.totalDeposit || 0).toLocaleString('id-ID')}`,
-      `└ <b>Total Belanja  :</b> Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}`,
-      '',
-      '💡 <i>Pilih nominal deposit instan di bawah, atau klik Nominal Bebas (Custom) untuk nominal lainnya:</i>'
-    ].join('\n');
-
-    const buttons = [
-      [
-        { text: '➕ Rp5.000', callback_data: 'dep_5000', style: 'primary' },
-        { text: '➕ Rp10.000', callback_data: 'dep_10000', style: 'primary' }
-      ],
-      [
-        { text: '➕ Rp25.000', callback_data: 'dep_25000', style: 'primary' },
-        { text: '➕ Rp50.000', callback_data: 'dep_50000', style: 'primary' }
-      ],
-      [
-        { text: isEn ? '✏️ Custom Amount (Min. Rp1,000)' : '✏️ Nominal Bebas (Min. Rp1.000)', callback_data: 'dep_custom', style: 'success' }
-      ],
-      [
-        { text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }
-      ]
-    ];
-    await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
-    return { ok: true };
-  }
-
-  // 6b. Trigger Input Custom Deposit
-  if (cbData === 'dep_custom') {
-    if (!dbData.userStates) dbData.userStates = {};
-    dbData.userStates[chatId] = { action: 'awaiting_custom_deposit', time: Date.now() };
-    await save();
-
-    const msgText = isEn ? [
-      '✏️ <b>CUSTOM BALANCE DEPOSIT</b>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      'Please type the balance amount you wish to top up:',
-      '',
-      '📌 <b>Terms:</b>',
-      '├ <b>Minimum deposit :</b> Rp1,000',
-      '├ <b>Maximum deposit :</b> Rp10,000,000',
-      '└ <b>Admin fee       :</b> QRIS service fee applies',
-      '',
-      '<i>Example: type <b>1000</b>, <b>5000</b>, or <b>50000</b> and send to this bot.</i>'
-    ].join('\n') : [
-      '✏️ <b>CUSTOM DEPOSIT SALDO</b>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      'Silakan ketik nominal saldo yang ingin Anda isi:',
-      '',
-      '📌 <b>Ketentuan:</b>',
-      '├ <b>Minimal deposit  :</b> Rp1.000',
-      '├ <b>Maksimal deposit :</b> Rp10.000.000',
-      '└ <b>Biaya Admin      :</b> Dikenakan biaya layanan QRIS',
-      '',
-      '<i>Contoh: ketik <b>1000</b>, <b>5000</b>, atau <b>50000</b> lalu kirimkan ke chat bot ini.</i>'
-    ].join('\n');
-
-    const buttons = [
-      [{ text: isEn ? '◀️ Cancel' : '◀️ Batal', callback_data: 'menu_wallet', style: 'danger' }]
-    ];
-    await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
-    return { ok: true };
-  }
-
-  // 6c. Preset Deposit Click
-  if (cbData.startsWith('dep_') && cbData !== 'dep_custom') {
-    const amount = Number(cbData.replace('dep_', ''));
-    if (amount >= 1000) {
-      return await handleCreateDeposit(chatId, userId, username, amount, dbData, token);
+  // 6. Menu Dompet (Dinonaktifkan)
+  if (cbData === 'menu_wallet' || cbData.startsWith('dep_') || cbData.startsWith('check_dep_')) {
+    if (callbackQuery?.id) {
+      fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: callbackQuery.id, text: isEn ? 'ℹ️ Wallet feature has been removed. All purchases are instant via QRIS.' : 'ℹ️ Fitur dompet dinonaktifkan. Pembelian diproses langsung via QRIS instan.' })
+      }).catch(() => {});
     }
-  }
-
-  // 6d. Cek Status Pembayaran Deposit (Batas 5 Menit)
-  if (cbData.startsWith('check_dep_')) {
-    const ref = cbData.replace('check_dep_', '');
-    const deposits = dbData.deposits || [];
-    const dep = deposits.find((d) => d.reference === ref);
-
-    if (dep) {
-      const depAge = Date.now() - new Date(dep.createdAt || Date.now()).getTime();
-      const isDepExpired = depAge > 5 * 60 * 1000;
-
-      const apiKey = getWistapayApiKey(db);
-      const checkUrl = (process.env.WISTAPAY_BASE_URL || 'https://wistapay.shop/wistapay/api') + `/check-status.php?reference=${encodeURIComponent(ref)}`;
-
-      try {
-        const res = await fetch(checkUrl, { headers: { 'X-API-Key': apiKey } });
-        const json = await res.json();
-        const status = String(json?.data?.status || json?.status || '').toUpperCase();
-
-        if (status === 'SUCCESS' || status === 'PAID') {
-          if (dep.status !== 'SUCCESS') {
-            dep.status = 'SUCCESS';
-            dep.paidAt = new Date().toISOString();
-            const uid = dep.userId;
-            if (!dbData.wallets) dbData.wallets = {};
-            if (!dbData.wallets[uid]) dbData.wallets[uid] = { balance: 0, totalDeposit: 0, totalSpent: 0 };
-            dbData.wallets[uid].balance = (dbData.wallets[uid].balance || 0) + dep.amount;
-            dbData.wallets[uid].totalDeposit = (dbData.wallets[uid].totalDeposit || 0) + dep.amount;
-            await save();
-
-            const successMsg = [
-              '🎉 <b>DEPOSIT SALDO BERHASIL!</b>',
-              '━━━━━━━━━━━━━━━━━━━━━━━━━',
-              `💰 <b>Nominal:</b> +Rp${Number(dep.amount).toLocaleString('id-ID')}`,
-              `💳 <b>Total Saldo Sekarang:</b> <b>Rp${Number(dbData.wallets[uid].balance).toLocaleString('id-ID')}</b>`,
-              `🆔 <b>Ref:</b> <code>${ref}</code>`,
-              '',
-              '<i>Saldo Anda sudah aktif dan dapat digunakan untuk membeli produk langsung di bot ini!</i>'
-            ].join('\n');
-
-            await sendTelegramMessage(chatId, successMsg, {
-              inline_keyboard: [
-                [{ text: '🛍️ Belanja Sekarang', callback_data: 'menu_products', style: 'success' }],
-                [{ text: '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
-              ]
-            }, token);
-            return { ok: true };
-          }
-        }
-      } catch (err) {
-        console.warn('[check deposit error]', err);
-      }
-
-      if (dep.status === 'SUCCESS') {
-        await sendTelegramMessage(chatId, `✅ Deposit <code>${ref}</code> sudah berstatus <b>SUCCESS</b>. Saldo sudah masuk ke akun Anda.`, null, token);
-        return { ok: true };
-      }
-
-      if (isDepExpired || dep.status === 'EXPIRED') {
-        dep.status = 'EXPIRED';
-        await save();
-        await sendTelegramMessage(chatId, `❌ <b>QRIS DEPOSIT TELAH HANGUS</b>\n\nBatas waktu 5 menit telah berakhir dan QRIS deposit ini sudah tidak berlaku.\nSilakan buat pengajuan deposit baru jika ingin mengisi saldo.`, {
-          inline_keyboard: [
-            [{ text: '➕ Deposit Baru', callback_data: 'menu_wallet', style: 'primary' }],
-            [{ text: '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
-          ]
-        }, token);
-        return { ok: true };
-      }
-
-      const remSec = Math.max(0, Math.floor((5 * 60 * 1000 - depAge) / 1000));
-      const remStr = `${Math.floor(remSec / 60)} menit ${remSec % 60} detik`;
-      await sendTelegramMessage(chatId, `⏳ Pembayaran deposit <code>${ref}</code> belum terdeteksi.\n\n⏰ Sisa waktu pembayaran: <b>${remStr}</b> sebelum QRIS hangus.\nPastikan Anda sudah menyelesaikan transfer di aplikasi bank/e-wallet lalu klik Cek Status kembali.`, {
-        inline_keyboard: [
-          [{ text: '🔄 Cek Status Lagi', callback_data: `check_dep_${ref}`, style: 'success' }],
-          [{ text: '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
-        ]
-      }, token);
-      return { ok: true };
-    }
+    return { ok: true };
   }
 
   // 7. Menu Profil
@@ -1849,7 +1565,6 @@ async function handleTelegramWebhook(body, dbData) {
       `├ <b>Full Name       :</b> ${from.first_name || '-'} ${from.last_name || ''}`,
       `├ <b>User ID         :</b> <code>${userId}</code>`,
       `├ <b>Username        :</b> ${username}`,
-      `├ <b>Account Balance :</b> <b>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</b>`,
       `├ <b>Account Status  :</b> 🟢 <b>Verified</b>`,
       `└ <b>Official Store  :</b> PojokAI Official Store`
     ].join('\n') : [
@@ -1860,7 +1575,6 @@ async function handleTelegramWebhook(body, dbData) {
       `├ <b>Nama Lengkap :</b> ${from.first_name || '-'} ${from.last_name || ''}`,
       `├ <b>User ID      :</b> <code>${userId}</code>`,
       `├ <b>Username     :</b> ${username}`,
-      `├ <b>Saldo Akun    :</b> <b>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</b>`,
       `├ <b>Status Akun   :</b> 🟢 <b>Terverifikasi</b>`,
       `└ <b>Toko Resmi    :</b> PojokAI Official Store`
     ].join('\n');
@@ -1940,6 +1654,13 @@ async function handleTelegramWebhook(body, dbData) {
       ? '✨ <b>Language successfully switched to 🇬🇧 English!</b>\n'
       : '✨ <b>Bahasa berhasil diubah ke 🇮🇩 Bahasa Indonesia!</b>\n';
 
+    const userOrders = orders.filter((o) => String(o.buyer?.telegramUserId || o.buyer?.telegramChatId) === String(userId));
+    const userSpent = userOrders.filter((o) => {
+      const s = String(o.status || '').toLowerCase();
+      return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
+    }).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const userOrderCount = userOrders.length;
+
     const msgText = (isEn ? [
       noticeBanner,
       '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
@@ -1950,9 +1671,9 @@ async function handleTelegramWebhook(body, dbData) {
       '',
       '💰 <tg-emoji emoji-id="5904655415735492625"><b>SUMMARY</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Account Balance :</b> <code>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</code>`,
-      `├ <b>Total Spent     :</b> <code>Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Total Orders    :</b> <code>${userWallet.totalDeposit ? 1 : 0} Orders</code>`,
+      `├ <b>Account Status :</b> 🟢 <b>Verified</b>`,
+      `├ <b>Total Spent    :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
+      `└ <b>Total Orders   :</b> <code>${userOrderCount} Orders</code>`,
       '',
       '📊 <tg-emoji emoji-id="5904715266104762882"><b>STORE STATISTICS</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
@@ -1970,9 +1691,9 @@ async function handleTelegramWebhook(body, dbData) {
       '',
       '💰 <tg-emoji emoji-id="5904655415735492625"><b>RINGKASAN</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Saldo Akun    :</b> <code>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</code>`,
-      `├ <b>Total Belanja :</b> <code>Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Total Order   :</b> <code>${userWallet.totalDeposit ? 1 : 0} Transaksi</code>`,
+      `├ <b>Status Akun   :</b> 🟢 <b>Terverifikasi</b>`,
+      `├ <b>Total Belanja :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
+      `└ <b>Total Pesanan :</b> <code>${userOrderCount} Pesanan</code>`,
       '',
       '📊 <tg-emoji emoji-id="5904715266104762882"><b>STATISTIK TOKO</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
@@ -1985,13 +1706,10 @@ async function handleTelegramWebhook(body, dbData) {
     const inlineKeyboard = isEn ? [
       [{ text: '🛍️ Products', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
       [
-        { text: '🤝 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
-        { text: '💼 Wallet', callback_data: 'menu_wallet', style: 'primary', icon_custom_emoji_id: '5904655415735492625' }
+        { text: '📦 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+        { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
       ],
-      [
-        { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' },
-        { text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }
-      ],
+      [{ text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
       [
         { text: '🌐 Language', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
         { text: '⚠️ Help', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
@@ -1999,13 +1717,10 @@ async function handleTelegramWebhook(body, dbData) {
     ] : [
       [{ text: '🛍️ Produk', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
       [
-        { text: '🤝 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
-        { text: '💼 Dompet', callback_data: 'menu_wallet', style: 'primary', icon_custom_emoji_id: '5904655415735492625' }
+        { text: '📦 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+        { text: '👤 Profil', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
       ],
-      [
-        { text: '👤 Profil', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' },
-        { text: '🤝 Ajak Teman', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }
-      ],
+      [{ text: '🤝 Ajak Teman', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
       [
         { text: '🌐 Bahasa', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
         { text: '⚠️ Bantuan', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
