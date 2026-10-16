@@ -3060,7 +3060,24 @@ function initChatbox() {
       sender: 'bot',
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       text: '',
-      html: `Halo kak! 👋 Selamat datang di <b>PojokAI</b>.<br><br>Saya asisten bot PojokAI siap membantu kamu 24 jam.<br><br>👉 Mau cek status pesanan? Silakan tekan tombol <b>📦 Cek Pesanan</b> di bawah, lalu kirim <b>Kode Pembelian</b> kamu ya!`
+      html: `
+        <div class="flex items-center gap-2.5 p-2 rounded-xl bg-surface/80 border border-line-soft shadow-2xs mb-2">
+          <div class="relative size-10 shrink-0 rounded-xl p-0.5 bot-aura-bg shadow-sm">
+            <div class="size-full rounded-[10px] overflow-hidden bg-surface relative bot-avatar-float">
+              <img src="/assets/branding/pojokai-bot-avatar.gif" alt="PojokAI" class="size-full object-cover">
+            </div>
+            <span class="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-surface"></span>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5 font-bold text-main text-[12px]">
+              <span>Halo kak! 👋</span>
+              <span class="px-1.5 py-0.2 rounded bg-primary/15 text-primary text-[9px] font-bold">Bot PojokAI</span>
+            </div>
+            <p class="text-[10.5px] text-muted leading-tight mt-0.5">Asisten virtual siap bantu cari akun &amp; cek pesanan 24/7!</p>
+          </div>
+        </div>
+        Mau cek status pesanan? Tekan tombol <b>📦 Cek Pesanan</b> di bawah, lalu kirim <b>Kode Pembelian</b> kamu ya!
+      `
     }
   ];
 
@@ -3073,7 +3090,7 @@ function initChatbox() {
       return `
         <div class="flex items-start gap-2 ${isBot ? '' : 'flex-row-reverse'} animate-in fade-in duration-200">
           ${isBot ? `
-            <div class="size-7 rounded-full overflow-hidden shrink-0 ring-1 ring-primary/30 bg-surface-2 mt-0.5">
+            <div class="size-7 rounded-full overflow-hidden shrink-0 ring-1 ring-primary/40 bg-surface-2 mt-0.5 bot-avatar-breathe shadow-2xs">
               <img src="/assets/branding/pojokai-bot-avatar.gif" alt="Bot" class="size-full object-cover">
             </div>
           ` : ''}
@@ -3132,7 +3149,7 @@ function initChatbox() {
       el.id = id;
       el.className = 'flex items-center gap-2 animate-in fade-in duration-150';
       el.innerHTML = `
-        <div class="size-7 rounded-full overflow-hidden shrink-0 ring-1 ring-primary/30 bg-surface-2 mt-0.5">
+        <div class="size-7 rounded-full overflow-hidden shrink-0 ring-1 ring-primary/40 bg-surface-2 mt-0.5 bot-typing-nod shadow-2xs">
           <img src="/assets/branding/pojokai-bot-avatar.gif" alt="Bot" class="size-full object-cover">
         </div>
         <div class="p-2.5 rounded-2xl rounded-tl-xs bg-surface-2 border border-line flex items-center gap-1 shadow-2xs">
