@@ -701,8 +701,51 @@ async function handleCreateDeposit(chatId, userId, username, amount, db, token) 
   await sendTelegramPhoto(chatId, q.qris_image, caption, { inline_keyboard: buttons }, token);
   return { ok: true };
 }
-async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, db, token) {
+const pendingOrderLocks = new Map();
+
+async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, db, token, callbackQuery = null) {
+  const now = Date.now();
+  const lastLock = pendingOrderLocks.get(String(chatId)) || 0;
+  if (now - lastLock < 6000) {
+    if (callbackQuery?.id) {
+      fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callback_query_id: callbackQuery.id,
+          text: '⏳ Tagihan QRIS sedang dibuat, mohon tunggu sebentar...',
+          show_alert: false
+        })
+      }).catch(() => {});
+    }
+    return { ok: true };
+  }
+  pendingOrderLocks.set(String(chatId), now);
+
   const v = (p.variants || [])[variantIndex] || p.variants?.[0] || { label: 'Standar', price: 25000 };
+
+  // Cegah penumpukan QR: Cek apakah user sudah punya QRIS aktif untuk produk ini dalam 3 menit terakhir
+  const existingPending = (db.orders || []).find((o) =>
+    o.buyer?.telegramChatId === String(chatId) &&
+    o.status === 'Menunggu Pembayaran' &&
+    o.product?.name === p.name &&
+    (v.label ? o.product?.variant === v.label : true) &&
+    (now - new Date(o.createdAt).getTime()) < 3 * 60 * 1000
+  );
+  if (existingPending) {
+    if (callbackQuery?.id) {
+      fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callback_query_id: callbackQuery.id,
+          text: `⚠️ Tagihan QRIS (${existingPending.code}) untuk ${p.name} sudah tersedia di chat. Silakan scan QRIS di atas!`,
+          show_alert: true
+        })
+      }).catch(() => {});
+    }
+    return { ok: true };
+  }
   const orderCode = `POJOK-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const amount = Number(v.price) || 25000;
   const apiKey = getWistapayApiKey(db);
@@ -1164,7 +1207,7 @@ async function handleTelegramWebhook(body, db) {
 
     const variants = p.variants || [];
     if (variants.length <= 1) {
-      return await handleCreateOrderQris(chatId, userId, username, p, 0, db, token);
+      return await handleCreateOrderQris(chatId, userId, username, p, 0, db, token, callbackQuery);
     }
 
     const msgText = [
@@ -1198,7 +1241,7 @@ async function handleTelegramWebhook(body, db) {
       return { ok: true };
     }
 
-    return await handleCreateOrderQris(chatId, userId, username, p, variantIndex, db, token);
+    return await handleCreateOrderQris(chatId, userId, username, p, variantIndex, db, token, callbackQuery);
   }
 
   // 3d. Cek Status Pembayaran QRIS Pesanan
