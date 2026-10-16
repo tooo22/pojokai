@@ -3060,7 +3060,7 @@ function initChatbox() {
       sender: 'bot',
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       text: '',
-      html: `Halo kak! 👋 Selamat datang di <b>PojokAI</b>.<br><br>Saya asisten bot PojokAI siap membantu kamu 24 jam. Mau cari akun premium, cek status pesanan, atau cara bayar QRIS? Pilih topik di bawah atau ketik langsung ya!`
+      html: `Halo kak! 👋 Selamat datang di <b>PojokAI</b>.<br><br>Saya asisten bot PojokAI siap membantu kamu 24 jam.<br><br>👉 Mau cek status pesanan? Silakan tekan tombol <b>📦 Cek Pesanan</b> di bawah, lalu kirim <b>Kode Pembelian</b> kamu ya!`
     }
   ];
 
@@ -3201,13 +3201,54 @@ function initChatbox() {
       return appendBotMessage(`Pesanan <b>${esc(searchKey)}</b> belum ditemukan di database. Pastikan kode pesanan Anda sudah benar (contoh: <code>POJOK-8L7HVW</code>) atau hubungi WhatsApp Admin.`);
     }
 
-    // 2. Quick Topic Buttons
-    if (lower === 'produk' || lower.includes('rekomendasi') || lower.includes('katalog') || lower.includes('daftar produk')) {
-      const popular = (PRODUCTS || []).slice(0, 4);
+    // 2. Cek Pesanan Prompt (Jika user tanya cek pesanan tanpa kode)
+    if (lower === 'pesanan' || lower === 'cek pesanan' || lower.includes('cek pesanan') || lower.includes('cek status') || lower.includes('lacak') || lower.includes('tracking') || lower.includes('status pesanan') || lower.includes('pesanan saya') || lower.includes('mau cek')) {
+      const stored = (getStoredOrders() || []).slice(0, 3);
+      const recentHtml = stored.length > 0 
+        ? `
+          <div class="pt-1.5 border-t border-line-soft">
+            <p class="text-[10.5px] text-muted mb-1.5 font-semibold">Atau pilih langsung kode pesanan kamu:</p>
+            <div class="flex flex-wrap gap-1.5">
+              ${stored.map(o => `
+                <button type="button" data-chat-select-code="${esc(o.code)}" class="px-2.5 py-1 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-mono text-[11px] font-bold transition cursor-pointer">
+                  ${esc(o.code)}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        ` 
+        : '';
+
+      if (input) {
+        input.placeholder = 'Ketik kode pesanan (misal: POJOK-8L7HVW)...';
+        input.focus();
+      }
+
+      return appendBotMessage('', `
+        <div class="space-y-2">
+          <p class="font-bold text-main flex items-center gap-1.5">
+            <i data-lucide="package-search" class="size-4 text-primary"></i>
+            <span>Cek Status Pesanan</span>
+          </p>
+          <p class="text-[11.5px] text-muted leading-relaxed">
+            Silakan kirimkan <b>Kode Pembelian</b> Anda di kolom pesan bawah ya kak (contoh: <code class="font-mono text-primary bg-primary/10 px-1 py-0.5 rounded font-bold">POJOK-8L7HVW</code>).
+          </p>
+          <p class="text-[10.5px] text-subtle leading-tight">
+            Kode pesanan dapat Anda lihat di invoice WhatsApp transaksi atau layar setelah checkout. Begitu dikirim, saya langsung lacak statusnya secara realtime! ⚡
+          </p>
+          ${recentHtml}
+        </div>
+      `);
+    }
+
+    // 3. Quick Topic: Produk Populer (Hanya produk aktif, sembunyikan yang p.hidden)
+    if (lower === 'produk' || lower.includes('rekomendasi') || lower.includes('katalog') || lower.includes('daftar produk') || lower.includes('populer')) {
+      const visibleProducts = (PRODUCTS || []).filter(p => !p.hidden);
+      const popular = visibleProducts.slice(0, 4);
       const itemsHtml = popular.map(p => `
         <div class="flex items-center justify-between p-2 rounded-xl bg-surface border border-line">
           <div class="flex items-center gap-2">
-            <img src="${esc(p.image || `assets/products/${p.slug}.webp`)}" alt="${esc(p.name)}" class="size-8 rounded-lg object-cover bg-surface-2">
+            ${cardImg(p, 'size-8 rounded-lg object-cover bg-surface-2')}
             <div>
               <p class="font-bold text-main text-[11.5px]">${esc(p.name)}</p>
               <p class="text-[10px] text-primary font-bold">Mulai ${rp(p.price || p.variants?.[0]?.price || 0)}</p>
@@ -3226,7 +3267,6 @@ function initChatbox() {
         </div>
       `);
     }
-
     // 3. QRIS / Cara Bayar
     if (lower.includes('qris') || lower.includes('bayar') || lower.includes('transfer') || lower.includes('wistapay') || lower.includes('metode')) {
       return appendBotMessage('', `
@@ -3257,6 +3297,7 @@ function initChatbox() {
 
     // 5. Product Search in PRODUCTS Catalog
     const matchedProducts = (PRODUCTS || []).filter(p => {
+      if (p.hidden) return false;
       const name = p.name.toLowerCase();
       const slug = p.slug.toLowerCase();
       const cat = (p.cat || '').toLowerCase();
@@ -3370,6 +3411,12 @@ function initChatbox() {
             }
           });
       }
+      return;
+    }
+    const selectCodeBtn = e.target.closest('[data-chat-select-code]');
+    if (selectCodeBtn) {
+      const code = selectCodeBtn.dataset.chatSelectCode;
+      if (code) handleUserQuery(code);
       return;
     }
   });
