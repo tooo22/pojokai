@@ -1102,7 +1102,7 @@ async function handleTelegramWebhook(body, db) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: chatId,
-          animation: 'CgACAgQAAxkDAAIECmrRjjpQwpu3yFWgLrmww9VLe99-AAIODAACX5CNUu9UBHm6W6s3PQQ',
+          animation: 'https://pojokai.my.id/assets/branding/pojokai-bot-avatar.gif',
           caption: msgText,
           parse_mode: 'HTML',
           reply_markup: { inline_keyboard: inlineKeyboard }
@@ -1604,7 +1604,7 @@ async function handleTelegramWebhook(body, db) {
 
   // 8. Menu Ajak Teman (Referral)
   if (cbData === 'menu_referral') {
-    const botUser = db.telegram?.botUsername || 'Tooowys_bot';
+    const botUser = db.telegram?.botUsername || 'pojokkai_bot';
     const refLink = `https://t.me/${botUser}?start=ref_${userId}`;
     const msgText = [
       '🤝 <b>PROGRAM AJAK TEMAN (REFERRAL)</b>',

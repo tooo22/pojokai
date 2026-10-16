@@ -3,7 +3,7 @@
   "telegram": {
     "botToken": "",
     "ownerChatId": "7787855968",
-    "botUsername": "Tooowys_bot",
+    "botUsername": "pojokkai_bot",
     "enabled": true,
     "webhookSecret": ""
   },
