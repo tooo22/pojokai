@@ -484,35 +484,6 @@ async function deleteTelegramMessage(chatId, messageId, botToken = null) {
     return false;
   }
 }
-async function deleteTelegramMessages(chatId, messageIds, botToken = null) {
-  const token = getTelegramToken(botToken);
-  if (!token || !chatId || !Array.isArray(messageIds) || messageIds.length === 0) return false;
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/deleteMessages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, message_ids: messageIds }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function clearTelegramChatHistory(chatId, lastMessageId, token, count = 50) {
-  if (!chatId || !lastMessageId) return;
-  const startId = Number(lastMessageId);
-  const minId = Math.max(1, startId - count);
-  const ids = [];
-  for (let id = startId; id >= minId; id--) {
-    ids.push(id);
-  }
-  const ok = await deleteTelegramMessages(chatId, ids, token);
-  if (!ok) {
-    const recent = ids.slice(0, 30);
-    await Promise.allSettled(recent.map((mId) => deleteTelegramMessage(chatId, mId, token)));
-  }
-}
 
 let _teleCommandsSynced = false;
 async function syncTelegramCommands(token) {
@@ -520,14 +491,12 @@ async function syncTelegramCommands(token) {
   try {
     const commandsId = [
       { command: 'start', description: 'Menu Utama' },
-      { command: 'clear', description: 'Bersihkan Riwayat Chat' },
       { command: 'produk', description: 'Katalog Produk Digital' },
       { command: 'bahasa', description: 'Ganti Bahasa Navigasi' },
       { command: 'bantuan', description: 'Pusat Bantuan & Admin' }
     ];
     const commandsEn = [
       { command: 'start', description: 'Main Menu' },
-      { command: 'clear', description: 'Clear Chat Messages' },
       { command: 'produk', description: 'Browse Products' },
       { command: 'bahasa', description: 'Change Language' },
       { command: 'bantuan', description: 'Help & Support' }
@@ -1173,21 +1142,6 @@ async function handleTelegramWebhook(body, db) {
   }
 
 
-  // Command /clear, /clean, /bersihkan, atau tombol Bersihkan Chat
-  if (text.startsWith('/clear') || text.startsWith('/clean') || text.startsWith('/bersihkan') || cbData === 'action_clear_chat') {
-    if (db.userStates?.[chatId]) {
-      delete db.userStates[chatId];
-      await saveDb(db);
-    }
-    const currentMsgId = message?.message_id || messageId;
-    await clearTelegramChatHistory(chatId, currentMsgId, token, 100);
-
-    const clearNotice = isEn
-      ? '🧹 <i>Chat history cleared! Welcome back.</i>\n'
-      : '🧹 <i>Riwayat pesan berhasil dibersihkan!</i>\n';
-
-    return await sendMainMenu(chatId, null, userId, username, db, token, isEn, clearNotice, false);
-  }
 
   // 1. /start or menu_main (Format persis seperti BerryGrowID)
   if (text.startsWith('/start') || cbData === 'menu_main') {
@@ -1715,7 +1669,6 @@ async function handleTelegramWebhook(body, db) {
       '💡 <b>Quick Commands:</b>',
       '├ /start - Open Main Menu',
       '├ /produk - Browse Products',
-      '├ /clear - Clean up chat messages',
       '└ /bahasa - Change Language',
       '',
       '<i>Our customer care team is ready to assist you right away.</i>'
@@ -1732,7 +1685,6 @@ async function handleTelegramWebhook(body, db) {
       '💡 <b>Perintah Cepat:</b>',
       '├ /start - Buka Menu Utama',
       '├ /produk - Lihat Katalog Produk',
-      '├ /clear - Bersihkan riwayat chat bot',
       '└ /bahasa - Ganti bahasa navigasi',
       '',
       '<i>Admin kami siap membantu menyelesaikan kendala Anda secepatnya.</i>'
@@ -1740,10 +1692,7 @@ async function handleTelegramWebhook(body, db) {
 
     const buttons = [
       [{ text: isEn ? '💬 Chat Admin WhatsApp (24 Hours)' : '💬 Chat WhatsApp Admin (24 Jam)', url: `https://wa.me/${wa}`, style: 'success' }],
-      [
-        { text: isEn ? '🧹 Clear Chat' : '🧹 Bersihkan Chat', callback_data: 'action_clear_chat', style: 'primary' },
-        { text: isEn ? '🌐 Visit Website' : '🌐 Buka Website', web_app: { url: 'https://pojokai.my.id' }, style: 'primary' }
-      ],
+      [{ text: isEn ? '🌐 Visit Website' : '🌐 Buka Website', web_app: { url: 'https://pojokai.my.id' }, style: 'primary' }],
       [{ text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
     ];
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
