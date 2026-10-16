@@ -582,6 +582,151 @@ async function deleteTelegramMessage(chatId, messageId, botToken = null) {
     return false;
   }
 }
+async function deleteTelegramMessages(chatId, messageIds, botToken = null) {
+  const token = getTelegramToken(botToken);
+  if (!token || !chatId || !Array.isArray(messageIds) || messageIds.length === 0) return false;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/deleteMessages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_ids: messageIds }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function clearTelegramChatHistory(chatId, lastMessageId, token, count = 100) {
+  if (!chatId || !lastMessageId) return;
+  const startId = Number(lastMessageId);
+  const minId = Math.max(1, startId - count);
+  const ids = [];
+  for (let id = startId; id >= minId; id--) {
+    ids.push(id);
+  }
+  for (let i = 0; i < ids.length; i += 100) {
+    const chunk = ids.slice(i, i + 100);
+    const ok = await deleteTelegramMessages(chatId, chunk, token);
+    if (!ok) {
+      for (let j = 0; j < chunk.length; j += 15) {
+        const sub = chunk.slice(j, j + 15);
+        await Promise.allSettled(sub.map((mId) => deleteTelegramMessage(chatId, mId, token)));
+      }
+    }
+  }
+}
+
+function buildMainMenuPayload(userId, username, dbData, isEn, banner = '') {
+  const userRank = '#' + ((Number(String(userId).slice(-2)) || 1) + 1);
+  const orders = dbData.orders || [];
+  const completedOrders = orders.filter((o) => {
+    const s = String(o.status || '').toLowerCase();
+    return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
+  }).length;
+  const totalSold = (dbData.products || []).reduce((sum, p) => sum + (Number(p.sold) || 0), 0) + completedOrders;
+
+  const userOrders = orders.filter((o) => String(o.buyer?.telegramUserId || o.buyer?.telegramChatId) === String(userId));
+  const userSpent = userOrders.filter((o) => {
+    const s = String(o.status || '').toLowerCase();
+    return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
+  }).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const userOrderCount = userOrders.length;
+
+  const msgText = (isEn ? [
+    banner,
+    '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `├ <b>User ID   :</b> <code>${userId}</code>`,
+    `├ <b>Username  :</b> ${username}`,
+    `└ <b>Rank      :</b> <code>${userRank}</code>`,
+    '',
+    '💰 <tg-emoji emoji-id="5904655415735492625"><b>SUMMARY</b></tg-emoji>',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `├ <b>Account Status :</b> 🟢 <b>Verified</b>`,
+    `├ <b>Total Spent    :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
+    `└ <b>Total Orders   :</b> <code>${userOrderCount} Orders</code>`,
+    '',
+    '📊 <tg-emoji emoji-id="5904715266104762882"><b>STORE STATISTICS</b></tg-emoji>',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `├ <b>Products Sold     :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
+    `└ <b>Successful Orders :</b> <code>${completedOrders.toLocaleString('id-ID')} Orders</code>`,
+    '',
+    '💫 <i>Select a menu below to start:</i>'
+  ] : [
+    banner,
+    '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `├ <b>User ID   :</b> <code>${userId}</code>`,
+    `├ <b>Username  :</b> ${username}`,
+    `└ <b>Peringkat :</b> <code>${userRank}</code>`,
+    '',
+    '💰 <tg-emoji emoji-id="5904655415735492625"><b>RINGKASAN</b></tg-emoji>',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `├ <b>Status Akun   :</b> 🟢 <b>Terverifikasi</b>`,
+    `├ <b>Total Belanja :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
+    `└ <b>Total Pesanan :</b> <code>${userOrderCount} Pesanan</code>`,
+    '',
+    '📊 <tg-emoji emoji-id="5904715266104762882"><b>STATISTIK TOKO</b></tg-emoji>',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━',
+    `├ <b>Produk Terjual   :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
+    `└ <b>Transaksi Sukses :</b> <code>${completedOrders.toLocaleString('id-ID')} Order</code>`,
+    '',
+    '💫 <i>Pilih menu di bawah untuk mulai:</i>'
+  ]).filter(Boolean).join('\n');
+
+  const inlineKeyboard = isEn ? [
+    [{ text: '🛍️ Products', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
+    [
+      { text: '📦 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+      { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
+    ],
+    [{ text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
+    [
+      { text: '🌐 Language', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
+      { text: '⚠️ Help', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
+    ]
+  ] : [
+    [{ text: '🛍️ Produk', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
+    [
+      { text: '📦 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+      { text: '👤 Profil', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
+    ],
+    [{ text: '🤝 Ajak Teman', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
+    [
+      { text: '🌐 Bahasa', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
+      { text: '⚠️ Bantuan', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
+    ]
+  ];
+
+  return { msgText, inlineKeyboard };
+}
+
+async function sendMainMenu(chatId, messageId, userId, username, dbData, token, isEn, banner = '', deleteOld = false) {
+  if (deleteOld && messageId) {
+    await deleteTelegramMessage(chatId, messageId, token);
+  }
+
+  const { msgText, inlineKeyboard } = buildMainMenuPayload(userId, username, dbData, isEn, banner);
+
+  try {
+    const animRes = await fetch(`https://api.telegram.org/bot${token}/sendAnimation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        animation: 'https://pojokai.my.id/assets/branding/pojokai-bot-avatar.gif',
+        caption: msgText,
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: inlineKeyboard }
+      })
+    });
+    if (animRes.ok) return { ok: true };
+  } catch {}
+
+  await sendTelegramMessage(chatId, msgText, { inline_keyboard: inlineKeyboard }, token);
+  return { ok: true };
+}
 
 async function updateOrSendMessage(chatId, messageId, text, replyMarkup = null, botToken = null, linkPreviewOptions = null) {
   const token = getTelegramToken(botToken);
@@ -1088,112 +1233,29 @@ async function handleTelegramWebhook(body, dbData) {
   }
 
 
+  // Command /clear, /clean, /bersihkan, atau tombol Bersihkan Chat
+  if (text.startsWith('/clear') || text.startsWith('/clean') || text.startsWith('/bersihkan') || cbData === 'action_clear_chat') {
+    if (dbData.userStates?.[chatId]) {
+      delete dbData.userStates[chatId];
+      await save();
+    }
+    const currentMsgId = message?.message_id || messageId;
+    await clearTelegramChatHistory(chatId, currentMsgId, token, 100);
+
+    const clearNotice = isEn
+      ? '🧹 <i>Chat history cleared! Welcome back.</i>\n'
+      : '🧹 <i>Riwayat pesan berhasil dibersihkan!</i>\n';
+
+    return await sendMainMenu(chatId, null, userId, username, dbData, token, isEn, clearNotice, false);
+  }
+
   // 1. /start or menu_main (Format persis seperti BerryGrowID)
   if (text.startsWith('/start') || cbData === 'menu_main') {
     if (dbData.userStates?.[chatId]) {
       delete dbData.userStates[chatId];
       await save();
     }
-
-
-    const userRank = '#' + ((Number(String(userId).slice(-2)) || 1) + 1);
-    const orders = dbData.orders || [];
-    const completedOrders = orders.filter((o) => {
-      const s = String(o.status || '').toLowerCase();
-      return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
-    }).length;
-    const totalSold = (dbData.products || []).reduce((sum, p) => sum + (Number(p.sold) || 0), 0) + completedOrders;
-    const userOrders = orders.filter((o) => String(o.buyer?.telegramUserId || o.buyer?.telegramChatId) === String(userId));
-    const userSpent = userOrders.filter((o) => {
-      const s = String(o.status || '').toLowerCase();
-      return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
-    }).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const userOrderCount = userOrders.length;
-
-    const msgText = isEn ? [
-      '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>User ID   :</b> <code>${userId}</code>`,
-      `├ <b>Username  :</b> ${username}`,
-      `└ <b>Rank      :</b> <code>${userRank}</code>`,
-      '',
-      '💰 <tg-emoji emoji-id="5904655415735492625"><b>SUMMARY</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Account Status :</b> 🟢 <b>Verified</b>`,
-      `├ <b>Total Spent    :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Total Orders   :</b> <code>${userOrderCount} Orders</code>`,
-      '',
-      '📊 <tg-emoji emoji-id="5904715266104762882"><b>STORE STATISTICS</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Products Sold     :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
-      `└ <b>Successful Orders :</b> <code>${completedOrders.toLocaleString('id-ID')} Orders</code>`,
-      '',
-      '💫 <i>Select a menu below to start:</i>'
-    ].join('\n') : [
-      '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>User ID   :</b> <code>${userId}</code>`,
-      `├ <b>Username  :</b> ${username}`,
-      `└ <b>Peringkat :</b> <code>${userRank}</code>`,
-      '',
-      '💰 <tg-emoji emoji-id="5904655415735492625"><b>RINGKASAN</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Status Akun   :</b> 🟢 <b>Terverifikasi</b>`,
-      `├ <b>Total Belanja :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Total Pesanan :</b> <code>${userOrderCount} Pesanan</code>`,
-      '',
-      '📊 <tg-emoji emoji-id="5904715266104762882"><b>STATISTIK TOKO</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Produk Terjual   :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
-      `└ <b>Transaksi Sukses :</b> <code>${completedOrders.toLocaleString('id-ID')} Order</code>`,
-      '',
-      '💫 <i>Pilih menu di bawah untuk mulai:</i>'
-    ].join('\n');
-
-    const inlineKeyboard = isEn ? [
-      [{ text: '🛍️ Products', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
-      [
-        { text: '📦 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
-        { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
-      ],
-      [{ text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
-      [
-        { text: '🌐 Language', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
-        { text: '⚠️ Help', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
-      ]
-    ] : [
-      [{ text: '🛍️ Produk', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
-      [
-        { text: '📦 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
-        { text: '👤 Profil', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
-      ],
-      [{ text: '🤝 Ajak Teman', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
-      [
-        { text: '🌐 Bahasa', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
-        { text: '⚠️ Bantuan', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
-      ]
-    ];
-
-    if (messageId && cbData === 'menu_main') {
-      await deleteTelegramMessage(chatId, messageId, token);
-    }
-    try {
-      const animRes = await fetch(`https://api.telegram.org/bot${token}/sendAnimation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          animation: 'https://pojokai.my.id/assets/branding/pojokai-bot-avatar.gif',
-          caption: msgText,
-          parse_mode: 'HTML',
-          reply_markup: { inline_keyboard: inlineKeyboard }
-        })
-      });
-      if (animRes.ok) return { ok: true };
-    } catch {}
-
-    await sendTelegramMessage(chatId, msgText, { inline_keyboard: inlineKeyboard }, token);
-    return { ok: true };
+    return await sendMainMenu(chatId, messageId, userId, username, dbData, token, isEn, '', cbData === 'menu_main');
   }
 
   // 2. Menu Produk (Grid Tombol Produk - Background HIJAU jika Ready!)
@@ -1654,96 +1716,7 @@ async function handleTelegramWebhook(body, dbData) {
       ? '✨ <b>Language successfully switched to 🇬🇧 English!</b>\n'
       : '✨ <b>Bahasa berhasil diubah ke 🇮🇩 Bahasa Indonesia!</b>\n';
 
-    const userOrders = orders.filter((o) => String(o.buyer?.telegramUserId || o.buyer?.telegramChatId) === String(userId));
-    const userSpent = userOrders.filter((o) => {
-      const s = String(o.status || '').toLowerCase();
-      return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
-    }).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const userOrderCount = userOrders.length;
-
-    const msgText = (isEn ? [
-      noticeBanner,
-      '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>User ID   :</b> <code>${userId}</code>`,
-      `├ <b>Username  :</b> ${username}`,
-      `└ <b>Rank      :</b> <code>${userRank}</code>`,
-      '',
-      '💰 <tg-emoji emoji-id="5904655415735492625"><b>SUMMARY</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Account Status :</b> 🟢 <b>Verified</b>`,
-      `├ <b>Total Spent    :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Total Orders   :</b> <code>${userOrderCount} Orders</code>`,
-      '',
-      '📊 <tg-emoji emoji-id="5904715266104762882"><b>STORE STATISTICS</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Products Sold     :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
-      `└ <b>Successful Orders :</b> <code>${completedOrders.toLocaleString('id-ID')} Orders</code>`,
-      '',
-      '💫 <i>Select a menu below to start:</i>'
-    ] : [
-      noticeBanner,
-      '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>User ID   :</b> <code>${userId}</code>`,
-      `├ <b>Username  :</b> ${username}`,
-      `└ <b>Peringkat :</b> <code>${userRank}</code>`,
-      '',
-      '💰 <tg-emoji emoji-id="5904655415735492625"><b>RINGKASAN</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Status Akun   :</b> 🟢 <b>Terverifikasi</b>`,
-      `├ <b>Total Belanja :</b> <code>Rp${Number(userSpent || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Total Pesanan :</b> <code>${userOrderCount} Pesanan</code>`,
-      '',
-      '📊 <tg-emoji emoji-id="5904715266104762882"><b>STATISTIK TOKO</b></tg-emoji>',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `├ <b>Produk Terjual   :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
-      `└ <b>Transaksi Sukses :</b> <code>${completedOrders.toLocaleString('id-ID')} Order</code>`,
-      '',
-      '💫 <i>Pilih menu di bawah untuk mulai:</i>'
-    ]).join('\n');
-
-    const inlineKeyboard = isEn ? [
-      [{ text: '🛍️ Products', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
-      [
-        { text: '📦 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
-        { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
-      ],
-      [{ text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
-      [
-        { text: '🌐 Language', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
-        { text: '⚠️ Help', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
-      ]
-    ] : [
-      [{ text: '🛍️ Produk', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
-      [
-        { text: '📦 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
-        { text: '👤 Profil', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' }
-      ],
-      [{ text: '🤝 Ajak Teman', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }],
-      [
-        { text: '🌐 Bahasa', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
-        { text: '⚠️ Bantuan', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
-      ]
-    ];
-
-    try {
-      const animRes = await fetch(`https://api.telegram.org/bot${token}/sendAnimation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          animation: 'https://pojokai.my.id/assets/branding/pojokai-bot-avatar.gif',
-          caption: msgText,
-          parse_mode: 'HTML',
-          reply_markup: { inline_keyboard: inlineKeyboard }
-        })
-      });
-      if (animRes.ok) return { ok: true };
-    } catch {}
-
-    await sendTelegramMessage(chatId, msgText, { inline_keyboard: inlineKeyboard }, token);
-    return { ok: true };
+    return await sendMainMenu(chatId, messageId, userId, username, dbData, token, isEn, noticeBanner, true);
   }
 
   if (cbData === 'menu_lang' || text.toLowerCase() === '/bahasa' || text.toLowerCase() === '/lang' || text.toLowerCase() === '/language') {
@@ -1797,6 +1770,12 @@ async function handleTelegramWebhook(body, dbData) {
       '├ <b>Operating Hours :</b> 🟢 <b>24 Hours Daily</b>',
       '└ <b>Official Website :</b> https://pojokai.my.id',
       '',
+      '💡 <b>Quick Commands:</b>',
+      '├ /start - Open Main Menu',
+      '├ /produk - Browse Products',
+      '├ /clear - Clean up chat messages',
+      '└ /bahasa - Change Language',
+      '',
       '<i>Our customer care team is ready to assist you right away.</i>'
     ].join('\n') : [
       '⚠️ <b>PUSAT BANTUAN &amp; LAYANAN PELANGGAN</b>',
@@ -1808,12 +1787,21 @@ async function handleTelegramWebhook(body, dbData) {
       '├ <b>Jam Operasional:</b> 🟢 <b>24 Jam Setiap Hari</b>',
       '└ <b>Website Resmi   :</b> https://pojokai.my.id',
       '',
+      '💡 <b>Perintah Cepat:</b>',
+      '├ /start - Buka Menu Utama',
+      '├ /produk - Lihat Katalog Produk',
+      '├ /clear - Bersihkan riwayat chat bot',
+      '└ /bahasa - Ganti bahasa navigasi',
+      '',
       '<i>Admin kami siap membantu menyelesaikan kendala Anda secepatnya.</i>'
     ].join('\n');
 
     const buttons = [
       [{ text: isEn ? '💬 Chat Admin WhatsApp (24 Hours)' : '💬 Chat WhatsApp Admin (24 Jam)', url: `https://wa.me/${wa}`, style: 'success' }],
-      [{ text: isEn ? '🌐 Visit Official Website' : '🌐 Kunjungi Website Resmi', web_app: { url: 'https://pojokai.my.id' }, style: 'primary' }],
+      [
+        { text: isEn ? '🧹 Clear Chat' : '🧹 Bersihkan Chat', callback_data: 'action_clear_chat', style: 'primary' },
+        { text: isEn ? '🌐 Visit Website' : '🌐 Buka Website', web_app: { url: 'https://pojokai.my.id' }, style: 'primary' }
+      ],
       [{ text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
     ];
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
