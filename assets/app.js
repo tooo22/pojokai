@@ -2975,3 +2975,404 @@ function checkUrlDeepLink() {
 
 window.addEventListener('hashchange', checkUrlDeepLink);
 checkUrlDeepLink();
+
+/* ---------- Interactive Chatbox Assistant ---------- */
+function initChatbox() {
+  const root = $('#chatboxRoot');
+  const toggleBtn = $('#chatboxToggleBtn');
+  const windowEl = $('#chatboxWindow');
+  const tooltip = $('#chatboxTooltip');
+  const tooltipClose = $('#chatboxTooltipClose');
+  const closeBtn = $('#chatboxCloseBtn');
+  const resetBtn = $('#chatboxResetBtn');
+  const messagesEl = $('#chatboxMessages');
+  const form = $('#chatboxForm');
+  const input = $('#chatboxInput');
+  const iconOpen = $('#chatboxIconOpen');
+  const iconClose = $('#chatboxIconClose');
+
+  if (!root || !toggleBtn || !windowEl) return;
+
+  const CHAT_STORAGE_KEY = 'pojokai:chat_history';
+  const TOOLTIP_DISMISSED_KEY = 'pojokai:chat_tooltip_closed';
+
+  if (localStorage.getItem(TOOLTIP_DISMISSED_KEY) === '1') {
+    tooltip?.classList.add('hidden');
+  }
+
+  tooltipClose?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    tooltip?.classList.add('hidden');
+    localStorage.setItem(TOOLTIP_DISMISSED_KEY, '1');
+  });
+
+  let isOpen = false;
+
+  const toggleChatbox = (open = null) => {
+    isOpen = open !== null ? open : !isOpen;
+    if (isOpen) {
+      windowEl.classList.remove('hidden');
+      windowEl.classList.add('flex');
+      iconOpen?.classList.add('hidden');
+      iconClose?.classList.remove('hidden');
+      iconClose?.classList.add('flex');
+      tooltip?.classList.add('hidden');
+      localStorage.setItem(TOOLTIP_DISMISSED_KEY, '1');
+      setTimeout(() => {
+        input?.focus();
+        scrollToBottom();
+      }, 60);
+      icons();
+    } else {
+      windowEl.classList.add('hidden');
+      windowEl.classList.remove('flex');
+      iconOpen?.classList.remove('hidden');
+      iconClose?.classList.add('hidden');
+      iconClose?.classList.remove('flex');
+    }
+  };
+
+  toggleBtn.addEventListener('click', () => toggleChatbox());
+  closeBtn?.addEventListener('click', () => toggleChatbox(false));
+
+  const scrollToBottom = () => {
+    if (messagesEl) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  };
+
+  const getStoredMessages = () => {
+    try {
+      const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  };
+
+  const saveMessages = (msgs) => {
+    try {
+      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(msgs.slice(-50)));
+    } catch {}
+  };
+
+  const initialGreeting = () => [
+    {
+      sender: 'bot',
+      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      text: '',
+      html: `Halo kak! 👋 Selamat datang di <b>PojokAI</b>.<br><br>Saya asisten bot PojokAI siap membantu kamu 24 jam. Mau cari akun premium, cek status pesanan, atau cara bayar QRIS? Pilih topik di bawah atau ketik langsung ya!`
+    }
+  ];
+
+  let messages = getStoredMessages() || initialGreeting();
+
+  const renderMessages = () => {
+    if (!messagesEl) return;
+    messagesEl.innerHTML = messages.map((m) => {
+      const isBot = m.sender === 'bot';
+      return `
+        <div class="flex items-start gap-2 ${isBot ? '' : 'flex-row-reverse'} animate-in fade-in duration-200">
+          ${isBot ? `
+            <div class="size-7 rounded-full overflow-hidden shrink-0 ring-1 ring-primary/30 bg-surface-2 mt-0.5">
+              <img src="/assets/branding/pojokai-bot-avatar.gif" alt="Bot" class="size-full object-cover">
+            </div>
+          ` : ''}
+          <div class="max-w-[82%] space-y-1">
+            <div class="p-2.5 rounded-2xl text-[12px] leading-relaxed shadow-2xs ${
+              isBot 
+                ? 'bg-surface-2 border border-line text-main rounded-tl-xs' 
+                : 'bg-primary text-primary-fg rounded-tr-xs'
+            }">
+              ${m.html || esc(m.text).replace(/\n/g, '<br>')}
+            </div>
+            <p class="text-[9.5px] text-muted ${isBot ? 'text-left pl-1' : 'text-right pr-1'} font-mono">${m.time}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+    icons();
+    scrollToBottom();
+  };
+
+  renderMessages();
+
+  resetBtn?.addEventListener('click', () => {
+    messages = initialGreeting();
+    saveMessages(messages);
+    renderMessages();
+    toast('Percakapan dibersihkan');
+  });
+
+  const appendBotMessage = (content, html = null) => {
+    messages.push({
+      sender: 'bot',
+      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      text: typeof content === 'string' ? content : '',
+      html: html || (typeof content === 'string' ? content : null)
+    });
+    saveMessages(messages);
+    renderMessages();
+  };
+
+  const appendUserMessage = (text) => {
+    messages.push({
+      sender: 'user',
+      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      text: text
+    });
+    saveMessages(messages);
+    renderMessages();
+  };
+
+  const showTypingIndicator = () => {
+    const id = 'typingIndicator';
+    let el = $('#' + id);
+    if (!el && messagesEl) {
+      el = document.createElement('div');
+      el.id = id;
+      el.className = 'flex items-center gap-2 animate-in fade-in duration-150';
+      el.innerHTML = `
+        <div class="size-7 rounded-full overflow-hidden shrink-0 ring-1 ring-primary/30 bg-surface-2 mt-0.5">
+          <img src="/assets/branding/pojokai-bot-avatar.gif" alt="Bot" class="size-full object-cover">
+        </div>
+        <div class="p-2.5 rounded-2xl rounded-tl-xs bg-surface-2 border border-line flex items-center gap-1 shadow-2xs">
+          <span class="size-1.5 rounded-full bg-primary animate-bounce"></span>
+          <span class="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:0.15s]"></span>
+          <span class="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:0.3s]"></span>
+        </div>
+      `;
+      messagesEl.appendChild(el);
+      scrollToBottom();
+    }
+  };
+
+  const hideTypingIndicator = () => {
+    $('#typingIndicator')?.remove();
+  };
+
+  const handleUserQuery = async (rawQuery) => {
+    const q = rawQuery.trim();
+    if (!q) return;
+
+    appendUserMessage(q);
+    showTypingIndicator();
+
+    const lower = q.toLowerCase();
+
+    // 1. Order Code Tracking Detection (e.g. POJOK-XXXXXX or phone number)
+    const codeMatch = q.match(/POJOK-[A-Z0-9]{4,10}/i);
+    const waMatch = q.match(/(\+?62|08)[0-9]{8,13}/);
+
+    await new Promise(r => setTimeout(r, 450));
+    hideTypingIndicator();
+
+    if (codeMatch || (waMatch && (lower.includes('cek') || lower.includes('pesanan') || lower.includes('order')))) {
+      const searchKey = codeMatch ? codeMatch[0].toUpperCase() : waMatch[0].replace(/\D/g, '');
+      try {
+        const res = await fetch(`/api/orders?q=${encodeURIComponent(searchKey)}`);
+        const data = await res.json();
+        const orders = data.orders || [];
+        if (orders.length > 0) {
+          const ord = orders[0];
+          const isPaid = ord.status && (ord.status.includes('Lunas') || ord.status.includes('Diproses') || ord.status.includes('Selesai'));
+          const html = `
+            <div class="space-y-2">
+              <p class="font-bold text-main">📦 Ditemukan Pesanan <b>${esc(ord.code)}</b></p>
+              <div class="rounded-xl border border-line bg-surface p-2.5 space-y-1 text-[11px]">
+                <div class="flex justify-between"><span>Produk:</span><b>${esc(ord.product?.name)} (${esc(ord.product?.variant)})</b></div>
+                <div class="flex justify-between"><span>Total:</span><b class="text-primary">${rp(ord.total)}</b></div>
+                <div class="flex justify-between"><span>Status:</span><b class="${isPaid ? 'text-emerald-500' : 'text-amber-500'}">${esc(ord.status)}</b></div>
+              </div>
+              <div class="flex gap-1.5 pt-1">
+                ${!isPaid ? `
+                  <button type="button" data-chat-pay="${esc(ord.code)}" class="flex-1 py-1.5 px-2.5 rounded-lg bg-primary text-primary-fg font-bold text-center text-[10.5px] hover:opacity-90 cursor-pointer">
+                    Bayar QRIS
+                  </button>
+                ` : ''}
+                <a href="https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(`Halo admin, saya mau tanya pesanan ${ord.code}`)}" target="_blank" class="flex-1 py-1.5 px-2.5 rounded-lg border border-line bg-surface hover:bg-surface-2 font-bold text-center text-[10.5px] text-main">
+                  Chat Admin
+                </a>
+              </div>
+            </div>
+          `;
+          return appendBotMessage('', html);
+        }
+      } catch {}
+      return appendBotMessage(`Pesanan <b>${esc(searchKey)}</b> belum ditemukan di database. Pastikan kode pesanan Anda sudah benar (contoh: <code>POJOK-8L7HVW</code>) atau hubungi WhatsApp Admin.`);
+    }
+
+    // 2. Quick Topic Buttons
+    if (lower === 'produk' || lower.includes('rekomendasi') || lower.includes('katalog') || lower.includes('daftar produk')) {
+      const popular = (PRODUCTS || []).slice(0, 4);
+      const itemsHtml = popular.map(p => `
+        <div class="flex items-center justify-between p-2 rounded-xl bg-surface border border-line">
+          <div class="flex items-center gap-2">
+            <img src="${esc(p.image || `assets/products/${p.slug}.webp`)}" alt="${esc(p.name)}" class="size-8 rounded-lg object-cover bg-surface-2">
+            <div>
+              <p class="font-bold text-main text-[11.5px]">${esc(p.name)}</p>
+              <p class="text-[10px] text-primary font-bold">Mulai ${rp(p.price || p.variants?.[0]?.price || 0)}</p>
+            </div>
+          </div>
+          <button type="button" data-chat-buy="${esc(p.slug)}" class="py-1 px-2.5 rounded-lg bg-primary text-primary-fg text-[10.5px] font-bold hover:opacity-90 cursor-pointer">
+            Beli
+          </button>
+        </div>
+      `).join('');
+      return appendBotMessage('', `
+        <div class="space-y-2">
+          <p class="font-bold text-main">🔥 Produk Terpopuler Hari Ini:</p>
+          <div class="space-y-1.5">${itemsHtml}</div>
+          <p class="text-[10.5px] text-muted">Klik <b>Beli</b> pada produk di atas atau ketik nama aplikasi yang kamu cari.</p>
+        </div>
+      `);
+    }
+
+    // 3. QRIS / Cara Bayar
+    if (lower.includes('qris') || lower.includes('bayar') || lower.includes('transfer') || lower.includes('wistapay') || lower.includes('metode')) {
+      return appendBotMessage('', `
+        <div class="space-y-1.5">
+          <p class="font-bold text-main">💳 Cara Pembayaran QRIS Dinamis:</p>
+          <ol class="list-decimal list-inside space-y-1 text-muted text-[11px]">
+            <li>Pilih paket produk lalu klik <b>Beli Sekarang</b>.</li>
+            <li>Scan QRIS Dinamis yang muncul menggunakan aplikasi m-Banking (BCA, Mandiri, BRI, BNI) atau e-Wallet (GoPay, OVO, DANA, ShopeePay).</li>
+            <li>Nominal otomatis terkunci pas (bebas biaya admin).</li>
+            <li>Sistem WistaPay memverifikasi transaksi secara <b>otomatis dalam hitungan detik</b> tanpa perlu kirim bukti transfer!</li>
+          </ol>
+        </div>
+      `);
+    }
+
+    // 4. Garansi
+    if (lower.includes('garansi') || lower.includes('klaim') || lower.includes('rusak') || lower.includes('replace') || lower.includes('masalah')) {
+      return appendBotMessage('', `
+        <div class="space-y-1.5">
+          <p class="font-bold text-main">🛡️ Jaminan Garansi 100% PojokAI:</p>
+          <p class="text-[11px] text-muted">Seluruh produk akun bergaransi penuh sesuai durasi paket yang kamu beli. Jika akun mengalami kendala atau back free, admin langsung ganti akun baru (replace) atau dibantu perbaikan secepatnya.</p>
+          <a href="https://wa.me/${WA_ADMIN}?text=${encodeURIComponent('Halo admin, saya ingin klaim garansi pesanan saya.')}" target="_blank" class="inline-flex items-center gap-1.5 font-bold text-primary hover:underline text-[11px] pt-1">
+            <i data-lucide="message-circle" class="size-3.5"></i> Hubungi Admin untuk Klaim Garansi
+          </a>
+        </div>
+      `);
+    }
+
+    // 5. Product Search in PRODUCTS Catalog
+    const matchedProducts = (PRODUCTS || []).filter(p => {
+      const name = p.name.toLowerCase();
+      const slug = p.slug.toLowerCase();
+      const cat = (p.cat || '').toLowerCase();
+      return name.includes(lower) || lower.includes(name) || slug.includes(lower) || lower.includes(slug) || cat.includes(lower);
+    }).slice(0, 3);
+
+    if (matchedProducts.length > 0) {
+      const cards = matchedProducts.map(p => `
+        <div class="flex items-center justify-between p-2 rounded-xl bg-surface border border-line">
+          <div class="flex items-center gap-2">
+            <img src="${esc(p.image || `assets/products/${p.slug}.webp`)}" alt="${esc(p.name)}" class="size-8 rounded-lg object-cover bg-surface-2">
+            <div>
+              <p class="font-bold text-main text-[11.5px]">${esc(p.name)}</p>
+              <p class="text-[10px] text-primary font-bold">Mulai ${rp(p.price || p.variants?.[0]?.price || 0)}</p>
+            </div>
+          </div>
+          <button type="button" data-chat-buy="${esc(p.slug)}" class="py-1 px-2.5 rounded-lg bg-primary text-primary-fg text-[10.5px] font-bold hover:opacity-90 cursor-pointer">
+            Lihat
+          </button>
+        </div>
+      `).join('');
+      return appendBotMessage('', `
+        <div class="space-y-2">
+          <p class="font-bold text-main">Ditemukan produk untuk "<b>${esc(q)}</b>":</p>
+          <div class="space-y-1.5">${cards}</div>
+        </div>
+      `);
+    }
+
+    // 6. Admin / Human
+    if (lower.includes('admin') || lower.includes('wa') || lower.includes('whatsapp') || lower.includes('kontak') || lower.includes('cs') || lower.includes('orang') || lower.includes('manusia')) {
+      return appendBotMessage('', `
+        <div class="space-y-1.5">
+          <p class="font-bold text-main">💬 Hubungi Admin WhatsApp:</p>
+          <p class="text-[11px] text-muted">Ingin bicara langsung dengan admin manusia? Silakan klik tombol di bawah untuk terhubung ke WhatsApp PojokAI.</p>
+          <a href="https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(`Halo admin PojokAI, saya butuh bantuan: ${q}`)}" target="_blank" class="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-[#25D366] text-white font-bold text-[11.5px] shadow-sm hover:bg-[#20ba59] transition">
+            <i data-lucide="message-circle" class="size-4"></i> Buka WhatsApp Admin
+          </a>
+        </div>
+      `);
+    }
+
+    // 7. Greeting
+    if (/^(halo|hai|hey|hei|pagi|siang|sore|malam|assalamualaikum|tes|test|p)\b/i.test(lower)) {
+      return appendBotMessage(`Halo kak! 😊 Ada yang bisa saya bantu hari ini? Kamu bisa tanya ketersediaan akun aplikasi premium (ChatGPT, Netflix, Canva, dll), cek status pesanan, atau cara bayar via QRIS.`);
+    }
+
+    // 8. Thank you
+    if (/^(makasih|terima kasih|thanks|ok|oke|sip|mantap|siap)\b/i.test(lower)) {
+      return appendBotMessage(`Sama-sama kak! Senang bisa membantu. Jika butuh bantuan lainnya jangan ragu untuk chat lagi ya! 🙏✨`);
+    }
+
+    // 9. Default Fallback
+    appendBotMessage('', `
+      <div class="space-y-2">
+        <p class="text-main">Terima kasih atas pertanyaannya kak! Untuk pertanyaan lebih lanjut mengenai "<b>${esc(q)}</b>", admin kami siap membantu langsung via WhatsApp.</p>
+        <a href="https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(`Halo admin PojokAI, saya mau tanya: ${q}`)}" target="_blank" class="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-[#25D366] text-white font-bold text-[11.5px] shadow-sm hover:bg-[#20ba59] transition">
+          <i data-lucide="message-circle" class="size-4"></i> Chat WhatsApp Admin
+        </a>
+      </div>
+    `);
+  };
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = input?.value || '';
+    if (val.trim()) {
+      input.value = '';
+      handleUserQuery(val);
+    }
+  });
+
+  // Handle Quick Chips & Chat Action Buttons
+  document.addEventListener('click', (e) => {
+    const quickBtn = e.target.closest('[data-chat-quick]');
+    if (quickBtn) {
+      const topic = quickBtn.dataset.chatQuick;
+      if (topic === 'produk') handleUserQuery('produk');
+      else if (topic === 'pesanan') handleUserQuery('cek pesanan');
+      else if (topic === 'qris') handleUserQuery('cara bayar qris');
+      else if (topic === 'garansi') handleUserQuery('garansi akun');
+      else if (topic === 'admin') handleUserQuery('hubungi admin');
+      return;
+    }
+
+    const buyBtn = e.target.closest('[data-chat-buy]');
+    if (buyBtn) {
+      const slug = buyBtn.dataset.chatBuy;
+      const prod = (PRODUCTS || []).find(p => p.slug === slug);
+      if (prod) {
+        openModal(prod);
+        toggleChatbox(false);
+      }
+      return;
+    }
+
+    const payBtn = e.target.closest('[data-chat-pay]');
+    if (payBtn) {
+      const code = payBtn.dataset.chatPay;
+      const ord = (getStoredOrders() || []).find(o => o.code === code);
+      if (ord) {
+        openPaymentModal(ord);
+        toggleChatbox(false);
+      } else {
+        fetch(`/api/orders?code=${encodeURIComponent(code)}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.orders?.[0]) {
+              openPaymentModal(data.orders[0]);
+              toggleChatbox(false);
+            }
+          });
+      }
+      return;
+    }
+  });
+}
+
+initChatbox();
