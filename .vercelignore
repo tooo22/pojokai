@@ -1,0 +1,5 @@
+data/
+docs/
+*.bat
+PANDUAN_KEAMANAN_DAN_DEPLOY.md
+.git*

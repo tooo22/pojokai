@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="/">
+  <title>PojokAI — Toko Akun Digital &amp; Jasa Sosmed via WhatsApp</title>
+  <meta name="description" content="Beli akun premium legal &amp; jasa sosial media murah via QRIS otomatis ke WhatsApp tanpa ribet login.">
+  <meta name="theme-color" content="#0a0a0b">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/svg+xml" href="pojokai_logo/pojokai-logo-lime.svg">
+  <link rel="alternate icon" type="image/png" href="pojokai_logo/pojokai-logo-lime-2048.png">
+  <link rel="apple-touch-icon" href="pojokai_logo/pojokai-logo-lime-2048.png">
+
+  <!-- Open Graph / WhatsApp / Facebook Preview -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PojokAI">
+  <meta property="og:title" content="PojokAI — Toko Akun Digital &amp; Jasa Sosmed">
+  <meta property="og:description" content="Beli akun premium (ChatGPT, Canva, Netflix, Gemini, dll) legal &amp; murah via QRIS otomatis ke WhatsApp.">
+  <meta property="og:image" content="https://pojok.my.id/pojokai_logo/pojokai-brand-darktheme-2048x600.png">
+  <meta property="og:image:width" content="2048">
+  <meta property="og:image:height" content="600">
+  <meta property="og:url" content="https://pojok.my.id">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PojokAI — Toko Akun Digital &amp; Jasa Sosmed">
+  <meta name="twitter:description" content="Beli akun premium legal &amp; murah via QRIS otomatis ke WhatsApp.">
+  <meta name="twitter:image" content="https://pojok.my.id/pojokai_logo/pojokai-brand-darktheme-2048x600.png">
+  <script>
+    (function () {
+      var t = localStorage.getItem('theme');
+      if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
+      var tok = localStorage.getItem('wk:owner:token') || (document.cookie.match(/(?:^|;\s*)wk_token=([A-Za-z0-9._-]+)/) ? '1' : '');
+      var active = location.pathname === '/admin' || location.hash === '#admin';
+      if (tok && active) {
+        document.documentElement.classList.add('preload-admin');
+      } else {
+        document.documentElement.classList.remove('preload-admin');
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/tailwind.css?v=6">
+  <link rel="stylesheet" href="assets/style.css?v=6">
+  <script src="https://unpkg.com/lucide@0.475.0/dist/umd/lucide.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="min-h-full bg-bg font-sans text-main">
+  <h1 class="sr-only">PojokAI &mdash; Toko Akun Digital &amp; Jasa Sosmed via WhatsApp</h1>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-md">
+    <div class="mx-auto flex h-14 sm:h-16 max-w-[1024px] items-center justify-between px-2 sm:px-4">
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="navBackBtn" class="hidden items-center gap-1.5 rounded-[12px] border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-main transition hover:bg-surface-2 cursor-pointer" title="Kembali ke Toko">
+          <i data-lucide="arrow-left" class="size-4 text-primary"></i><span>Kembali ke Toko</span>
+        </button>
+        <a href="#" class="flex items-center gap-2" aria-label="PojokAI">
+          <svg viewBox="0 0 100 96.04" width="28" height="27" class="shrink-0 text-primary" aria-hidden="true"><use href="#logo"/></svg>
+          <span class="text-[16px] sm:text-[17px] font-bold tracking-tight">PojokAI</span>
+        </a>
+      </div>
+
+      <!-- Center Clock Widget (ala Snipbot) -->
+      <div id="siteClockWrap" class="site-clock-wrap relative">
+        <div id="siteClock" class="site-clock cursor-pointer transition hover:border-primary/50" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" title="Klik untuk ganti zona waktu (WIB, WITA, WIT, UTC)">
+          <span class="site-clock-icon">
+            <i data-lucide="clock" class="size-3.5 sm:size-4 text-primary"></i>
+          </span>
+          <div class="site-clock-copy">
+            <div class="flex items-center gap-1.5 leading-none">
+              <strong id="clockTime" class="tabular-nums font-bold tracking-tight">--:--:--</strong>
+              <span id="clockZoneBadge" class="site-clock-zone-toggle">
+                <span id="clockZoneLabel">WIB</span>
+                <i data-lucide="chevron-down" class="size-2.5"></i>
+              </span>
+            </div>
+            <div class="site-clock-sub flex items-center gap-1.5 leading-none">
+              <span class="site-clock-live"><span class="pulse-dot"></span>LIVE</span>
+              <small id="clockDate" class="truncate font-medium text-muted">-- --- ----</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timezone Dropdown Menu -->
+        <div id="clockMenu" class="site-clock-menu hidden" role="menu" aria-label="Menu Zona Waktu">
+          <div class="site-clock-menu-title">
+            <i data-lucide="globe" class="size-3.5 text-primary"></i>
+            <span>Zona Waktu</span>
+          </div>
+          <button type="button" class="site-clock-menu-option" data-tz="Asia/Jakarta" data-label="WIB">
+            <span>
+              <strong>WIB <small>(UTC+7)</small></strong>
+              <small class="text-muted">Waktu Indonesia Barat · Jakarta</small>
+            </span>
+            <i data-lucide="check" class="size-4 check-icon hidden text-primary"></i>
+          </button>
+          <button type="button" class="site-clock-menu-option" data-tz="Asia/Makassar" data-label="WITA">
+            <span>
+              <strong>WITA <small>(UTC+8)</small></strong>
+              <small class="text-muted">Waktu Indonesia Tengah · Bali</small>
+            </span>
+            <i data-lucide="check" class="size-4 check-icon hidden text-primary"></i>
+          </button>
+          <button type="button" class="site-clock-menu-option" data-tz="Asia/Jayapura" data-label="WIT">
+            <span>
+              <strong>WIT <small>(UTC+9)</small></strong>
+              <small class="text-muted">Waktu Indonesia Timur · Jayapura</small>
+            </span>
+            <i data-lucide="check" class="size-4 check-icon hidden text-primary"></i>
+          </button>
+          <button type="button" class="site-clock-menu-option" data-tz="UTC" data-label="UTC">
+            <span>
+              <strong>UTC <small>(GMT)</small></strong>
+              <small class="text-muted">Coordinated Universal Time</small>
+            </span>
+            <i data-lucide="check" class="size-4 check-icon hidden text-primary"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <button id="themeToggle" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-surface text-main transition hover:bg-surface-2 cursor-pointer" aria-label="Ganti tema">
+          <i data-lucide="moon" class="size-[19px] dark:hidden"></i>
+          <i data-lucide="sun" class="hidden size-[19px] dark:block"></i>
+        </button>
+        <button id="masukBtn" class="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-bold text-main transition hover:bg-surface-2 cursor-pointer" title="Masuk / Akun Saya">
+          <i data-lucide="user-round" class="size-[18px] text-primary"></i>
+          <span id="masukLabel">Masuk</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Category nav -->
+  <nav class="store-only border-b border-line">
+    <div class="no-scrollbar mx-auto flex max-w-[1024px] overflow-x-auto px-3 text-[13px] font-medium text-muted">
+      <a href="#sec-premium" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Akun Aplikasi Premium</a>
+      <a href="#sec-ai" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Akun AI</a>
+      <a href="#sec-lainnya" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Akun Lainnya</a>
+      <a href="#sosmed" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Jasa Sosmed</a>
+      <a href="#" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Blog</a>
+      <a href="#reseller" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Reseller</a>
+      <a href="#cek-pesanan" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Cek Pesanan</a>
+    </div>
+  </nav>
+
+  <main class="store-only mx-auto max-w-[1024px] space-y-7 px-4 py-6">
+
+    <!-- Hero carousel -->
+    <section id="hero" class="group relative overflow-hidden rounded-[14px]" aria-roledescription="carousel" aria-label="Promo akun digital PojokAI">
+      <div id="heroTrack" class="no-scrollbar flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"></div>
+      <button type="button" data-hero="-1" aria-label="Banner sebelumnya" class="absolute left-2 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/65 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:flex"><i data-lucide="chevron-left" class="size-5"></i></button>
+      <button type="button" data-hero="1" aria-label="Banner berikutnya" class="absolute right-2 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/65 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:flex"><i data-lucide="chevron-right" class="size-5"></i></button>
+      <div id="heroDots" class="absolute bottom-1 left-1/2 flex -translate-x-1/2"></div>
+    </section>
+
+    <!-- Paket hemat -->
+    <section id="sec-paket-hemat" class="space-y-2">
+      <h2 class="flex items-center gap-1.5 text-sm font-bold text-danger">
+        <i data-lucide="zap" class="size-4"></i>Paket hemat
+        <span class="font-normal text-subtle">· lebih murah daripada beli satuan</span>
+      </h2>
+      <div id="paketHematCard"></div>
+    </section>
+
+    <!-- Cek pesanan -->
+    <section id="cek-pesanan" class="card border-line-soft scroll-mt-24 p-4">
+      <div class="flex items-center gap-2.5">
+        <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-surface-2 text-main dark:bg-primary/10 dark:text-primary"><i data-lucide="receipt" class="size-4"></i></span>
+        <div>
+          <h3 class="text-sm font-semibold">Cek pesanan kamu</h3>
+          <p class="text-xs text-muted">Masukkan kode pesanan (POJOK-...) atau nomor WhatsApp</p>
+        </div>
+      </div>
+      <form id="trackForm" class="mt-3 flex gap-2">
+        <input id="trackInput" type="text" placeholder="POJOK-... atau 0812xxxxxxxx" class="input h-[42px] flex-1">
+        <button class="inline-flex h-[42px] items-center gap-1.5 rounded-[12px] bg-primary px-4 text-sm font-semibold text-primary-fg transition hover:opacity-90">
+          <i data-lucide="search" class="size-4"></i>Cari
+        </button>
+      </form>
+      <p id="trackResult" class="mt-2 hidden text-xs"></p>
+    </section>
+
+    <!-- Produk -->
+    <div id="produk" class="scroll-mt-4 space-y-2.5">
+      <label class="relative block">
+        <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"></i>
+        <input id="searchInput" type="search" placeholder="Cari produk (mis. netflix, canva)..." class="input h-[42px] w-full pl-9">
+      </label>
+
+      <div class="flex items-center justify-between gap-2">
+        <div class="no-scrollbar flex items-center gap-1.5 overflow-x-auto">
+          <label class="chip relative h-8 shrink-0 gap-2 pr-8">
+            <i data-lucide="sliders-horizontal" class="size-4 text-muted"></i>
+            <span class="text-muted">Urutkan:</span>
+            <select id="sortSelect" class="absolute inset-0 cursor-pointer opacity-0">
+              <option value="rekomendasi">Rekomendasi</option>
+              <option value="termurah">Termurah</option>
+              <option value="termahal">Termahal</option>
+              <option value="terlaris">Terlaris</option>
+            </select>
+            <b id="sortLabel" class="font-semibold text-main">Rekomendasi</b>
+            <i data-lucide="chevron-down" class="absolute right-2.5 size-4 text-muted"></i>
+          </label>
+          <div id="chips" class="flex gap-1.5"></div>
+        </div>
+        <div class="flex shrink-0 rounded-[12px] border border-line bg-surface p-0.5">
+          <button data-view="list" class="view-btn grid size-8 place-items-center rounded-[10px] text-muted" aria-label="Tampilan daftar"><i data-lucide="list" class="size-4"></i></button>
+          <button data-view="grid" class="view-btn grid size-8 place-items-center rounded-[10px] text-muted" aria-label="Tampilan grid"><i data-lucide="layout-grid" class="size-4"></i></button>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="catalog" class="space-y-7"></div>
+
+    <div class="h-px bg-line-soft"></div>
+
+    <!-- Jasa sosmed -->
+    <a id="sosmed" href="#" class="card border-line-soft flex scroll-mt-24 items-center gap-4 p-5 transition hover:border-primary/50">
+      <div class="grid shrink-0 grid-cols-2 gap-1">
+        <span class="grid size-[28px] place-items-center rounded-[8px] bg-[radial-gradient(circle_at_30%_110%,#fdf497_0%,#fd5949_45%,#d6249f_60%,#285AEB_90%)]">
+          <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="#fff"/></svg>
+        </span>
+        <span class="grid size-[28px] place-items-center rounded-[8px] bg-black ring-1 ring-white/10">
+          <svg viewBox="0 0 24 24" class="size-4" fill="#fff"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 0 1 0-5.18c.27 0 .53.04.78.12V9.68a5.73 5.73 0 0 0-.78-.05 5.68 5.68 0 1 0 5.68 5.68V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.24-1.48Z"/></svg>
+        </span>
+        <span class="grid size-[28px] place-items-center rounded-[8px] bg-[#ff0000]">
+          <svg viewBox="0 0 24 24" class="size-4" fill="#fff"><path d="M9.5 8.5v7l6-3.5-6-3.5Z"/></svg>
+        </span>
+        <span class="grid size-[28px] place-items-center rounded-[8px] bg-[#1877f2]">
+          <svg viewBox="0 0 24 24" class="size-4" fill="#fff"><path d="M13.5 21v-7.5h2.5l.4-3h-2.9V8.6c0-.87.25-1.46 1.5-1.46h1.5V4.46A20 20 0 0 0 14.3 4.3c-2.17 0-3.66 1.33-3.66 3.76v2.44H8.2v3h2.44V21h2.86Z"/></svg>
+        </span>
+      </div>
+      <div class="min-w-0">
+        <h3 class="font-semibold">Jasa sosial media</h3>
+        <p class="mt-0.5 text-sm text-muted">Mau beli followers, likes, atau views untuk Instagram, TikTok, YouTube, Facebook &amp; lainnya? <b class="inline-flex items-center font-semibold text-primary">Klik di sini<i data-lucide="chevron-right" class="size-4"></i></b></p>
+        <p class="mt-1 text-[11px] text-subtle">Cukup link profil/postingan — tanpa password · bayar QRIS · proses otomatis</p>
+      </div>
+    </a>
+
+    <div class="h-px bg-line-soft"></div>
+
+    <!-- Reseller -->
+    <section id="reseller" class="card border-line-soft relative scroll-mt-24 overflow-hidden p-4 sm:p-5">
+      <div class="flex items-start gap-3.5 sm:items-center">
+        <span class="grid size-12 shrink-0 place-items-center rounded-[12px] bg-primary/10 text-primary"><i data-lucide="handshake" class="size-6"></i></span>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Program reseller</p>
+          <h2 class="mt-0.5 text-lg font-bold">Mau jual lagi? Gabung jadi reseller</h2>
+          <p class="mt-1 text-sm text-muted">Beli akun digital dengan harga reseller, jual lagi ke pelangganmu sendiri — untung di selisihnya.</p>
+        </div>
+      </div>
+      <ul class="mt-3.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <li class="flex items-start gap-2 rounded-[12px] bg-surface-2/50 px-3 py-2 text-xs text-muted"><i data-lucide="tag" class="mt-px size-4 shrink-0 text-primary"></i> Harga khusus, lebih murah dari harga toko</li>
+        <li class="flex items-start gap-2 rounded-[12px] bg-surface-2/50 px-3 py-2 text-xs text-muted"><i data-lucide="message-circle" class="mt-px size-4 shrink-0 text-primary"></i> Akun tetap terkirim otomatis ke WhatsApp</li>
+        <li class="flex items-start gap-2 rounded-[12px] bg-surface-2/50 px-3 py-2 text-xs text-muted"><i data-lucide="key-round" class="mt-px size-4 shrink-0 text-primary"></i> Daftar gratis pakai akun email / Google</li>
+        <li class="flex items-start gap-2 rounded-[12px] bg-surface-2/50 px-3 py-2 text-xs text-muted"><i data-lucide="store" class="mt-px size-4 shrink-0 text-primary"></i> Bisa buka web toko sendiri + API untuk bot</li>
+      </ul>
+      <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <a data-wa="Halo admin, saya mau daftar jadi reseller PojokAI." href="#" class="group inline-flex h-11 items-center justify-center gap-1.5 rounded-[12px] bg-primary px-5 text-sm font-semibold text-primary-fg transition-colors hover:opacity-90">Daftar jadi reseller <i data-lucide="chevron-right" class="size-4 transition-transform group-hover:translate-x-0.5"></i></a>
+        <a href="#" data-wa="Halo admin, saya sudah punya akun reseller dan mau masuk." class="inline-flex h-11 items-center justify-center gap-1.5 rounded-[12px] border border-line px-5 text-sm font-medium transition-colors hover:border-primary/40"><i data-lucide="key-round" class="size-4"></i> Sudah punya akun? Masuk</a>
+      </div>
+    </section>
+
+    <div class="h-px bg-line-soft"></div>
+
+    <!-- FAQ -->
+    <section class="space-y-2">
+      <h2 class="text-xl font-bold tracking-tight">Pertanyaan umum</h2>
+      <div id="faq" class="space-y-2"></div>
+    </section>
+
+    <p class="flex items-center justify-center gap-1.5 pt-1 text-center text-xs text-muted">
+      <i data-lucide="shield-check" class="size-3.5 text-success"></i>Pembayaran terverifikasi otomatis · akun dikirim ke WhatsApp
+    </p>
+  </main>
+
+  <!-- Panel owner -->
+  <section id="admin" class="hidden mx-auto max-w-[1140px] space-y-4 px-4 py-6" aria-label="Panel owner">
+    <!-- Tombol Kembali ke Toko di Pojok Kiri -->
+    <div class="flex items-center justify-between pb-0.5">
+      <button id="aBackBtn" class="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-3.5 py-2 text-xs font-bold text-main transition hover:bg-surface-2 cursor-pointer shadow-2xs">
+        <i data-lucide="arrow-left" class="size-4 text-primary"></i><span>Kembali ke Beranda Toko</span>
+      </button>
+    </div>
+
+    <!-- Header Dashboard Card -->
+    <div class="card relative overflow-hidden rounded-[20px] border border-line bg-gradient-to-r from-surface via-surface to-surface-2 p-4 sm:p-5 shadow-sm">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
+          <div class="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-fg shadow-sm">
+            <i data-lucide="layout-dashboard" class="size-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-extrabold tracking-tight sm:text-xl">Panel Owner</h2>
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-2.5 py-0.5 text-[11px] font-bold text-success">
+                <span class="size-1.5 rounded-full bg-success animate-pulse"></span>Aktif
+              </span>
+            </div>
+            <p class="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+              <i data-lucide="user-check" class="size-3.5"></i>
+              <span id="aOwner">owner</span>
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="aWaSettingBtn" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold transition hover:bg-surface-2 cursor-pointer" title="Pengaturan nomor WhatsApp toko">
+            <i data-lucide="phone" class="size-4 text-success"></i><span id="aWaDisplay">WhatsApp</span>
+          </button>
+          <button id="aExit" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold transition hover:bg-surface-2 cursor-pointer">
+            <i data-lucide="store" class="size-4"></i>Lihat toko
+          </button>
+          <button id="aDownloadDb" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold transition hover:bg-surface-2 cursor-pointer" title="Unduh backup db.json terkini" aria-label="Unduh backup db.json terkini">
+            <i data-lucide="download" class="size-4"></i>Unduh db.json
+          </button>
+          <button id="aPw" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold transition hover:bg-surface-2 cursor-pointer" title="Ganti password owner" aria-label="Ganti password owner">
+            <i data-lucide="key-round" class="size-4"></i>Password
+          </button>
+          <button id="aLogout" class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold text-danger transition hover:bg-danger/10 cursor-pointer">
+            <i data-lucide="log-out" class="size-4"></i>Keluar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI / Metric Cards -->
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      <div id="kpiTotal" class="card kpi-card cursor-pointer rounded-[18px] border border-line p-3.5 sm:p-4 transition-all hover:border-primary/50 hover:shadow-sm" data-kpi="all">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-muted">Total Produk</span>
+          <span class="grid size-8 place-items-center rounded-xl bg-primary/10 text-primary"><i data-lucide="package" class="size-4"></i></span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="kpiTotalVal" class="text-2xl font-extrabold tabular-nums">0</span>
+          <span class="text-[11px] text-subtle">item</span>
+        </div>
+        <p class="mt-0.5 text-[11px] text-subtle truncate">Semua produk katalog</p>
+      </div>
+      <div id="kpiPendingOrders" class="card kpi-card cursor-pointer rounded-[18px] border border-line p-3.5 sm:p-4 transition-all hover:border-blue-500/50 hover:shadow-sm" title="Klik untuk lihat pesanan proses mengirim">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-muted">Proses Mengirim</span>
+          <span class="grid size-8 place-items-center rounded-xl bg-blue-500/10 text-blue-500"><i data-lucide="truck" class="size-4"></i></span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="kpiPendingVal" class="text-2xl font-extrabold tabular-nums text-blue-500">0</span>
+          <span class="text-[11px] text-subtle">pesanan</span>
+        </div>
+        <p class="mt-0.5 text-[11px] text-subtle truncate">Lunas &amp; perlu dikirim</p>
+      </div>
+      <div id="kpiOos" class="card kpi-card cursor-pointer rounded-[18px] border border-line p-3.5 sm:p-4 transition-all hover:border-danger/50 hover:shadow-sm" data-kpi="oos">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-muted">Stok Habis</span>
+          <span class="grid size-8 place-items-center rounded-xl bg-danger/10 text-danger"><i data-lucide="alert-triangle" class="size-4"></i></span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="kpiOosVal" class="text-2xl font-extrabold tabular-nums text-danger">0</span>
+          <span class="text-[11px] text-subtle">produk</span>
+        </div>
+        <p class="mt-0.5 text-[11px] text-subtle truncate">Perlu isi stok varian</p>
+      </div>
+      <div id="kpiHidden" class="card kpi-card cursor-pointer rounded-[18px] border border-line p-3.5 sm:p-4 transition-all hover:border-warning/50 hover:shadow-sm" data-kpi="hidden">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-muted">Tersembunyi</span>
+          <span class="grid size-8 place-items-center rounded-xl bg-warning/10 text-warning"><i data-lucide="eye-off" class="size-4"></i></span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="kpiHiddenVal" class="text-2xl font-extrabold tabular-nums text-warning">0</span>
+          <span class="text-[11px] text-subtle">produk</span>
+        </div>
+        <p class="mt-0.5 text-[11px] text-subtle truncate">Tidak tampil di beranda</p>
+      </div>
+    </div>
+
+    <!-- Admin Navigation Tabs: Produk vs Pesanan -->
+    <div class="flex items-center gap-2 border-b border-line pb-1.5">
+      <button id="aTabProductsBtn" type="button" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-primary text-primary-fg shadow-xs cursor-pointer transition">
+        <i data-lucide="package" class="size-4"></i><span>Katalog Produk</span>
+      </button>
+      <button id="aTabOrdersBtn" type="button" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-line bg-surface text-main hover:bg-surface-2 cursor-pointer transition">
+        <i data-lucide="receipt" class="size-4 text-primary"></i><span>Daftar Pesanan Masuk</span>
+        <span id="aPendingOrdersBadge" class="hidden rounded-full bg-danger px-2 py-0.5 text-[10px] font-extrabold text-white">0</span>
+      </button>
+    </div>
+
+    <!-- 1. Section Produk Katalog -->
+    <div id="aProductsSection" class="space-y-4">
+      <!-- Toolbar: Search, Filters & Actions -->
+      <div class="card rounded-[18px] border border-line p-3 sm:p-4 space-y-3">
+        <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-1 flex-wrap items-center gap-2">
+            <label class="relative min-w-[200px] flex-1 sm:max-w-xs">
+              <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle"></i>
+              <input id="aQ" class="input h-9.5 w-full pl-9 pr-8 text-[13px] rounded-xl" placeholder="Cari produk atau slug…" aria-label="Cari produk">
+              <button id="aQClear" type="button" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-subtle hover:text-main" aria-label="Hapus cari"><i data-lucide="x" class="size-3.5"></i></button>
+            </label>
+            <select id="aCat" class="input h-9.5 text-[13px] rounded-xl" aria-label="Saring kategori"></select>
+          </div>
+
+          <div class="flex items-center gap-2 self-end sm:self-auto">
+            <!-- View switcher (Grid Card vs List) -->
+            <div class="flex items-center rounded-xl border border-line bg-surface p-0.5" title="Mode Tampilan">
+              <button id="aViewGrid" type="button" class="grid size-8 place-items-center rounded-lg text-muted transition hover:text-main" aria-label="Tampilan Grid Card">
+                <i data-lucide="layout-grid" class="size-4"></i>
+              </button>
+              <button id="aViewList" type="button" class="grid size-8 place-items-center rounded-lg text-muted transition hover:text-main" aria-label="Tampilan List Baris">
+                <i data-lucide="list" class="size-4"></i>
+              </button>
+            </div>
+
+            <button id="aBundleBtn" type="button" class="inline-flex h-9.5 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold text-main transition hover:bg-surface-2 hover:border-warning/60 shadow-2xs">
+              <i data-lucide="zap" class="size-4 text-warning"></i><span>Paket Hemat</span>
+            </button>
+            <button id="aExpand" class="inline-flex h-9.5 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold transition hover:bg-surface-2">
+              <i data-lucide="chevrons-up-down" class="size-4"></i><span class="hidden sm:inline">Buka semua</span>
+            </button>
+            <button id="aAdd" class="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-[13px] font-bold text-primary-fg shadow-sm transition hover:opacity-90">
+              <i data-lucide="plus" class="size-4"></i>Produk baru
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Status Filters -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-line-soft">
+          <span class="text-xs font-medium text-subtle mr-1">Status:</span>
+          <div id="aCount" class="flex flex-wrap items-center gap-1.5"></div>
+        </div>
+      </div>
+
+      <!-- Products Container -->
+      <div id="aProducts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- 2. Section Daftar Pesanan Masuk -->
+    <div id="aOrdersSection" class="hidden space-y-4">
+      <!-- Orders Toolbar -->
+      <div class="card rounded-[18px] border border-line p-3 sm:p-4 space-y-3">
+        <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <label class="relative min-w-[200px] flex-1 sm:max-w-md">
+            <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle"></i>
+            <input id="aOrderQ" class="input h-9.5 w-full pl-9 pr-8 text-[13px] rounded-xl" placeholder="Cari kode pesanan (POJOK-...), nama, no WA, produk…" aria-label="Cari pesanan">
+            <button id="aOrderQClear" type="button" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-subtle hover:text-main" aria-label="Hapus cari"><i data-lucide="x" class="size-3.5"></i></button>
+          </label>
+          <div class="flex items-center gap-2">
+            <button id="aReloadOrdersBtn" type="button" class="inline-flex h-9.5 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-semibold transition hover:bg-surface-2 cursor-pointer" title="Muat ulang pesanan">
+              <i data-lucide="refresh-cw" class="size-4 text-primary"></i><span>Muat Ulang</span>
+            </button>
+            <button id="aClearCancelledOrdersBtn" type="button" class="inline-flex h-9.5 items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 text-[13px] font-semibold text-rose-600 dark:text-rose-400 transition hover:bg-rose-500/20 cursor-pointer" title="Hapus semua pesanan yang dibatalkan / expired">
+              <i data-lucide="trash-2" class="size-4"></i><span>Hapus Pesanan Batal</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Tab Status Pesanan -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-line-soft">
+          <span class="text-xs font-medium text-subtle mr-1">Status:</span>
+          <div id="aOrderFilters" class="flex flex-wrap items-center gap-1.5">
+            <button type="button" data-order-filter="all" class="chip" aria-pressed="true">Semua (<span id="countOrderAll">0</span>)</button>
+            <button type="button" data-order-filter="unpaid" class="chip" aria-pressed="false">Belum Bayar (<span id="countOrderUnpaid">0</span>)</button>
+            <button type="button" data-order-filter="processing" class="chip" aria-pressed="false">Proses Mengirim (<span id="countOrderProcessing">0</span>)</button>
+            <button type="button" data-order-filter="completed" class="chip" aria-pressed="false">Pesanan Sukses (<span id="countOrderCompleted">0</span>)</button>
+            <button type="button" data-order-filter="cancelled" class="chip" aria-pressed="false">Batal / Kadaluarsa (<span id="countOrderCancelled">0</span>)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders List Container -->
+      <div id="aOrdersList" class="space-y-3"></div>
+    </div>
+  </section>
+
+  <div id="aToast" class="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 space-y-2"></div>
+
+  <!-- Ticker -->
+  <section aria-label="Pembelian terbaru" class="store-only overflow-hidden border-t border-line-soft bg-surface py-2">
+    <div id="ticker" class="ticker flex w-max items-center"></div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="store-only mt-12 border-t border-line">
+    <div class="mx-auto flex w-full max-w-[1024px] flex-col items-center gap-4 px-4 py-10 text-center text-sm text-muted">
+      <a href="#" class="flex items-center gap-2.5 text-[17px] font-bold tracking-tight text-main">
+        <svg viewBox="0 0 100 96.04" width="26" height="25" class="text-primary" aria-hidden="true"><use href="#logo"/></svg> PojokAI
+      </a>
+      <p class="max-w-[46ch] text-pretty">Akun digital instan · bayar QRIS · dikirim otomatis ke WhatsApp, tanpa perlu daftar. Butuh bantuan? Hubungi penjual lewat WhatsApp setelah membeli.</p>
+      <nav class="flex flex-wrap justify-center gap-x-6 gap-y-2">
+        <a href="#cek-pesanan" class="transition-colors hover:text-main">Cek pesanan</a>
+        <a href="#sosmed" class="transition-colors hover:text-main">Jasa Sosmed</a>
+        <a href="#reseller" class="transition-colors hover:text-main">Jadi reseller</a>
+        <a href="#faq" class="transition-colors hover:text-main">Panduan &amp; FAQ</a>
+        <button type="button" data-open-policy="privacy" class="transition-colors hover:text-main cursor-pointer bg-transparent border-0 p-0 text-inherit text-sm">Kebijakan Privasi</button>
+        <button type="button" data-open-policy="terms" class="transition-colors hover:text-main cursor-pointer bg-transparent border-0 p-0 text-inherit text-sm">Syarat &amp; Ketentuan</button>
+        <button type="button" data-open-policy="warranty" class="transition-colors hover:text-main cursor-pointer bg-transparent border-0 p-0 text-inherit text-sm">Garansi &amp; Klaim</button>
+      </nav>
+      <p class="text-xs text-subtle">© 2026 PojokAI. Seluruh hak cipta dilindungi.</p>
+    </div>
+  </footer>
+
+  <!-- Product modal -->
+  <div id="modal" class="fixed inset-0 z-50 hidden h-[100dvh] items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+    <div id="dialog" role="dialog" aria-modal="true" aria-labelledby="mName" tabindex="-1" class="card flex max-h-[min(92dvh,100%)] w-full max-w-md flex-col overflow-hidden rounded-t-[18px] p-0 outline-none sm:max-h-[88vh] sm:rounded-[14px]"></div>
+  </div>
+
+  <!-- Panel owner modal -->
+  <div id="aModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+    <div id="aDialog" role="dialog" aria-modal="true" tabindex="-1" class="card flex flex-col max-h-[92dvh] w-full max-w-lg overflow-hidden p-0 outline-none rounded-[22px] shadow-2xl border border-line bg-surface"></div>
+  </div>
+
+  <svg width="0" height="0" class="absolute" aria-hidden="true">
+    <symbol id="logo" viewBox="0 0 100 96.04"><path fill="currentColor" fill-rule="evenodd" d="M37.63 94.78C35.39 94.64 33.98 94.44 31.49 93.9C28.12 93.18 25.39 92.22 22.21 90.65C20.48 89.8 19.52 89.22 17.72 87.97C17.45 87.790 17.11 87.55 16.96 87.44C16.81 87.34 16.51 87.12 16.3 86.94C16.09 86.77 15.78 86.52 15.62 86.4C13.26 84.52 10.15 81.28 8.32 78.78C8 78.35 6.7 76.39 6.66 76.28C6.64 76.23 6.5 75.98 6.36 75.74C5.82 74.86 4.84 72.95 4.42 71.99C3.83 70.64 3.42 69.54 2.87 67.83C1.62 63.89 0.95 59.09 1.11 55.3C1.2 53.04 1.41 51.39 1.9 49.02C1.98 48.62 2.08 48.16 2.11 48C2.19 47.58 2.77 45.490 2.99 44.8C3.18 44.21 3.36 43.75 3.88 42.48C4.04 42.08 4.23 41.63 4.28 41.48C4.43 41.1 5.3 39.37 5.48 39.12C5.56 39 5.74 38.68 5.88 38.42C6.49 37.28 7.75 35.42 8.88 34C10.25 32.26 12.7 29.82 14.37 28.53C14.46 28.46 14.71 28.26 14.93 28.09C15.32 27.77 15.43 27.68 16.05 27.2C17.31 26.23 20.22 24.46 22.36 23.35C22.78 23.14 23.18 22.93 23.23 22.9C23.66 22.66 25.71 21.77 27.11 21.23C27.53 21.07 27.99 20.88 28.14 20.82C29.17 20.39 30.98 19.84 32.97 19.33C33.82 19.12 34.66 18.9 34.84 18.86C35.49 18.68 38.51 18.07 41.17 17.57C43.26 17.17 44.93 16.74 46.91 16.07C48.13 15.65 49.6 15.11 50.04 14.9C50.25 14.8 50.43 14.72 50.44 14.72C50.45 14.72 50.76 14.57 51.11 14.4C54.84 12.58 58.5 9.57 60.65 6.54C61.56 5.25 62.98 2.78 63.3 1.91C63.37 1.71 63.5 1.52 63.67 1.35C63.9 1.12 63.94 1.1 64.11 1.12C64.35 1.16 64.62 1.39 64.75 1.66C64.86 1.89 65.36 3.41 65.71 4.61C65.95 5.43 66.2 6.69 66.32 7.73C66.58 9.94 66.59 10.03 66.58 11.68C66.58 15.62 65.86 18.98 64.34 22.22C64.16 22.59 64.02 22.96 64.01 23.04C64 23.17 64.02 23.18 64.24 23.2C64.57 23.22 65.44 23.08 66.72 22.81C69.23 22.26 69.98 22.07 71.78 21.51C73.44 21 73.9 20.84 75.69 20.16C77.56 19.45 80.38 18.09 82.67 16.81C85.01 15.49 85.33 15.29 88.01 13.36C88.51 12.99 89.6 12.14 90.44 11.45C91.4 10.67 93.76 8.46 95.21 7C96.26 5.94 96.42 5.87 96.83 6.27C97.07 6.52 97.09 6.68 97.16 8.42C97.23 10.43 97.1 13.68 96.89 15.3C96.86 15.51 96.79 16.09 96.73 16.59C96.59 17.76 96.26 19.77 96 21.02C95.39 23.97 94.06 28.34 93 30.88C92.87 31.2 92.67 31.69 92.55 31.96C91.86 33.63 90.49 36.36 89.640 37.79C89.44 38.14 89.26 38.45 89.25 38.48C89.15 38.71 87.7 40.95 87.23 41.59C87.06 41.82 86.7 42.31 86.44 42.67C86.17 43.03 85.88 43.43 85.78 43.56C85.57 43.84 85.57 43.86 85.72 43.94C85.98 44.08 86.86 43.96 89.21 43.46C89.88 43.32 90.81 43.13 91.27 43.04C92.66 42.77 94.15 42.41 95.52 42.02C97.79 41.38 98.16 41.31 98.5 41.47C98.79 41.6 98.84 41.86 98.68 42.48C98.43 43.45 96.86 46.95 96.13 48.21C95.66 49 95.03 50.05 94.9 50.24C94.54 50.78 93.97 51.6 93.79 51.84C93.68 51.98 93.52 52.19 93.43 52.3C92.36 53.7 90.69 55.51 89.47 56.57C89.18 56.83 88.78 57.19 88.58 57.36C87.54 58.28 86.56 59.02 85.34 59.82C84.31 60.5 84.27 60.53 83.7 60.85C83.43 61.01 83.06 61.22 82.9 61.32C82.39 61.63 80.38 62.63 79.71 62.91C79.12 63.16 78.63 63.33 77.94 63.53C77.48 63.67 77.48 63.65 77.11 65.32C76.79 66.74 76.3 68.4 75.82 69.65C75.68 69.99 75.5 70.49 75.4 70.75C74.47 73.29 72.28 77.21 70.6 79.36C70.48 79.51 70.22 79.85 70.02 80.12C68.75 81.78 67.29 83.33 65.4 85.05C64.65 85.73 64.3 86.02 63.19 86.89C62.3 87.6 60.77 88.68 60.26 88.96C60.2 88.99 59.7 89.27 59.15 89.59C58.22 90.13 56.5 91.02 55.88 91.28C52.8 92.59 50.39 93.41 48.44 93.8C48.21 93.85 47.84 93.93 47.63 93.99C46.62 94.24 45.06 94.5 43.38 94.68C42.24 94.8 38.96 94.86 37.63 94.78ZM40.69 68.56C45.25 68.22 48.88 66.17 51.88 62.24C52.47 61.46 53.47 59.94 53.96 59.07C54.06 58.88 54.28 58.5 54.43 58.23C54.59 57.95 54.92 57.31 55.17 56.8C55.83 55.48 55.99 54.88 55.74 54.63C55.55 54.44 55.22 54.52 54.19 55C53.7 55.23 52.9 55.6 52.43 55.81C51.95 56.03 51.11 56.42 50.57 56.67C50.03 56.92 49.57 57.12 49.56 57.12C49.52 57.12 48.25 57.66 47.73 57.9C47.23 58.12 46.3 58.51 45.75 58.72C45.49 58.82 44.99 59.01 44.65 59.15C44.3 59.29 43.9 59.44 43.75 59.49C43.6 59.54 43.12 59.72 42.67 59.88C42.22 60.04 41.4 60.32 40.85 60.5C40.3 60.67 39.68 60.88 39.48 60.95C38.94 61.13 37.18 61.62 36.26 61.83C33.34 62.52 32.67 62.65 30.64 62.95C29.94 63.06 29.77 63.11 29.64 63.28C29.39 63.6 29.6 63.98 30.58 64.94C31.65 66 32.07 66.33 33.15 66.94C34.85 67.9 36.57 68.4 38.9 68.58C39.37 68.62 39.990 68.61 40.69 68.56ZM14.04 66.59C14.9 66.41 15.9 65.84 16.43 65.23C16.99 64.57 17.56 63.57 17.56 63.23C17.56 62.84 17.4 62.75 16.29 62.58C15.41 62.44 14.19 62.14 13.4 61.86C12.55 61.56 10.54 60.54 9.76 60.02C9.6 59.91 9.41 59.79 9.34 59.74C9.26 59.7 9.01 59.52 8.77 59.35C8.53 59.18 8.19 58.94 8.01 58.81C7.56 58.49 6.98 58.03 6.42 57.53C5.93 57.09 5.79 57.03 5.49 57.1C5.09 57.2 5.08 57.72 5.46 58.62C5.56 58.86 5.75 59.33 5.88 59.67C6.02 60.02 6.33 60.71 6.59 61.2C8.11 64.18 9.73 65.84 11.77 66.5C12.39 66.7 13.3 66.74 14.04 66.59Z"/></symbol>
+  </svg>
+
+  <script type="module" src="assets/app.js?v=6"></script>
+  <script type="module" src="assets/admin.js?v=6"></script>
+</body>
+</html>

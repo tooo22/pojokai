@@ -1,0 +1,105 @@
+# ==============================================================================
+# POJOKAI - SECURITY & REWRITE CONFIGURATION FOR APACHE / LITESPEED / DIRECTADMIN
+# ==============================================================================
+
+# 1. Hentikan Directory Browsing (Mencegah pengunjung melihat isi folder)
+Options -Indexes -MultiViews
+
+# 2. Pengaturan Default Charset
+AddDefaultCharset UTF-8
+
+# ------------------------------------------------------------------------------
+# 3. HTTP SECURITY HEADERS LENGKAP
+# ------------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    # Enforce HTTPS HSTS (1 tahun + subdomains + preload)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Anti-Clickjacking: Larang web dimuat dalam iframe dari domain lain
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Anti-MIME Sniffing: Paksa browser mematuhi Content-Type
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Referrer Policy: Kirim origin saja saat lintas-domain HTTPS
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Batasi akses perangkat/sensor yang tidak digunakan
+    Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()"
+
+    # Hilangkan identitas LiteSpeed server
+    Header unset X-Turbo-Charged-By
+    Header always unset X-Turbo-Charged-By
+
+    # Pengaturan Cache untuk file statis
+    <FilesMatch "\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)$">
+        Header set Cache-Control "max-age=2592000, public"
+    </FilesMatch>
+
+    # API response jangan di-cache oleh browser/proxy
+    <FilesMatch "\.(json)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate"
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 4. PROTEKSI FILE & FOLDER SENSITIF (AKTIF / TERKUNCI)
+# ------------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Blokir akses HTTP langsung ke direktori data/
+    RewriteRule ^data(/.*)?$ - [F,L,NC]
+
+    # Blokir akses ke direktori dot/hidden (.git, .vercel, .netlify, dll.)
+    RewriteRule (^|/)\.(?!well-known/) - [F,L]
+</IfModule>
+
+# Blokir file sensitif, database internal db.json, file konfigurasi, dan script build
+<FilesMatch "(^\.env|db\.json|\.mjs|\.bat|package\.json|package-lock\.json|netlify\.toml|vercel\.json|\.gitignore)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ------------------------------------------------------------------------------
+# 5. REWRITE & ROUTING RULES (SPA & API)
+# ------------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Paksa redirect ke HTTPS jika diakses lewat HTTP biasa (port 80)
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Routing untuk halaman Admin: /admin -> /index.html
+    RewriteRule ^admin/?$ index.html [L,QSA]
+
+    # Routing untuk static API endpoint fallback
+    RewriteRule ^api/catalog/?$ api/catalog.json [L]
+    RewriteRule ^api/bundle/?$ api/bundle.json [L]
+    RewriteRule ^api/session/?$ api/session.json [L]
+
+    # Jika file atau folder fisik ada, layani langsung
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Fallback untuk route lainnya ke index.html (SPA mode)
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 6. GZIP / DEFLATE COMPRESSION (PERFORMA CEPAT)
+# ------------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>

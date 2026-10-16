@@ -1,0 +1,712 @@
+{
+  "wa": "6283171982973",
+  "telegram": {
+    "botToken": "",
+    "ownerChatId": "7787855968",
+    "botUsername": "Tooowys_bot",
+    "enabled": true,
+    "webhookSecret": ""
+  },
+  "categories": [
+    {
+      "id": "premium",
+      "anchor": "sec-premium",
+      "title": "Aplikasi Premium"
+    },
+    {
+      "id": "ai",
+      "anchor": "sec-ai",
+      "title": "AI"
+    },
+    {
+      "id": "lainnya",
+      "anchor": "sec-lainnya",
+      "title": "Lainnya"
+    }
+  ],
+  "hero": [
+    {
+      "eyebrow": "PojokAI · Toko akun digital",
+      "title": "Belanja aman & terpercaya",
+      "line2": "Akun langsung dikirim ke WhatsApp.",
+      "sub": "Bayar QRIS · bergaransi · admin ramah 24 jam",
+      "cta": "Belanja sekarang",
+      "href": "#produk",
+      "items": [
+        [
+          "🛡️",
+          "Akun bergaransi"
+        ],
+        [
+          "⚡",
+          "Dikirim otomatis ke WA"
+        ],
+        [
+          "⭐",
+          "Ribuan pembeli puas"
+        ]
+      ]
+    },
+    {
+      "eyebrow": "Baru · Jasa sosmed",
+      "title": "Naikkan followers & views",
+      "line2": "Otomatis, tanpa password.",
+      "sub": "Pilih akun Indonesia atau global · bayar QRIS",
+      "cta": "Lihat jasa sosmed",
+      "href": "#sosmed",
+      "items": [
+        [
+          "📸",
+          "+1.000 followers Instagram"
+        ],
+        [
+          "🎵",
+          "+5.000 views TikTok"
+        ],
+        [
+          "▶️",
+          "+500 subscribers YouTube"
+        ]
+      ]
+    },
+    {
+      "eyebrow": "Akun premium hemat",
+      "title": "ChatGPT, Netflix, Canva & lainnya",
+      "line2": "Aktif instan, harga bersahabat.",
+      "sub": "Cek stok & pilih paket sesuai kebutuhanmu",
+      "cta": "Lihat akun premium",
+      "href": "#sec-premium",
+      "items": [
+        [
+          "🤖",
+          "ChatGPT Plus · aktif"
+        ],
+        [
+          "🎬",
+          "Netflix Premium · aktif"
+        ],
+        [
+          "🎨",
+          "Canva Pro · aktif"
+        ]
+      ]
+    },
+    {
+      "eyebrow": "Program reseller",
+      "title": "Jualan akun digital tanpa modal",
+      "line2": "Punya web toko sendiri.",
+      "sub": "Harga modal khusus · pesanan otomatis · untung tiap penjualan",
+      "cta": "Daftar reseller",
+      "href": "#reseller",
+      "items": [
+        [
+          "🏪",
+          "Web toko atas namamu"
+        ],
+        [
+          "💸",
+          "Untung tiap penjualan"
+        ],
+        [
+          "📦",
+          "Tanpa stok & tanpa ribet"
+        ]
+      ]
+    }
+  ],
+  "faqs": [
+    [
+      "Berapa lama akun dikirim?",
+      "Setelah pembayaran QRIS terverifikasi, akun dikirim otomatis ke nomor WhatsApp kamu dalam hitungan detik — tanpa menunggu admin."
+    ],
+    [
+      "Apakah akunnya aman?",
+      "Akun yang dikirim valid dan siap pakai. Detail garansi tertera pada masing-masing produk. Simpan baik-baik data yang kamu terima."
+    ],
+    [
+      "Bagaimana kalau akun belum diterima?",
+      "Cek halaman status pesanan yang muncul setelah membayar — di sana ada detail akun beserta status pengiriman. Jika ada kendala, hubungi admin via WhatsApp."
+    ],
+    [
+      "Apakah bisa refund?",
+      "Jika stok habis saat pembayaran, dana akan diproses kembali sesuai ketentuan toko. Untuk masalah lain, hubungi admin lewat WhatsApp."
+    ]
+  ],
+  "ticker": [
+    [
+      "Surfshark VPN",
+      null,
+      "3 menit lalu"
+    ],
+    [
+      "YouTube",
+      5,
+      "5 menit lalu"
+    ],
+    [
+      "CapCut Pro",
+      35,
+      "30 menit lalu"
+    ],
+    [
+      "Canva",
+      2,
+      "1 jam lalu"
+    ],
+    [
+      "Meitu",
+      3,
+      "2 jam lalu"
+    ],
+    [
+      "Netflix Premium",
+      9,
+      "6 jam lalu"
+    ],
+    [
+      "Google Mail",
+      3,
+      "13 jam lalu"
+    ],
+    [
+      "Google Gemini",
+      null,
+      "15 jam lalu"
+    ],
+    [
+      "Instagram Followers",
+      2,
+      "16 jam lalu"
+    ],
+    [
+      "ChatGPT",
+      5,
+      "19 jam lalu"
+    ],
+    [
+      "TikTok Likes",
+      null,
+      "20 jam lalu"
+    ],
+    [
+      "Alight Motion",
+      null,
+      "21 jam lalu"
+    ]
+  ],
+  "bundle": {
+    "enabled": true,
+    "title": "Google Mail + Google Gemini",
+    "prod1": "google-mail",
+    "prod2": "google-gemini",
+    "badge": "-17%",
+    "price": 30000,
+    "strike": 33000,
+    "soldText": "1 terjual hari ini",
+    "fulText": "Manual",
+    "items": [
+      "Google Mail Fresh",
+      "Google Gemini 18 Bulan Link",
+      "Klaim dengan menyertakan kode transaksi"
+    ]
+  },
+  "products": [
+    {
+      "slug": "google-gemini",
+      "name": "Google Gemini",
+      "cat": "ai",
+      "sold": 164,
+      "auto": true,
+      "ar": 137,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5,0",
+        "n": 2,
+        "real": true
+      },
+      "brief": [
+        "18 Bulan: link redeem ke akun Google-mu",
+        "Bisa di gemini.google.com & aplikasi Gemini",
+        "Isi email dengan benar saat checkout",
+        "18 Bulan dikirim otomatis · 1 Tahun diproses admin"
+      ],
+      "desc": "✅ Paket 18 Bulan\n✅ Penyimpanan Cloud 5 TB\n✅ Bisa menambahkan hingga 5 pengguna\n✅ Bukan akun sharing — 100% private\n✅ Tidak perlu kartu/metode pembayaran\n✅ Support Antigravity\n✅ Bisa digunakan di negara mana pun tanpa verifikasi\n⛔ Tanpa garansi\n\n⌛ Redeem link kedaluwarsa dalam 5-6 hari, bukan paketnya\n⚠️ Link wajib digunakan & kendala dilaporkan maksimal 24 jam setelah pesanan diterima\n❌ Lewat 24 jam tidak ada penggantian atau penerbitan ulang link\n\n🪅 Langganan Gemini AI Pro asli, aktif di akun Gmail sendiri\n🪅 Bisa Undang 5 anggota keluarga\n🪅 Tempel link redeem di browser → klik Aktifkan Paket → paket langsung aktif di akun google anda\n\n💈 Link hangus/terpakai tidak dapat diganti\n💈 Langganan Berhenti/berakhir tidak dapat diganti\n💵 Tidak ada refund\n✅ Membeli berarti menyetujui ketentuan",
+      "variants": [
+        {
+          "label": "18 Bulan Link",
+          "d": "Via link redeem",
+          "price": 25000,
+          "stock": 10,
+          "ful": "manual",
+          "strike": 309999
+        }
+      ],
+      "hidden": false,
+      "patungan": false
+    },
+    {
+      "slug": "google-mail",
+      "name": "Google Mail",
+      "cat": "lainnya",
+      "sold": 251,
+      "hot": true,
+      "baru": true,
+      "grp": 2,
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Gmail: akun @gmail.com siap pakai",
+        "Bisa login di semua aplikasi & situs Google",
+        "Jangan ubah nomor/pemulihan akun Gsuite",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "✅ Akun Google Mail (@gmail.com) Fresh & Baru\n✅ Dibuat dengan metode legal & aman\n✅ 100% Private — Bukan akun sharing / bekas\n✅ Siap pakai untuk semua aplikasi & situs Google (YouTube, Drive, Play Store, dll)\n✅ Bisa ganti password & amankan sendiri\n⛔ Jangan ubah nomor/pemulihan akun sebelum masa garansi\n\n⌛ Garansi login pertama 24 jam setelah pengiriman\n⚠️ Laporkan jika ada kendala saat login pertama kali\n❌ Dilarang untuk aktivitas ilegal / spamming\n\n🪅 Format pengiriman: Email:Password\n🪅 Langsung login di browser atau aplikasi Gmail\n🪅 Masukkan kode verifikasi jika diminta\n\n💈 Akun yang sudah berhasil login tidak dapat diganti\n💵 Tidak ada refund\n✅ Membeli berarti menyetujui ketentuan",
+      "variants": [
+        {
+          "label": "Fresh",
+          "d": "Fresh siap pakai",
+          "price": 8000,
+          "stock": 10,
+          "ful": "manual"
+        }
+      ],
+      "hidden": false,
+      "patungan": false
+    }
+  ],
+  "owners": [
+    {
+      "email": "3t.ardiansyah@gmail.com",
+      "passhash": "scrypt:d07487153fa56bbb0a5faf9b1df164ec:19da9388e8b675bc4d6a534917abe4d152893a830220720835800ab0a71acaaf847b8c52d760d069fbebb7a195159c9d7815c6fd5285935d748a4cc375b725bb",
+      "role": "owner",
+      "createdAt": "2026-10-11T12:49:05.861Z",
+      "username": "tittoganteng"
+    }
+  ],
+  "sessions": [
+    {
+      "tokenHash": "58c98b5ec6480703fc4a5eec9da5887bc45d0e5c90f8f7415eddef9a3bd1f344",
+      "email": "3t.ardiansyah@gmail.com",
+      "expires": 1794649023503
+    },
+    {
+      "tokenHash": "af1e0f851b602b5bb5496b1403a6e2e51291c45b3bb622bcbe9bdaf482246833",
+      "email": "3t.ardiansyah@gmail.com",
+      "expires": 1794649031587
+    },
+    {
+      "tokenHash": "c4bd7ddc7b4a5eee9e0ccd0065b91b4da02e32ab7c749d728aecf74b5f14dbad",
+      "email": "3t.ardiansyah@gmail.com",
+      "expires": 1794649046316
+    },
+    {
+      "tokenHash": "5b7cf41bfa272d0bff4614e0d62dc87f7e66aea02494b326dac1ddfaa6ef7e06",
+      "email": "3t.ardiansyah@gmail.com",
+      "expires": 1794650099123
+    },
+    {
+      "tokenHash": "f6a583662d3c33af90c1bc633cd2e66d2f67cee3a784cbb9f82f9f7e5f39ac66",
+      "email": "3t.ardiansyah@gmail.com",
+      "expires": 1794651170615
+    },
+    {
+      "tokenHash": "2067d2cf3cdac8cfafe153899e822ba988d8aead94556e9adb17e0d0feea6d61",
+      "email": "3t.ardiansyah@gmail.com",
+      "expires": 1794661903683
+    },
+    {
+      "tokenHash": "f3891d29ed4535406089e87bce0b51dec5e371416b837195983add1d717afc3f",
+      "email": "3t.ardiansyah@gmail.com",
+      "expires": 1794698879114
+    },
+    {
+      "tokenHash": "da9c4fa00849cd572053d96c085a52e49ead8eb77b7dc1097ab20e49906f52fd",
+      "email": "3t.ardiansyah@gmail.com",
+      "expires": 1794700037624
+    }
+  ],
+  "orders": [
+    {
+      "code": "POJOK-3RLE3G",
+      "createdAt": "2026-10-15T22:46:00.517Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "customer@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25000,
+      "note": "Email: customer@gmail.com | WA: 081234567890",
+      "status": "Menunggu Pengiriman",
+      "wistapay": {
+        "reference": "API20261016054601DE0EC1",
+        "payment_id": "e3562671-121c-40b8-9a44-65d57cfa5f61",
+        "qris_image": "https://mutasiku.co.id/api/qris/ZTM1NjI2NzEtMTIxYy00MGI4LTlhNDQtNjVkNTdjZmE1ZjYxOjE3OTIxMDQzNjI0MTI=",
+        "payment_url": "https://mutasiku.co.id/pay/ZTM1NjI2NzEtMTIxYy00MGI4LTlhNDQtNjVkNTdjZmE1ZjYxOjE3OTIxMDQzNjI0MTI=",
+        "expires_at": "2026-10-15T22:56:02.012Z",
+        "charge_amount": 25000
+      }
+    },
+    {
+      "code": "POJOK-7SQFW9",
+      "createdAt": "2026-10-15T08:59:15.983Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "customer@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25000,
+      "note": "Email: customer@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API20261015155916C594BE",
+        "payment_id": "e00ec1c5-44b0-4d3d-837b-aac437aaebf4",
+        "qris_image": "https://mutasiku.co.id/api/qris/ZTAwZWMxYzUtNDRiMC00ZDNkLTgzN2ItYWFjNDM3YWFlYmY0OjE3OTIwNTQ3NTcwNDA=",
+        "payment_url": "https://mutasiku.co.id/pay/ZTAwZWMxYzUtNDRiMC00ZDNkLTgzN2ItYWFjNDM3YWFlYmY0OjE3OTIwNTQ3NTcwNDA=",
+        "expires_at": "2026-10-15T09:09:16.403Z",
+        "charge_amount": 25000
+      }
+    },
+    {
+      "code": "POJOK-A2QW6T",
+      "createdAt": "2026-10-15T08:59:11.592Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "customer@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25000,
+      "note": "Email: customer@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API202610151559116C6D8E",
+        "payment_id": "d0ef56f8-2af4-4485-af80-7e34791f4c28",
+        "qris_image": "https://mutasiku.co.id/api/qris/ZDBlZjU2ZjgtMmFmNC00NDg1LWFmODAtN2UzNDc5MWY0YzI4OjE3OTIwNTQ3NTI1MjQ=",
+        "payment_url": "https://mutasiku.co.id/pay/ZDBlZjU2ZjgtMmFmNC00NDg1LWFmODAtN2UzNDc5MWY0YzI4OjE3OTIwNTQ3NTI1MjQ=",
+        "expires_at": "2026-10-15T09:09:12.087Z",
+        "charge_amount": 25000
+      }
+    },
+    {
+      "code": "POJOK-BMSJ7B",
+      "createdAt": "2026-10-15T08:37:26.649Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "3t.ardiansyah@gmail.com",
+        "wa": "085283048377"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25685,
+      "note": "Email: 3t.ardiansyah@gmail.com | WA: 085283048377",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API20261015153727022C88",
+        "payment_id": "b2bfa1f7-9ef6-49bf-8a84-e8d23ce0a4ac",
+        "qris_image": "https://mutasiku.co.id/api/qris/YjJiZmExZjctOWVmNi00OWJmLThhODQtZThkMjNjZTBhNGFjOjE3OTIwNTM0NDgyODY=",
+        "payment_url": "https://mutasiku.co.id/pay/YjJiZmExZjctOWVmNi00OWJmLThhODQtZThkMjNjZTBhNGFjOjE3OTIwNTM0NDgyODY=",
+        "expires_at": "2026-10-15T08:47:27.811Z",
+        "charge_amount": 26114.8
+      }
+    },
+    {
+      "code": "POJOK-UNPAID01",
+      "createdAt": "2026-10-15T07:38:43.472Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "",
+        "wa": ""
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25000,
+      "note": "",
+      "status": "Dibatalkan (Waktu Habis)",
+      "cancelledAt": "2026-10-15T07:38:43.481Z"
+    },
+    {
+      "code": "POJOK-XCU5WV",
+      "createdAt": "2026-10-15T07:37:57.112Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "sabiaaja00@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25591,
+      "note": "Email: sabiaaja00@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API2026101514375720985A",
+        "payment_id": "6c14d369-6eb1-44cd-8749-66b5e6d24930",
+        "qris_image": "https://mutasiku.co.id/api/qris/NmMxNGQzNjktNmViMS00NGNkLTg3NDktNjZiNWU2ZDI0OTMwOjE3OTIwNDk4NzgyMjY=",
+        "payment_url": "https://mutasiku.co.id/pay/NmMxNGQzNjktNmViMS00NGNkLTg3NDktNjZiNWU2ZDI0OTMwOjE3OTIwNDk4NzgyMjY=",
+        "expires_at": "2026-10-15T07:47:57.858Z",
+        "charge_amount": 26020.14
+      },
+      "cancelledAt": "2026-10-15T07:42:56.150Z"
+    },
+    {
+      "code": "POJOK-S43XX4",
+      "createdAt": "2026-10-15T07:31:24.188Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "3t.ardiansyah@gmail.com",
+        "wa": "085283048377"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25197,
+      "note": "Email: 3t.ardiansyah@gmail.com | WA: 085283048377",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API20261015143126E6D92D",
+        "payment_id": "ba4e0fbb-8f45-43d3-ac1e-0fa09b03648c",
+        "qris_image": "https://mutasiku.co.id/api/qris/YmE0ZTBmYmItOGY0NS00M2QzLWFjMWUtMGZhMDliMDM2NDhjOjE3OTIwNDk0ODY5MzQ=",
+        "payment_url": "https://mutasiku.co.id/pay/YmE0ZTBmYmItOGY0NS00M2QzLWFjMWUtMGZhMDliMDM2NDhjOjE3OTIwNDk0ODY5MzQ=",
+        "expires_at": "2026-10-15T07:41:26.582Z",
+        "charge_amount": 25623.38
+      }
+    },
+    {
+      "code": "POJOK-DU7EB6",
+      "createdAt": "2026-10-15T07:27:58.239Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "sabiaaja00@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25292,
+      "note": "Email: sabiaaja00@gmail.com | WA: 081234567890",
+      "status": "Selesai (Akun Terkirim)",
+      "wistapay": {
+        "reference": "API2026101514275863E347",
+        "payment_id": "18fd3e61-5257-43fa-9b53-ef15c5e19645",
+        "qris_image": "https://mutasiku.co.id/api/qris/MThmZDNlNjEtNTI1Ny00M2ZhLTliNTMtZWYxNWM1ZTE5NjQ1OjE3OTIwNDkyNzkxNTM=",
+        "payment_url": "https://mutasiku.co.id/pay/MThmZDNlNjEtNTI1Ny00M2ZhLTliNTMtZWYxNWM1ZTE5NjQ1OjE3OTIwNDkyNzkxNTM=",
+        "expires_at": "2026-10-15T07:37:58.744Z",
+        "charge_amount": 25719.04
+      },
+      "paidAt": "2026-10-15T07:28:43.449Z",
+      "paidAmount": 25425,
+      "updatedAt": "2026-10-15T07:53:52.752Z"
+    },
+    {
+      "code": "POJOK-K8S7J4",
+      "createdAt": "2026-10-15T07:26:42.893Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "sabiaaja00@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25400,
+      "note": "Email: sabiaaja00@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API2026101514264362DFA2",
+        "payment_id": "844560a6-66ad-4fc4-b7e1-e17b5efe5aae",
+        "qris_image": "https://mutasiku.co.id/api/qris/ODQ0NTYwYTYtNjZhZC00ZmM0LWI3ZTEtZTE3YjVlZmU1YWFlOjE3OTIwNDkyMDM5MTA=",
+        "payment_url": "https://mutasiku.co.id/pay/ODQ0NTYwYTYtNjZhZC00ZmM0LWI3ZTEtZTE3YjVlZmU1YWFlOjE3OTIwNDkyMDM5MTA=",
+        "expires_at": "2026-10-15T07:36:43.527Z",
+        "charge_amount": 25827.8
+      }
+    },
+    {
+      "code": "POJOK-3CD93C",
+      "createdAt": "2026-10-15T07:24:05.518Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "sabiaaja00@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25636,
+      "note": "Email: sabiaaja00@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API2026101514240553E8F3",
+        "payment_id": "ee1f8ccf-634e-4336-a2bf-d4219435f396",
+        "qris_image": "https://mutasiku.co.id/api/qris/ZWUxZjhjY2YtNjM0ZS00MzM2LWEyYmYtZDQyMTk0MzVmMzk2OjE3OTIwNDkwNDY2MDc=",
+        "payment_url": "https://mutasiku.co.id/pay/ZWUxZjhjY2YtNjM0ZS00MzM2LWEyYmYtZDQyMTk0MzVmMzk2OjE3OTIwNDkwNDY2MDc=",
+        "expires_at": "2026-10-15T07:34:06.073Z",
+        "charge_amount": 26065.45
+      }
+    },
+    {
+      "code": "POJOK-WQ6VEA",
+      "createdAt": "2026-10-15T07:22:33.403Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "sabiaaja00@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25395,
+      "note": "Email: sabiaaja00@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API20261015142236CBFF3D",
+        "payment_id": "0351e873-1ca3-497c-bb32-6f6d25f7f758",
+        "qris_image": "https://mutasiku.co.id/api/qris/MDM1MWU4NzMtMWNhMy00OTdjLWJiMzItNmY2ZDI1ZjdmNzU4OjE3OTIwNDg5NTY3NjA=",
+        "payment_url": "https://mutasiku.co.id/pay/MDM1MWU4NzMtMWNhMy00OTdjLWJiMzItNmY2ZDI1ZjdmNzU4OjE3OTIwNDg5NTY3NjA=",
+        "expires_at": "2026-10-15T07:32:36.363Z",
+        "charge_amount": 25822.77
+      }
+    },
+    {
+      "code": "POJOK-3AK4TD",
+      "createdAt": "2026-10-15T07:21:38.934Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "sabiaaja00@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25445,
+      "note": "Email: sabiaaja00@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API20261015142149AF4928",
+        "payment_id": "699c38cf-4156-46b9-a030-71114603ad77",
+        "qris_image": "https://mutasiku.co.id/api/qris/Njk5YzM4Y2YtNDE1Ni00NmI5LWEwMzAtNzExMTQ2MDNhZDc3OjE3OTIwNDg5MTAzMzg=",
+        "payment_url": "https://mutasiku.co.id/pay/Njk5YzM4Y2YtNDE1Ni00NmI5LWEwMzAtNzExMTQ2MDNhZDc3OjE3OTIwNDg5MTAzMzg=",
+        "expires_at": "2026-10-15T07:31:49.809Z",
+        "charge_amount": 25852.98
+      }
+    },
+    {
+      "code": "POJOK-UN3C5S",
+      "createdAt": "2026-10-15T07:20:02.716Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "sabiaaja00@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25639,
+      "note": "Email: sabiaaja00@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API202610151420035385B9",
+        "payment_id": "cc08f40a-8da1-43ad-b052-7c9c70c8bad1",
+        "qris_image": "https://mutasiku.co.id/api/qris/Y2MwOGY0MGEtOGRhMS00M2FkLWIwNTItN2M5YzcwYzhiYWQxOjE3OTIwNDg4MDQxNDE=",
+        "payment_url": "https://mutasiku.co.id/pay/Y2MwOGY0MGEtOGRhMS00M2FkLWIwNTItN2M5YzcwYzhiYWQxOjE3OTIwNDg4MDQxNDE=",
+        "expires_at": "2026-10-15T07:30:03.751Z",
+        "charge_amount": 26068.47
+      }
+    },
+    {
+      "code": "POJOK-9BCZKV",
+      "createdAt": "2026-10-15T07:18:14.199Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "sabiaaja00@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25234,
+      "note": "Email: sabiaaja00@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)",
+      "wistapay": {
+        "reference": "API20261015141814AEFED2",
+        "payment_id": "229b7f0f-f973-4af1-bba0-4ba952c56621",
+        "qris_image": "https://mutasiku.co.id/api/qris/MjI5YjdmMGYtZjk3My00YWYxLWJiYTAtNGJhOTUyYzU2NjIxOjE3OTIwNDg2OTU0NjE=",
+        "payment_url": "https://mutasiku.co.id/pay/MjI5YjdmMGYtZjk3My00YWYxLWJiYTAtNGJhOTUyYzU2NjIxOjE3OTIwNDg2OTU0NjE=",
+        "expires_at": "2026-10-15T07:28:15.024Z",
+        "charge_amount": 25660.64
+      }
+    },
+    {
+      "code": "POJOK-BDTXKR",
+      "createdAt": "2026-10-15T06:33:56.566Z",
+      "buyer": {
+        "name": "Pembeli",
+        "email": "pembeli@gmail.com",
+        "wa": "081234567890"
+      },
+      "product": {
+        "name": "Google Gemini",
+        "variant": "18 Bulan Link",
+        "qty": 1,
+        "price": 25000
+      },
+      "total": 25458,
+      "note": "Email: pembeli@gmail.com | WA: 081234567890",
+      "status": "Dibatalkan (Waktu Habis)"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "pojokai",
+  "version": "1.0.0",
+  "description": "Toko Akun Digital & Jasa Sosmed via WhatsApp",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "build:css": "tailwindcss -i assets/tailwind-input.css -o assets/tailwind.css --minify",
+    "build": "node build.mjs && tailwindcss -i assets/tailwind-input.css -o assets/tailwind.css --minify",
+    "deploy": "npm run build && vercel --prod",
+    "deploy:vercel": "npm run build && vercel --prod"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.2"
+  }
+}
