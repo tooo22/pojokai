@@ -168,9 +168,14 @@ details[open] { border-color: rgb(var(--primary) / .3); }
 details[open] .faq-icon { transform: rotate(45deg); background: rgb(var(--primary) / .1); color: rgb(var(--primary)); }
 
 @media (prefers-reduced-motion: no-preference) {
-  #modal:not(.hidden) { animation: wk-fade .2s ease-out; }
-  #modal:not(.hidden) #dialog { animation: wk-sheet .3s ease-out; }
-  @media (min-width: 640px) { #modal:not(.hidden) #dialog { animation-name: wk-pop; } }
+  #modal:not(.hidden),
+  #constructionModal:not(.hidden) { animation: wk-fade .2s ease-out; }
+  #modal:not(.hidden) #dialog,
+  #constructionModal:not(.hidden) #constructionDialog { animation: wk-sheet .3s ease-out; }
+  @media (min-width: 640px) {
+    #modal:not(.hidden) #dialog,
+    #constructionModal:not(.hidden) #constructionDialog { animation-name: wk-pop; }
+  }
 }
 @keyframes wk-fade { from { opacity: 0; } }
 @keyframes wk-sheet { from { transform: translateY(16px); opacity: 0; } }

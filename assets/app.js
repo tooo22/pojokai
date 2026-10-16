@@ -3445,3 +3445,117 @@ function initChatbox() {
 }
 
 initChatbox();
+
+/* ==============================================================================
+   Pemberitahuan Website Sedang Dalam Pembangunan (Under Construction Pop-up)
+   ============================================================================== */
+
+function shouldShowConstructionModal() {
+  // Jangan tampilkan jika sedang berada di halaman owner/admin
+  if (location.pathname === '/admin' || location.hash === '#admin') return false;
+
+  // URL query parameter untuk pengujian manual: ?popup=1 atau ?preview=construction
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('popup') === '1' || params.get('preview') === 'construction') return true;
+  } catch {}
+
+  // Jangan tampilkan jika user mencentang "Jangan tampilkan lagi hari ini"
+  try {
+    const hideUntil = localStorage.getItem('wk_construction_hide_until');
+    if (hideUntil && Number(hideUntil) > Date.now()) return false;
+  } catch {}
+
+  // Jangan tampilkan jika sudah pernah ditutup dalam sesi browser ini
+  try {
+    if (sessionStorage.getItem('wk_construction_dismissed')) return false;
+  } catch {}
+
+  return true;
+}
+
+function openConstructionModal() {
+  const modal = $('#constructionModal');
+  const dialog = $('#constructionDialog');
+  if (!modal) return;
+
+  // Pastikan tautan WhatsApp terpasang dengan nomor admin resmi & pesan otomatis
+  const waBtn = $('#constructionWaBtn');
+  if (waBtn) {
+    const waNum = WA_ADMIN || '6283171982973';
+    const msg = 'Halo Admin PojokAI, saya melihat website sedang dalam tahap pengembangan. Mau tanya stok & info pemesanan akun premium ya kak...';
+    waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
+  }
+
+  modal.classList.replace('hidden', 'flex');
+  document.documentElement.style.overflow = 'hidden';
+  icons();
+  setTimeout(() => {
+    dialog?.focus({ preventScroll: true });
+  }, 60);
+}
+
+function closeConstructionModal() {
+  const modal = $('#constructionModal');
+  if (!modal) return;
+
+  // Simpan preferensi jika dicentang "Jangan tampilkan lagi hari ini" (24 jam)
+  const dontShowCheck = $('#constructionDontShowToday');
+  if (dontShowCheck && dontShowCheck.checked) {
+    try {
+      localStorage.setItem('wk_construction_hide_until', String(Date.now() + 24 * 60 * 60 * 1000));
+    } catch {}
+  }
+
+  // Simpan flag sesi browser agar tidak mengganggu navigasi selama tab terbuka
+  try {
+    sessionStorage.setItem('wk_construction_dismissed', '1');
+  } catch {}
+
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+
+  // Kembalikan scroll body jika tidak ada modal lain yang aktif
+  const mainModal = $('#modal');
+  const adminModal = $('#aModal');
+  const hasOtherModal = (mainModal && !mainModal.classList.contains('hidden')) ||
+                        (adminModal && !adminModal.classList.contains('hidden'));
+  if (!hasOtherModal) {
+    document.documentElement.style.overflow = '';
+  }
+}
+
+function initConstructionNotice() {
+  $('#constructionCloseBtn')?.addEventListener('click', closeConstructionModal);
+  $('#constructionDismissBtn')?.addEventListener('click', closeConstructionModal);
+  $('#constructionBannerBtn')?.addEventListener('click', openConstructionModal);
+
+  // Klik area backdrop untuk menutup modal
+  $('#constructionModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'constructionModal') {
+      closeConstructionModal();
+    }
+  });
+
+  // Tombol Escape menutup modal jika terbuka
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = $('#constructionModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        closeConstructionModal();
+      }
+    }
+  });
+
+  // Tampilkan otomatis untuk pengunjung yang baru masuk
+  if (shouldShowConstructionModal()) {
+    setTimeout(() => {
+      openConstructionModal();
+    }, 400);
+  }
+}
+
+window.openConstructionModal = openConstructionModal;
+window.closeConstructionModal = closeConstructionModal;
+
+initConstructionNotice();
