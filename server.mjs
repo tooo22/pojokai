@@ -809,6 +809,8 @@ async function handleCreateDeposit(chatId, userId, username, amount, dbData, tok
 const pendingOrderLocks = new Map();
 
 async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, dbData, token, callbackQuery = null) {
+  const userLang = dbData.userLanguages?.[userId] || dbData.wallets?.[userId]?.lang || 'id';
+  const isEn = userLang === 'en';
   const now = Date.now();
   const lastLock = pendingOrderLocks.get(String(chatId)) || 0;
   if (now - lastLock < 6000) {
@@ -818,7 +820,7 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callback_query_id: callbackQuery.id,
-          text: '⏳ Tagihan QRIS sedang dibuat, mohon tunggu sebentar...',
+          text: isEn ? '⏳ Generating QRIS invoice, please wait a moment...' : '⏳ Tagihan QRIS sedang dibuat, mohon tunggu sebentar...',
           show_alert: false
         })
       }).catch(() => {});
@@ -844,7 +846,7 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callback_query_id: callbackQuery.id,
-          text: `⚠️ Tagihan QRIS (${existingPending.code}) untuk ${p.name} sudah tersedia di chat. Silakan scan QRIS di atas!`,
+          text: isEn ? `⚠️ QRIS invoice (${existingPending.code}) for ${p.name} is already available in chat. Please scan QRIS above!` : `⚠️ Tagihan QRIS (${existingPending.code}) untuk ${p.name} sudah tersedia di chat. Silakan scan QRIS di atas!`,
           show_alert: true
         })
       }).catch(() => {});
@@ -874,8 +876,8 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
 
     const json = await res.json();
     if (!json.success || !json.data) {
-      await sendTelegramMessage(chatId, `❌ Gagal membuat QRIS: ${json.message || 'Server pembayaran sibuk'}. Silakan coba lagi atau beli via Web Toko.`, {
-        inline_keyboard: [[{ text: '🛒 Buka Web Toko', web_app: { url: 'https://pojokai.my.id' } }]]
+      await sendTelegramMessage(chatId, isEn ? `❌ Failed to create QRIS: ${json.message || 'Payment server busy'}. Please try again or purchase via Web Store.` : `❌ Gagal membuat QRIS: ${json.message || 'Server pembayaran sibuk'}. Silakan coba lagi atau beli via Web Toko.`, {
+        inline_keyboard: [[{ text: isEn ? '🛒 Open Web Store' : '🛒 Buka Web Toko', web_app: { url: 'https://pojokai.my.id' } }]]
       }, token);
       return { ok: true };
     }
@@ -920,7 +922,26 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
     if (dbData.orders.length > 1000) dbData.orders.pop();
     await save();
 
-    const caption = [
+    const caption = isEn ? [
+      '💳 <b>QRIS PAYMENT INVOICE</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '📋 <b>Order Details:</b>',
+      `├ <b>Order Code  :</b> <code>${orderCode}</code>`,
+      `├ <b>Product     :</b> ${p.name} (${v.label || 'Standard'})`,
+      `├ <b>Quantity    :</b> 1 Pcs`,
+      `└ <b>Total Bill  :</b> <b>Rp${Number(finalTotal).toLocaleString('id-ID')}</b>`,
+      '',
+      '⏰ <b>Valid For  :</b> <b>5 Minutes</b> <i>(Auto-expires)</i>',
+      '⚡ <b>Payment Method :</b> Realtime QRIS <i>(BCA, Mandiri, Dana, GoPay, OVO, ShopeePay)</i>',
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '📱 <b>Payment Instructions:</b>',
+      '1️⃣ Save or screenshot the QRIS barcode above.',
+      '2️⃣ Open any M-Banking or E-Wallet app.',
+      '3️⃣ Scan the QRIS barcode & pay the exact total above.',
+      '4️⃣ After payment, click <b>Check Payment Status</b> below!'
+    ].join('\n') : [
       '💳 <b>INVOICE PEMBAYARAN QRIS</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
@@ -941,7 +962,10 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
       '4️⃣ Setelah berhasil, klik tombol <b>Cek Status Pembayaran</b> di bawah!'
     ].join('\n');
 
-    const buttons = [
+    const buttons = isEn ? [
+      [{ text: '🔍 Check Payment', callback_data: `check_order_${orderCode}`, style: 'primary' }],
+      [{ text: '❌ Cancel Order', callback_data: `cancel_order_${orderCode}`, style: 'danger' }]
+    ] : [
       [{ text: '🔍 Cek Pembayaran', callback_data: `check_order_${orderCode}`, style: 'primary' }],
       [{ text: '❌ Batalkan Transaksi', callback_data: `cancel_order_${orderCode}`, style: 'danger' }]
     ];
@@ -963,9 +987,18 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
     o.code === rawCode || 
     (cleanCode && (o.code || '').replace(/[^A-Z0-9]/g, '') === cleanCode.replace(/[^A-Z0-9]/g, ''))
   );
+  const userLang = dbData.userLanguages?.[chatId] || (order?.buyer?.telegramUserId ? dbData.userLanguages?.[order.buyer.telegramUserId] : null) || 'id';
+  const isEn = userLang === 'en';
 
   if (!order) {
-    const notFoundText = [
+    const notFoundText = isEn ? [
+      '❌ <b>Order Code Not Found</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `Order code <code>${cleanCode || text}</code> is not registered in the PojokAI system.`,
+      '',
+      'Please make sure you entered the complete order code (example: <code>POJOK-XXXXXX</code>).',
+      'If you have just completed a purchase or need help, please contact admin on WhatsApp.'
+    ].join('\n') : [
       '❌ <b>Nomor Pesanan Tidak Ditemukan</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       `Nomor pesanan <code>${cleanCode || text}</code> tidak terdaftar di sistem PojokAI.`,
@@ -976,9 +1009,9 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
 
     await sendTelegramMessage(chatId, notFoundText, {
       inline_keyboard: [
-        [{ text: '🔄 Coba Ketik Lagi', callback_data: 'menu_check_order', style: 'primary' }],
-        [{ text: '💬 Hubungi Admin WA', url: `https://wa.me/${dbData.wa || '6283171982973'}?text=${encodeURIComponent(`Halo admin, saya mau tanya pesanan ${cleanCode || text}`)}`, style: 'success' }],
-        [{ text: '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
+        [{ text: isEn ? '🔄 Try Again' : '🔄 Coba Ketik Lagi', callback_data: 'menu_check_order', style: 'primary' }],
+        [{ text: isEn ? '💬 Contact Admin WA' : '💬 Hubungi Admin WA', url: `https://wa.me/${dbData.wa || '6283171982973'}?text=${encodeURIComponent(`Halo admin, saya mau tanya pesanan ${cleanCode || text}`)}`, style: 'success' }],
+        [{ text: isEn ? '◀️ Main Menu' : '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
       ]
     }, token);
     return { ok: true };
@@ -1032,7 +1065,19 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
     order.status = 'Kadaluarsa (Waktu 5 Menit Habis)';
     await save();
 
-    const expiredMsg = [
+    const expiredMsg = isEn ? [
+      '❌ <b>QRIS PAYMENT EXPIRED</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '📋 <b>Order Details:</b>',
+      `├ <b>Order Code  :</b> <code>${order.code}</code>`,
+      `├ <b>Product Name:</b> ${order.product?.name} (${order.product?.variant || 'Standard'})`,
+      `├ <b>Total Bill  :</b> Rp${Number(order.total).toLocaleString('id-ID')}`,
+      `└ <b>Status      :</b> 🔴 <b>Expired (5-Minute Limit Passed)</b>`,
+      '',
+      '⚠️ <i>The 5-minute payment window has ended and this QRIS is no longer active.</i>',
+      '<i>Please create a new order if you still want to buy this product.</i>'
+    ].join('\n') : [
       '❌ <b>PEMBAYARAN QRIS TELAH HANGUS</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
@@ -1048,19 +1093,29 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
 
     await sendTelegramMessage(chatId, expiredMsg, {
       inline_keyboard: [
-        [{ text: '🛍️ Beli Produk Baru', callback_data: 'menu_products', style: 'success' }],
-        [{ text: '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
+        [{ text: isEn ? '🛍️ Order New Product' : '🛍️ Beli Produk Baru', callback_data: 'menu_products', style: 'success' }],
+        [{ text: isEn ? '◀️ Main Menu' : '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
       ]
     }, token);
     return { ok: true };
   }
-
   // 4. Masih ada waktu pembayaran
   const elapsedMs = Date.now() - createdAtTime;
   const remSec = Math.max(0, Math.floor((5 * 60 * 1000 - elapsedMs) / 1000));
   const remStr = `${Math.floor(remSec / 60)} menit ${remSec % 60} detik`;
 
-  const pendingMsg = [
+  const pendingMsg = isEn ? [
+    '⏳ <b>STATUS: AWAITING PAYMENT</b>',
+    '━━━━━━━━━━━━━━━━━━━━━━━━━',
+    '',
+    '📋 <b>Order Details:</b>',
+    `├ <b>Order Code     :</b> <code>${order.code}</code>`,
+    `├ <b>Product Name   :</b> ${order.product?.name} (${order.product?.variant || 'Standard'})`,
+    `├ <b>Total Bill     :</b> <b>Rp${Number(order.total).toLocaleString('id-ID')}</b>`,
+    `└ <b>Remaining Time :</b> <b>${remStr}</b> <i>(Before Expiring)</i>`,
+    '',
+    '<i>Please complete the QRIS payment in your banking/e-wallet app then click Check Payment Status below!</i>'
+  ].join('\n') : [
     '⏳ <b>STATUS: MENUNGGU PEMBAYARAN</b>',
     '━━━━━━━━━━━━━━━━━━━━━━━━━',
     '',
@@ -1075,8 +1130,8 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
 
   await sendTelegramMessage(chatId, pendingMsg, {
     inline_keyboard: [
-      [{ text: '🔄 Cek Status Pembayaran Lagi', callback_data: `check_order_${order.code}`, style: 'success' }],
-      [{ text: '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
+      [{ text: isEn ? '🔄 Check Payment Status Again' : '🔄 Cek Status Pembayaran Lagi', callback_data: `check_order_${order.code}`, style: 'success' }],
+      [{ text: isEn ? '◀️ Main Menu' : '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
     ]
   }, token);
   return { ok: true };
@@ -1114,6 +1169,10 @@ async function handleTelegramWebhook(body, dbData) {
   if (!dbData.wallets) dbData.wallets = {};
   if (!dbData.wallets[userId]) dbData.wallets[userId] = { balance: 0, totalDeposit: 0, totalSpent: 0 };
   const userWallet = dbData.wallets[userId];
+  // Inisialisasi preferensi bahasa user
+  if (!dbData.userLanguages) dbData.userLanguages = {};
+  const userLang = dbData.userLanguages[userId] || userWallet.lang || 'id';
+  const isEn = userLang === 'en';
 
   // A. Handle input nominal custom deposit
   if (dbData.userStates?.[chatId]?.action === 'awaiting_custom_deposit' && text && !text.startsWith('/')) {
@@ -1163,7 +1222,26 @@ async function handleTelegramWebhook(body, dbData) {
     }).length;
     const totalSold = (dbData.products || []).reduce((sum, p) => sum + (Number(p.sold) || 0), 0) + completedOrders;
 
-    const msgText = [
+    const msgText = isEn ? [
+      '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>User ID   :</b> <code>${userId}</code>`,
+      `├ <b>Username  :</b> ${username}`,
+      `└ <b>Rank      :</b> <code>${userRank}</code>`,
+      '',
+      '💰 <tg-emoji emoji-id="5904655415735492625"><b>SUMMARY</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>Account Balance :</b> <code>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</code>`,
+      `├ <b>Total Spent     :</b> <code>Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}</code>`,
+      `└ <b>Total Orders    :</b> <code>${userWallet.totalDeposit ? 1 : 0} Orders</code>`,
+      '',
+      '📊 <tg-emoji emoji-id="5904715266104762882"><b>STORE STATISTICS</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>Products Sold     :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
+      `└ <b>Successful Orders :</b> <code>${completedOrders.toLocaleString('id-ID')} Orders</code>`,
+      '',
+      '💫 <i>Select a menu below to start:</i>'
+    ].join('\n') : [
       '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       `├ <b>User ID   :</b> <code>${userId}</code>`,
@@ -1184,7 +1262,21 @@ async function handleTelegramWebhook(body, dbData) {
       '💫 <i>Pilih menu di bawah untuk mulai:</i>'
     ].join('\n');
 
-    const inlineKeyboard = [
+    const inlineKeyboard = isEn ? [
+      [{ text: '🛍️ Products', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
+      [
+        { text: '🤝 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+        { text: '💼 Wallet', callback_data: 'menu_wallet', style: 'primary', icon_custom_emoji_id: '5904655415735492625' }
+      ],
+      [
+        { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' },
+        { text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }
+      ],
+      [
+        { text: '🌐 Language', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
+        { text: '⚠️ Help', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
+      ]
+    ] : [
       [{ text: '🛍️ Produk', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
       [
         { text: '🤝 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
@@ -1223,12 +1315,14 @@ async function handleTelegramWebhook(body, dbData) {
   }
 
   // 2. Menu Produk (Grid Tombol Produk - Background HIJAU jika Ready!)
-  if (cbData === 'menu_products' || text.toLowerCase() === '/produk') {
-    const msgText = [
+  if (cbData === 'menu_products' || text.toLowerCase() === '/produk' || text.toLowerCase() === '/products') {
+    const msgText = isEn ? [
+      '💎 <b>AVAILABLE PRODUCTS AT POJOKAI</b>',
+      'Please select the product you need below:'
+    ].join('\n') : [
       '💎 <b>PRODUK TERSEDIA DI POJOKAI</b>',
       'Silakan pilih produk yang Anda butuhkan di bawah ini:'
     ].join('\n');
-
     const productButtons = [];
     let currentRow = [];
     for (let i = 0; i < products.length; i++) {
@@ -1250,7 +1344,7 @@ async function handleTelegramWebhook(body, dbData) {
 
     productButtons.push([
       { text: '🔄 Refresh', callback_data: 'menu_products', style: 'primary' },
-      { text: '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }
+      { text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }
     ]);
 
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: productButtons }, token);
@@ -1262,7 +1356,7 @@ async function handleTelegramWebhook(body, dbData) {
     const slug = cbData.slice(2);
     const p = products.find((x) => x.slug.startsWith(slug) || x.slug === slug);
     if (!p) {
-      await sendTelegramMessage(chatId, '⚠️ Produk tidak ditemukan.', null, token);
+      await sendTelegramMessage(chatId, isEn ? '⚠️ Product not found.' : '⚠️ Produk tidak ditemukan.', null, token);
       return { ok: true };
     }
 
@@ -1270,23 +1364,33 @@ async function handleTelegramWebhook(body, dbData) {
     const variants = p.variants || [];
     const minP = variants.reduce((m, v) => (m === null || v.price < m ? v.price : m), null);
     const isReady = variants.some((v) => v.stock > 0 || v.stock === 999999);
+    const stockStatus = isEn
+      ? (isReady ? '🟢 <b>Ready / In Stock</b>' : '🔴 <b>Out of Stock</b>')
+      : (isReady ? '🟢 <b>Ready / Tersedia</b>' : '🔴 <b>Stok Habis</b>');
 
-    const msgText = [
+    const msgText = isEn ? [
+      `${emoji} <b>${p.name.toUpperCase()}</b>`,
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>Starting Price :</b> <code>Rp${Number(minP || 0).toLocaleString('id-ID')}</code>`,
+      `└ <b>Stock Status   :</b> ${stockStatus}`,
+      '',
+      p.desc ? p.desc : '<i>Product description not available yet.</i>'
+    ].join('\n') : [
       `${emoji} <b>${p.name.toUpperCase()}</b>`,
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       `├ <b>Harga Mulai :</b> <code>Rp${Number(minP || 0).toLocaleString('id-ID')}</code>`,
-      `└ <b>Status Stok :</b> ${isReady ? '🟢 <b>Ready / Tersedia</b>' : '🔴 <b>Stok Habis</b>'}`,
+      `└ <b>Status Stok :</b> ${stockStatus}`,
       '',
       p.desc ? p.desc : '<i>Deskripsi produk belum tersedia.</i>'
     ].join('\n');
 
     const buttons = [
-      [{ text: `⚡ Beli Langsung via QRIS (Rp${Number(minP || 0).toLocaleString('id-ID')})`, callback_data: `buy_qris_${p.slug}`, style: 'success' }],
+      [{ text: isEn ? `⚡ Buy Instantly via QRIS (Rp${Number(minP || 0).toLocaleString('id-ID')})` : `⚡ Beli Langsung via QRIS (Rp${Number(minP || 0).toLocaleString('id-ID')})`, callback_data: `buy_qris_${p.slug}`, style: 'success' }],
       [
-        { text: '🛒 Beli di Web App', web_app: { url: 'https://pojokai.my.id' }, style: 'primary' },
-        { text: '💬 Order via WA Admin', url: `https://wa.me/${wa}?text=${encodeURIComponent(`Halo admin, saya mau order ${p.name}`)}`, style: 'primary' }
+        { text: isEn ? '🛒 Buy on Web App' : '🛒 Beli di Web App', web_app: { url: 'https://pojokai.my.id' }, style: 'primary' },
+        { text: isEn ? '💬 Order via Admin WA' : '💬 Order via WA Admin', url: `https://wa.me/${wa}?text=${encodeURIComponent(`Halo admin, saya mau order ${p.name}`)}`, style: 'primary' }
       ],
-      [{ text: '◀️ Kembali ke Daftar Produk', callback_data: 'menu_products', style: 'danger' }]
+      [{ text: isEn ? '◀️ Back to Product List' : '◀️ Kembali ke Daftar Produk', callback_data: 'menu_products', style: 'danger' }]
     ];
 
     const photoUrl = (p.image && p.image.startsWith('http'))
@@ -1308,7 +1412,7 @@ async function handleTelegramWebhook(body, dbData) {
     const slug = cbData.replace('buy_qris_', '');
     const p = products.find((x) => x.slug === slug || x.slug.startsWith(slug));
     if (!p) {
-      await sendTelegramMessage(chatId, '⚠️ Produk tidak ditemukan.', null, token);
+      await sendTelegramMessage(chatId, isEn ? '⚠️ Product not found.' : '⚠️ Produk tidak ditemukan.', null, token);
       return { ok: true };
     }
 
@@ -1317,7 +1421,14 @@ async function handleTelegramWebhook(body, dbData) {
       return await handleCreateOrderQris(chatId, userId, username, p, 0, dbData, token, callbackQuery);
     }
 
-    const msgText = [
+    const msgText = isEn ? [
+      `💎 <b>SELECT PACKAGE: ${p.name.toUpperCase()}</b>`,
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `📦 <b>Product :</b> ${p.name}`,
+      '⚡ <b>Method  :</b> Instant Dynamic QRIS (Automatic)',
+      '',
+      '<i>Please select the package variant you want to buy via instant QRIS:</i>'
+    ].join('\n') : [
       `💎 <b>PILIH PAKET: ${p.name.toUpperCase()}</b>`,
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       `📦 <b>Produk :</b> ${p.name}`,
@@ -1330,7 +1441,7 @@ async function handleTelegramWebhook(body, dbData) {
       callback_data: `checkout_${p.slug}_${idx}`,
       style: 'success'
     }]));
-    variantButtons.push([{ text: '◀️ Batal', callback_data: `p_${p.slug}`, style: 'danger' }]);
+    variantButtons.push([{ text: isEn ? '◀️ Cancel' : '◀️ Batal', callback_data: `p_${p.slug}`, style: 'danger' }]);
 
     await sendTelegramMessage(chatId, msgText, { inline_keyboard: variantButtons }, token);
     return { ok: true };
@@ -1462,12 +1573,20 @@ async function handleTelegramWebhook(body, dbData) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callback_query_id: callbackQuery.id,
-          text: `❌ Pesanan ${code} telah dibatalkan.`,
+          text: isEn ? `❌ Order ${code} has been cancelled.` : `❌ Pesanan ${code} telah dibatalkan.`,
         })
       }).catch(() => {});
     }
 
-    const cancelCaption = [
+    const cancelCaption = isEn ? [
+      '❌ <b>TRANSACTION CANCELLED</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `🆔 <b>Order Code:</b> <code>${code}</code>`,
+      `📦 <b>Product   :</b> ${order?.product?.name || 'Digital Product'}`,
+      `⚡ <b>Status    :</b> 🔴 <b>Cancelled by User</b>`,
+      '',
+      '<i>This QRIS invoice is no longer valid. You can select another product to make a new order.</i>'
+    ].join('\n') : [
       '❌ <b>TRANSAKSI TELAH DIBATALKAN</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       `🆔 <b>Kode Pesanan:</b> <code>${code}</code>`,
@@ -1477,7 +1596,10 @@ async function handleTelegramWebhook(body, dbData) {
       '<i>Tagihan QRIS ini sudah tidak berlaku lagi. Anda dapat memilih produk lain untuk melakukan pemesanan baru.</i>'
     ].join('\n');
 
-    const cancelButtons = [
+    const cancelButtons = isEn ? [
+      [{ text: '🛍️ Shop New Product', callback_data: 'menu_products', style: 'success' }],
+      [{ text: '◀️ Main Menu', callback_data: 'menu_main', style: 'danger' }]
+    ] : [
       [{ text: '🛍️ Belanja Produk Baru', callback_data: 'menu_products', style: 'success' }],
       [{ text: '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
     ];
@@ -1511,7 +1633,15 @@ async function handleTelegramWebhook(body, dbData) {
     dbData.userStates[chatId] = { action: 'awaiting_order_code', time: Date.now() };
     await save();
 
-    const msgText = [
+    const msgText = isEn ? [
+      '📦 <b>CHECK ORDER STATUS</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      'Please type or paste your <b>Order Code</b> in this chat:',
+      '',
+      'Example: <code>POJOK-261016-UYXCJ</code>',
+      '',
+      '<i>The bot will immediately verify payment status, account credentials, and order details automatically!</i>'
+    ].join('\n') : [
       '📦 <b>CEK STATUS PESANAN</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       'Silakan ketik atau tempelkan <b>Nomor Pesanan</b> Anda langsung di chat ini:',
@@ -1522,7 +1652,7 @@ async function handleTelegramWebhook(body, dbData) {
     ].join('\n');
 
     await updateOrSendMessage(chatId, messageId, msgText, {
-      inline_keyboard: [[{ text: '◀️ Batal / Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]]
+      inline_keyboard: [[{ text: isEn ? '◀️ Cancel / Back to Menu' : '◀️ Batal / Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]]
     }, token);
     return { ok: true };
   }
@@ -1533,7 +1663,21 @@ async function handleTelegramWebhook(body, dbData) {
 
   // 6. Menu Dompet & Pilihan Deposit
   if (cbData === 'menu_wallet') {
-    const msgText = [
+    const msgText = isEn ? [
+      '💼 <b>WALLET &amp; ACCOUNT BALANCE</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '👤 <b>Account Details:</b>',
+      `├ <b>Username :</b> <code>${username}</code>`,
+      `└ <b>User ID  :</b> <code>${userId}</code>`,
+      '',
+      '💰 <b>Balance Details:</b>',
+      `├ <b>Active Balance :</b> <b>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</b>`,
+      `├ <b>Total Deposit  :</b> Rp${Number(userWallet.totalDeposit || 0).toLocaleString('id-ID')}`,
+      `└ <b>Total Spent    :</b> Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}`,
+      '',
+      '💡 <i>Choose instant deposit amount below, or click Custom Amount for other amounts:</i>'
+    ].join('\n') : [
       '💼 <b>DOMPET &amp; SALDO AKUN</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
@@ -1559,10 +1703,10 @@ async function handleTelegramWebhook(body, dbData) {
         { text: '➕ Rp50.000', callback_data: 'dep_50000', style: 'primary' }
       ],
       [
-        { text: '✏️ Nominal Bebas (Min. Rp1.000)', callback_data: 'dep_custom', style: 'success' }
+        { text: isEn ? '✏️ Custom Amount (Min. Rp1,000)' : '✏️ Nominal Bebas (Min. Rp1.000)', callback_data: 'dep_custom', style: 'success' }
       ],
       [
-        { text: '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }
+        { text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }
       ]
     ];
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
@@ -1575,7 +1719,18 @@ async function handleTelegramWebhook(body, dbData) {
     dbData.userStates[chatId] = { action: 'awaiting_custom_deposit', time: Date.now() };
     await save();
 
-    const msgText = [
+    const msgText = isEn ? [
+      '✏️ <b>CUSTOM BALANCE DEPOSIT</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      'Please type the balance amount you wish to top up:',
+      '',
+      '📌 <b>Terms:</b>',
+      '├ <b>Minimum deposit :</b> Rp1,000',
+      '├ <b>Maximum deposit :</b> Rp10,000,000',
+      '└ <b>Admin fee       :</b> QRIS service fee applies',
+      '',
+      '<i>Example: type <b>1000</b>, <b>5000</b>, or <b>50000</b> and send to this bot.</i>'
+    ].join('\n') : [
       '✏️ <b>CUSTOM DEPOSIT SALDO</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       'Silakan ketik nominal saldo yang ingin Anda isi:',
@@ -1589,7 +1744,7 @@ async function handleTelegramWebhook(body, dbData) {
     ].join('\n');
 
     const buttons = [
-      [{ text: '◀️ Batal', callback_data: 'menu_wallet', style: 'danger' }]
+      [{ text: isEn ? '◀️ Cancel' : '◀️ Batal', callback_data: 'menu_wallet', style: 'danger' }]
     ];
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
     return { ok: true };
@@ -1686,7 +1841,18 @@ async function handleTelegramWebhook(body, dbData) {
 
   // 7. Menu Profil
   if (cbData === 'menu_profile') {
-    const msgText = [
+    const msgText = isEn ? [
+      '👤 <b>USER PROFILE</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '📋 <b>Account Information:</b>',
+      `├ <b>Full Name       :</b> ${from.first_name || '-'} ${from.last_name || ''}`,
+      `├ <b>User ID         :</b> <code>${userId}</code>`,
+      `├ <b>Username        :</b> ${username}`,
+      `├ <b>Account Balance :</b> <b>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</b>`,
+      `├ <b>Account Status  :</b> 🟢 <b>Verified</b>`,
+      `└ <b>Official Store  :</b> PojokAI Official Store`
+    ].join('\n') : [
       '👤 <b>PROFIL PENGGUNA</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
@@ -1700,8 +1866,8 @@ async function handleTelegramWebhook(body, dbData) {
     ].join('\n');
 
     const buttons = [
-      [{ text: '🛍️ Mulai Belanja', callback_data: 'menu_products', style: 'success' }],
-      [{ text: '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
+      [{ text: isEn ? '🛍️ Start Shopping' : '🛍️ Mulai Belanja', callback_data: 'menu_products', style: 'success' }],
+      [{ text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
     ];
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
     return { ok: true };
@@ -1711,7 +1877,15 @@ async function handleTelegramWebhook(body, dbData) {
   if (cbData === 'menu_referral') {
     const botUser = dbData.telegram?.botUsername || 'pojokkai_bot';
     const refLink = `https://t.me/${botUser}?start=ref_${userId}`;
-    const msgText = [
+    const msgText = isEn ? [
+      '🤝 <b>REFERRAL PROGRAM</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      'Share your referral link with friends to get special promotions & bonuses at PojokAI!',
+      '',
+      `🔗 <b>Your Referral Link:</b>\n<code>${refLink}</code>`,
+      '',
+      '<i>Every friend who makes a purchase using your link will be recorded in the store system.</i>'
+    ].join('\n') : [
       '🤝 <b>PROGRAM AJAK TEMAN (REFERRAL)</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       'Bagikan link referral Anda ke teman-teman untuk mendapatkan promo & bonus spesial di PojokAI!',
@@ -1722,27 +1896,175 @@ async function handleTelegramWebhook(body, dbData) {
     ].join('\n');
 
     const buttons = [
-      [{ text: '📢 Bagikan ke Chat Lain', url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('Beli akun premium legal & murah di PojokAI!')}`, style: 'primary' }],
-      [{ text: '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
+      [{ text: isEn ? '📢 Share to Another Chat' : '📢 Bagikan ke Chat Lain', url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(isEn ? 'Buy cheap & official digital accounts at PojokAI!' : 'Beli akun premium legal & murah di PojokAI!')}`, style: 'primary' }],
+      [{ text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
     ];
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
     return { ok: true };
   }
 
   // 9. Menu Bahasa
-  if (cbData === 'menu_lang') {
+  if (cbData === 'set_lang_id' || cbData === 'set_lang_en') {
+    const nextLang = cbData === 'set_lang_en' ? 'en' : 'id';
+    if (!dbData.userLanguages) dbData.userLanguages = {};
+    dbData.userLanguages[userId] = nextLang;
+    if (chatId) dbData.userLanguages[String(chatId)] = nextLang;
+    if (userWallet) userWallet.lang = nextLang;
+    await save();
+
+    if (callbackQuery?.id) {
+      const toastText = nextLang === 'en'
+        ? '✅ Language set to English!'
+        : '✅ Bahasa berhasil diubah ke Bahasa Indonesia!';
+      fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: callbackQuery.id, text: toastText, show_alert: true })
+      }).catch(() => {});
+    }
+
+    if (messageId) {
+      await deleteTelegramMessage(chatId, messageId, token);
+    }
+
+    const isEn = nextLang === 'en';
+    const userRank = '#' + ((Number(String(userId).slice(-2)) || 1) + 1);
+    const orders = dbData.orders || [];
+    const completedOrders = orders.filter((o) => {
+      const s = String(o.status || '').toLowerCase();
+      return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
+    }).length;
+    const totalSold = (dbData.products || []).reduce((sum, p) => sum + (Number(p.sold) || 0), 0) + completedOrders;
+
+    const noticeBanner = isEn
+      ? '✨ <b>Language successfully switched to 🇬🇧 English!</b>\n'
+      : '✨ <b>Bahasa berhasil diubah ke 🇮🇩 Bahasa Indonesia!</b>\n';
+
+    const msgText = (isEn ? [
+      noticeBanner,
+      '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>User ID   :</b> <code>${userId}</code>`,
+      `├ <b>Username  :</b> ${username}`,
+      `└ <b>Rank      :</b> <code>${userRank}</code>`,
+      '',
+      '💰 <tg-emoji emoji-id="5904655415735492625"><b>SUMMARY</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>Account Balance :</b> <code>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</code>`,
+      `├ <b>Total Spent     :</b> <code>Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}</code>`,
+      `└ <b>Total Orders    :</b> <code>${userWallet.totalDeposit ? 1 : 0} Orders</code>`,
+      '',
+      '📊 <tg-emoji emoji-id="5904715266104762882"><b>STORE STATISTICS</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>Products Sold     :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
+      `└ <b>Successful Orders :</b> <code>${completedOrders.toLocaleString('id-ID')} Orders</code>`,
+      '',
+      '💫 <i>Select a menu below to start:</i>'
+    ] : [
+      noticeBanner,
+      '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>User ID   :</b> <code>${userId}</code>`,
+      `├ <b>Username  :</b> ${username}`,
+      `└ <b>Peringkat :</b> <code>${userRank}</code>`,
+      '',
+      '💰 <tg-emoji emoji-id="5904655415735492625"><b>RINGKASAN</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>Saldo Akun    :</b> <code>Rp${Number(userWallet.balance || 0).toLocaleString('id-ID')}</code>`,
+      `├ <b>Total Belanja :</b> <code>Rp${Number(userWallet.totalSpent || 0).toLocaleString('id-ID')}</code>`,
+      `└ <b>Total Order   :</b> <code>${userWallet.totalDeposit ? 1 : 0} Transaksi</code>`,
+      '',
+      '📊 <tg-emoji emoji-id="5904715266104762882"><b>STATISTIK TOKO</b></tg-emoji>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `├ <b>Produk Terjual   :</b> <code>${totalSold.toLocaleString('id-ID')} Pcs</code>`,
+      `└ <b>Transaksi Sukses :</b> <code>${completedOrders.toLocaleString('id-ID')} Order</code>`,
+      '',
+      '💫 <i>Pilih menu di bawah untuk mulai:</i>'
+    ]).join('\n');
+
+    const inlineKeyboard = isEn ? [
+      [{ text: '🛍️ Products', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
+      [
+        { text: '🤝 My Orders', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+        { text: '💼 Wallet', callback_data: 'menu_wallet', style: 'primary', icon_custom_emoji_id: '5904655415735492625' }
+      ],
+      [
+        { text: '👤 Profile', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' },
+        { text: '🤝 Invite Friends', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }
+      ],
+      [
+        { text: '🌐 Language', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
+        { text: '⚠️ Help', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
+      ]
+    ] : [
+      [{ text: '🛍️ Produk', callback_data: 'menu_products', style: 'success', icon_custom_emoji_id: '5276438812866681286' }],
+      [
+        { text: '🤝 Pesanan Saya', callback_data: 'menu_check_order', style: 'primary', icon_custom_emoji_id: '5904715266104762882' },
+        { text: '💼 Dompet', callback_data: 'menu_wallet', style: 'primary', icon_custom_emoji_id: '5904655415735492625' }
+      ],
+      [
+        { text: '👤 Profil', callback_data: 'menu_profile', style: 'primary', icon_custom_emoji_id: '5904771654730391536' },
+        { text: '🤝 Ajak Teman', callback_data: 'menu_referral', style: 'primary', icon_custom_emoji_id: '5253555497696503165' }
+      ],
+      [
+        { text: '🌐 Bahasa', callback_data: 'menu_lang', style: 'danger', icon_custom_emoji_id: '5276521718620398284' },
+        { text: '⚠️ Bantuan', callback_data: 'menu_help', style: 'danger', icon_custom_emoji_id: '5427086749278943412' }
+      ]
+    ];
+
+    try {
+      const animRes = await fetch(`https://api.telegram.org/bot${token}/sendAnimation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          animation: 'https://pojokai.my.id/assets/branding/pojokai-bot-avatar.gif',
+          caption: msgText,
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: inlineKeyboard }
+        })
+      });
+      if (animRes.ok) return { ok: true };
+    } catch {}
+
+    await sendTelegramMessage(chatId, msgText, { inline_keyboard: inlineKeyboard }, token);
+    return { ok: true };
+  }
+
+  if (cbData === 'menu_lang' || text.toLowerCase() === '/bahasa' || text.toLowerCase() === '/lang' || text.toLowerCase() === '/language') {
+    const isLangEn = userLang === 'en';
     const msgText = [
       '🌐 <b>PILIH BAHASA / SELECT LANGUAGE</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      'Pilih bahasa yang ingin Anda gunakan untuk navigasi bot:',
+      isLangEn
+        ? 'Select the language you want to use for bot navigation:'
+        : 'Pilih bahasa yang ingin Anda gunakan untuk navigasi bot:',
       '',
-      'Bahasa saat ini: 🇮🇩 <b>Bahasa Indonesia</b>'
+      isLangEn
+        ? 'Current language: 🇬🇧 <b>English</b>'
+        : 'Bahasa saat ini: 🇮🇩 <b>Bahasa Indonesia</b>',
+      '',
+      isLangEn
+        ? '<i>Tap button below to switch:</i>'
+        : '<i>Pilih opsi di bawah untuk mengganti:</i>'
     ].join('\n');
 
     const buttons = [
-      [{ text: '🇮🇩 Bahasa Indonesia (Aktif)', callback_data: 'menu_main', style: 'primary' }],
-      [{ text: '🇬🇧 English', callback_data: 'menu_main', style: 'primary' }],
-      [{ text: '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
+      [{
+        text: isLangEn ? '🇮🇩 Switch to Bahasa Indonesia' : '🇮🇩 Bahasa Indonesia (Aktif)',
+        callback_data: 'set_lang_id',
+        style: isLangEn ? 'primary' : 'success'
+      }],
+      [{
+        text: isLangEn ? '🇬🇧 English (Active)' : '🇬🇧 Switch to English',
+        callback_data: 'set_lang_en',
+        style: isLangEn ? 'success' : 'primary'
+      }],
+      [{
+        text: isLangEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu',
+        callback_data: 'menu_main',
+        style: 'danger'
+      }]
     ];
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
     return { ok: true };
@@ -1750,7 +2072,18 @@ async function handleTelegramWebhook(body, dbData) {
 
   // 10. Menu Bantuan
   if (cbData === 'menu_help') {
-    const msgText = [
+    const msgText = isEn ? [
+      '⚠️ <b>HELP CENTER &amp; CUSTOMER SUPPORT</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      'Need assistance with your account, warranty, or QRIS payment?',
+      '',
+      '📞 <b>Official Contacts:</b>',
+      `├ <b>Admin WhatsApp  :</b> https://wa.me/${wa}`,
+      '├ <b>Operating Hours :</b> 🟢 <b>24 Hours Daily</b>',
+      '└ <b>Official Website :</b> https://pojokai.my.id',
+      '',
+      '<i>Our customer care team is ready to assist you right away.</i>'
+    ].join('\n') : [
       '⚠️ <b>PUSAT BANTUAN &amp; LAYANAN PELANGGAN</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       'Butuh bantuan terkait akun, garansi, atau pembayaran QRIS?',
@@ -1764,14 +2097,13 @@ async function handleTelegramWebhook(body, dbData) {
     ].join('\n');
 
     const buttons = [
-      [{ text: '💬 Chat WhatsApp Admin (24 Jam)', url: `https://wa.me/${wa}`, style: 'success' }],
-      [{ text: '🌐 Kunjungi Website Resmi', web_app: { url: 'https://pojokai.my.id' }, style: 'primary' }],
-      [{ text: '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
+      [{ text: isEn ? '💬 Chat Admin WhatsApp (24 Hours)' : '💬 Chat WhatsApp Admin (24 Jam)', url: `https://wa.me/${wa}`, style: 'success' }],
+      [{ text: isEn ? '🌐 Visit Official Website' : '🌐 Kunjungi Website Resmi', web_app: { url: 'https://pojokai.my.id' }, style: 'primary' }],
+      [{ text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
     ];
     await updateOrSendMessage(chatId, messageId, msgText, { inline_keyboard: buttons }, token);
     return { ok: true };
   }
-
   return { ok: true };
 }
 
