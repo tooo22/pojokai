@@ -225,6 +225,492 @@
   },
   "products": [
     {
+      "slug": "capcut-pro",
+      "name": "CapCut Pro",
+      "cat": "premium",
+      "sold": 2131,
+      "hot": true,
+      "ar": 1626,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5,0",
+        "n": 7,
+        "real": true
+      },
+      "brief": [
+        "Bisa di HP (Android/iOS) & PC",
+        "Login pakai akun dari toko",
+        "Jangan ubah email/password akun",
+        "Simpan hasil edit sebelum masa aktif habis",
+        "Dikirim otomatis setelah bayar · bergaransi selama aktif"
+      ],
+      "desc": "CapCut Pro adalah paket premium aplikasi edit video CapCut yang membuka template, efek, filter, dan transisi eksklusif, serta tambahan penyimpanan cloud untuk proyekmu. Cocok buat kamu yang rutin bikin konten TikTok, Reels, Shorts, atau video jualan dan ingin hasil lebih rapi tanpa ribet. Di sini kamu bisa beli akun CapCut Pro siap pakai yang disediakan toko.\n\nYang umumnya kamu dapat di akun CapCut Pro premium, sesuai paket dari penyedia:\n• Template, efek, filter, transisi, dan gaya teks khusus Pro\n• Ekspor video tanpa watermark dengan resolusi tinggi\n• Alat berbasis AI, misalnya teks otomatis (auto caption) dan pelacakan gerak\n• Penyimpanan cloud tambahan agar proyek bisa dibuka dari perangkat lain\n\nPilihan paket yang tersedia: 7 Hari, 1 Bulan, dan 6 Bulan. Paket 7 Hari pas untuk kebutuhan singkat seperti menyelesaikan satu proyek, sedangkan 1 Bulan dan 6 Bulan lebih nyaman untuk kamu yang mengedit video setiap minggu.\n\nCara pakai setelah beli: buka aplikasi CapCut di HP atau PC, pilih masuk, lalu login dengan detail akun yang dikirim. Ikuti juga catatan yang menyertai akun, karena di situ ada petunjuk khusus untuk akun tersebut.\n\nBeberapa tips singkat:\n• Simpan detail akun di tempat aman dan jangan dibagikan ke orang lain\n• Ekspor atau unduh hasil edit penting ke galeri sebelum masa aktif selesai\n• Kalau fitur Pro belum muncul, coba keluar lalu login ulang\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan, jadi pastikan nomor yang kamu isi aktif. Bergaransi selama masa aktif.",
+      "variants": [
+        {
+          "label": "7 Hari",
+          "price": 10000,
+          "stock": 0,
+          "ful": "auto"
+        },
+        {
+          "label": "1 Bulan",
+          "price": 25000,
+          "strike": 75000,
+          "stock": 16,
+          "ful": "auto"
+        },
+        {
+          "label": "6 Bulan",
+          "price": 200000,
+          "stock": 0,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "apple-music",
+      "name": "Apple Music",
+      "cat": "premium",
+      "sold": 11,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 7
+      },
+      "brief": [
+        "Undangan ke email (Apple Account) kamu",
+        "Bisa di iPhone, iPad, Mac & perangkat yang didukung",
+        "Isi email dengan benar saat checkout",
+        "Cek folder spam bila undangan belum masuk",
+        "Diproses admin setelah bayar"
+      ],
+      "desc": "Apple Music adalah layanan streaming musik berlangganan dari Apple untuk mendengarkan lagu tanpa iklan dan mengunduhnya agar bisa diputar offline. Pas untuk kamu yang ingin menikmati koleksi lagu dan playlist lengkap di iPhone, iPad, Mac, maupun perangkat lain yang didukung. Beli akun Apple Music premium paket 1 bulan di sini dengan pembayaran QRIS.\n\nFitur yang umumnya didapat dari langganan Apple Music:\n• Katalog lagu yang sangat luas tanpa iklan\n• Unduh lagu dan playlist untuk diputar tanpa koneksi internet\n• Audio lossless serta Spatial Audio dengan Dolby Atmos pada lagu yang mendukung\n• Lirik real-time yang berjalan mengikuti lagu\n• Rekomendasi lagu dan playlist sesuai selera dengarmu\n\nPilihan paket: 1 Bulan. Cocok untuk mencoba atau melanjutkan langganan tanpa komitmen panjang.\n\nCara pakai setelah beli: paket 1 bulan di toko ini diberikan lewat undangan (invite) ke email kamu. Saat checkout, isi email yang akan menerima undangan; setelah pembayaran QRIS terverifikasi, admin memproses pesanan, mengirim undangan ke email tersebut, dan mengabari kamu lewat WhatsApp. Buka email undangan itu, terima undangannya, lalu buka aplikasi Apple Music dengan Apple Account yang memakai email tersebut.\n\nTips aman:\n• Pastikan email yang kamu isi saat checkout sudah benar dan aktif.\n• Cek folder spam atau promosi bila undangan belum terlihat di kotak masuk.\n• Simpan pesan dari admin supaya langkahnya mudah dilihat lagi.\n\nBayar lewat QRIS, isi email saat checkout, lalu admin mengirim undangan dan mengabari kamu lewat WhatsApp.",
+      "variants": [
+        {
+          "label": "1 Bulan",
+          "price": 10000,
+          "stock": 999999,
+          "ful": "manual"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "alight-motion",
+      "name": "Alight Motion",
+      "cat": "premium",
+      "sold": 6,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 4
+      },
+      "brief": [
+        "Bisa di aplikasi Android & iOS (versi resmi)",
+        "Jangan pakai APK modifikasi",
+        "Login pakai akun dari toko",
+        "Jangan bagikan akun ke orang lain",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Alight Motion adalah aplikasi motion design untuk membuat animasi dan efek visual serta mengedit video langsung dari ponsel atau tablet. Kalau kamu sering bikin konten Reels, TikTok, lyric video, atau edit jedag-jedug, beli akun Alight Motion premium di sini supaya hasil ekspor lebih rapi tanpa tanda air.\n\nKeanggotaan berbayarnya menghapus watermark pada hasil ekspor dan membuka efek serta fitur Pro. Secara umum, di versi berbayar kamu bisa memaksimalkan:\n• Efek dan preset Pro untuk transisi, blur, glitch, dan pewarnaan\n• Animasi keyframe dengan kurva easing untuk gerakan yang halus\n• Susunan banyak layer grafis, video, dan audio dalam satu proyek\n• Ekspor video MP4, GIF, atau urutan gambar PNG sesuai kebutuhan\n\nPilihan paket: 1 Tahun. Satu kali beli, kamu bisa fokus berkarya sepanjang tahun tanpa perlu memikirkan perpanjangan bulanan.\n\nCara pakai setelah beli: untuk paket 1 tahun ini, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik setelah pembayaran QRIS terverifikasi, dan juga tampil di halaman status pesanan. Buka aplikasi Alight Motion, masuk memakai detail akun tersebut, lalu cek status keanggotaan di menu akun sebelum mulai mengedit.\n\nTips aman:\n• Simpan detail akun di catatan pribadi dan jangan bagikan ke orang lain.\n• Pastikan aplikasi sudah versi terbaru dari Play Store atau App Store, bukan APK modifikasi.\n• Simpan proyek penting secara berkala agar pekerjaan tidak hilang saat ganti perangkat.\n\nPembayaran cukup lewat QRIS, dan detail akun langsung sampai ke WhatsApp serta halaman status pesanan tanpa perlu menunggu admin.",
+      "variants": [
+        {
+          "label": "1 Tahun",
+          "price": 10000,
+          "stock": 27,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true,
+      "patungan": false
+    },
+    {
+      "slug": "hbo-max",
+      "name": "HBO Max",
+      "cat": "premium",
+      "sold": 6,
+      "mf": [
+        "Nomor WhatsApp"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 5
+      },
+      "brief": [
+        "Bisa di aplikasi & web HBO Max",
+        "Pakai profil yang ditentukan",
+        "Jangan ubah pengaturan/profil orang lain",
+        "Isi nomor WhatsApp aktif",
+        "Diproses admin setelah bayar"
+      ],
+      "desc": "HBO Max adalah layanan streaming film dan serial, termasuk tayangan orisinal HBO, dengan paket Standard dan Premium yang berbeda pada kualitas video dan jumlah perangkat yang bisa menonton bersamaan. Cocok untuk kamu yang ingin maraton serial drama, fantasi, dokumenter, sampai film layar lebar di satu tempat. Beli akun HBO Max premium di sini lewat pembayaran QRIS yang praktis.\n\nYang umumnya didapat dari langganan berbayar HBO Max:\n• Menonton tanpa iklan, sesuai paket dari penyedia\n• Katalog serial orisinal HBO, film, dan tayangan dari berbagai studio\n• Fitur unduh untuk menonton tanpa internet di aplikasi ponsel atau tablet\n• Paket Premium umumnya menawarkan kualitas gambar lebih tinggi hingga 4K dan audio Dolby Atmos untuk judul yang mendukung\n\nPilihan paket:\n• Premium, untuk kamu yang mengutamakan kualitas gambar dan lebih banyak perangkat nonton bersamaan\n• Standard, untuk kebutuhan nonton harian dengan kualitas yang tetap nyaman\n\nCara pakai setelah beli: akun untuk kedua paket ini dikirim oleh admin secara manual. Saat checkout, isi nomor WhatsApp yang aktif; setelah pembayaran QRIS terverifikasi, admin memproses pesanan dan mengirimkan akun kepadamu lewat WhatsApp. Setelah akun diterima, masuk lewat aplikasi atau situs HBO Max dan pilih profil yang sesuai.\n\nTips aman:\n• Periksa kembali nomor WhatsApp sebelum membayar agar akun tidak salah kirim.\n• Jangan mengubah pengaturan akun atau profil yang bukan milikmu.\n• Simpan pesan dari admin supaya detail akun mudah dicari lagi.\n\nPembayaran lewat QRIS, lalu admin memproses pesanan dan mengirim akun HBO Max ke WhatsApp kamu.",
+      "variants": [
+        {
+          "label": "Premium",
+          "price": 55000,
+          "stock": 999999,
+          "ful": "manual"
+        },
+        {
+          "label": "Standard",
+          "price": 20000,
+          "stock": 999999,
+          "ful": "manual"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "netflix-premium",
+      "name": "Netflix Premium",
+      "cat": "premium",
+      "sold": 142,
+      "ar": 83,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5,0",
+        "n": 1,
+        "real": true
+      },
+      "brief": [
+        "Akun sharing — dipakai bersama",
+        "Hanya pakai profil yang ditentukan",
+        "Jangan ubah password, email, atau profil",
+        "Bisa di HP, laptop, tablet & smart TV",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Netflix adalah layanan streaming berlangganan untuk menonton film, serial, dokumenter, dan anime, termasuk judul-judul orisinal Netflix. Pilihan ini cocok buat kamu yang ingin menikmati tontonan premium dengan cara lebih hemat. Kalau kamu ingin beli akun Netflix premium di sini, perlu dipahami dulu bahwa paket di toko ini berupa akun sharing selama 1 bulan, artinya satu akun Netflix dipakai bersama pengguna lain.\n\nYang umumnya bisa kamu nikmati di Netflix berbayar, sesuai paket dari penyedia:\n• Katalog film, serial, dokumenter, dan anime yang luas\n• Judul orisinal Netflix yang rutin bertambah\n• Subtitle dan audio dalam berbagai bahasa\n• Aplikasi Netflix tersedia untuk HP, laptop, tablet, maupun smart TV\n\nPaket yang tersedia: Sharing 1 Bulan. Paket ini pas untuk kamu yang ingin menamatkan serial favorit atau mengikuti rilisan terbaru selama sebulan penuh.\n\nCara pakai setelah beli: buka aplikasi atau situs Netflix, login dengan detail akun yang dikirim, lalu ikuti catatan yang menyertai akun, misalnya profil mana yang boleh kamu gunakan.\n\nKarena akun ini dipakai bersama, ada beberapa hal yang perlu dijaga:\n• Gunakan hanya profil yang ditentukan untukmu\n• Jangan ubah password, email, nama profil, atau pengaturan milik bersama\n• Keluar dari perangkat yang tidak kamu pakai lagi agar akun tetap nyaman untuk semua pengguna\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan.",
+      "variants": [
+        {
+          "label": "1 Bulan · Sharing 1P1U",
+          "price": 25000,
+          "strike": 35000,
+          "stock": 10,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "youtube",
+      "name": "YouTube",
+      "cat": "premium",
+      "sold": 167,
+      "auto": true,
+      "hot": true,
+      "ar": 138,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5,0",
+        "n": 3,
+        "real": true
+      },
+      "brief": [
+        "Bisa di aplikasi YouTube & YouTube Music",
+        "Pakai akun toko atau akun milikmu",
+        "Isi email dengan benar saat checkout",
+        "Logout-login ulang bila Premium belum muncul",
+        "Diproses admin setelah bayar"
+      ],
+      "desc": "YouTube Premium adalah langganan berbayar dari YouTube untuk kamu yang sering menonton video, mendengarkan musik, atau belajar lewat YouTube dan ingin pengalaman yang lebih nyaman. Di sini kamu bisa beli akun YouTube Premium paket 1 bulan dengan pilihan memakai akun dari toko atau akun milikmu sendiri.\n\nYang umumnya didapat di YouTube Premium, sesuai paket dari penyedia:\n• Menonton YouTube tanpa iklan sebelum maupun di tengah video\n• Memutar video di latar belakang, termasuk saat layar HP mati\n• Mengunduh video untuk ditonton offline\n• Mendengarkan musik di YouTube Music tanpa iklan\n• Fitur tambahan seperti picture-in-picture pada perangkat yang mendukung\n\nPilihan paket yang tersedia: 1 Bulan. Pesanan diproses oleh admin, jadi siapkan email yang akan kamu pakai sebelum checkout.\n\nCara pakai setelah beli: tunggu kabar dari admin lewat WhatsApp, lalu ikuti petunjuk yang diberikan sesuai akun yang dipakai. Setelah aktif, buka aplikasi YouTube atau YouTube Music, pastikan kamu masuk dengan akun yang benar, dan cek logo Premium di pojok layar.\n\nBeberapa tips aman:\n• Tulis email dengan teliti saat checkout supaya pesanan cepat diproses\n• Pastikan nomor WhatsApp yang kamu isi aktif agar kabar dari admin sampai\n• Kalau Premium belum terlihat, coba keluar lalu masuk ulang ke aplikasi\n\nPaket 1 bulan di toko ini bisa memakai akun dari toko atau akun milikmu sendiri. Saat checkout, isi email kamu; setelah pembayaran QRIS terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp.",
+      "variants": [
+        {
+          "label": "1 Bulan",
+          "price": 10000,
+          "stock": 999999,
+          "ful": "manual"
+        },
+        {
+          "label": "1 Bulan · YouTube + One",
+          "price": 50000,
+          "stock": 999999,
+          "ful": "manual",
+          "d": "Google AI Pro (Gemini Pro + penyimpanan Google One) 16 bulan"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "canva",
+      "name": "Canva",
+      "cat": "premium",
+      "sold": 126,
+      "auto": true,
+      "mf": [
+        "Email Canva"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 110
+      },
+      "brief": [
+        "Diaktifkan di akun Canva milikmu (via email)",
+        "Isi Email Canva dengan benar saat checkout",
+        "Bisa di web & aplikasi Canva",
+        "Cek folder spam bila undangan belum masuk",
+        "Diproses admin setelah bayar"
+      ],
+      "desc": "Canva adalah platform desain online untuk membuat presentasi, konten media sosial, poster, hingga video. Canva Pro cocok untuk pelajar, guru, pemilik usaha, admin media sosial, dan kreator yang ingin desain rapi dalam waktu singkat. Di toko ini kamu bisa beli Canva Pro dengan akses yang diproses untuk akun Canva milikmu, jadi desain yang sudah ada tetap di akunmu.\n\nYang umumnya didapat di Canva Pro, sesuai paket dari penyedia:\n• Template serta elemen premium, termasuk foto, video, grafis, dan font\n• Penghapus latar belakang gambar dalam satu klik\n• Brand Kit untuk menyimpan logo, warna, dan font brand\n• Ubah ukuran desain otomatis untuk berbagai format media sosial dan cetak\n• Berbagai alat AI untuk membantu membuat dan menyunting desain\n\nPilihan paket yang tersedia: 1 Bulan dan 1 Tahun. Paket 1 Bulan pas untuk kebutuhan proyek singkat, sedangkan 1 Tahun lebih praktis untuk kamu yang mendesain secara rutin.\n\nCara pakai setelah beli: pastikan kamu sudah punya akun Canva dan tahu email yang dipakai. Setelah admin mengirim akses, buka email tersebut, ikuti tautan atau petunjuk yang dikirim, lalu masuk ke Canva dengan akunmu. Fitur Pro akan terlihat di akun yang sama.\n\nBeberapa tips aman:\n• Tulis Email Canva dengan teliti saat checkout supaya akses tidak salah alamat\n• Cek juga folder spam atau promosi bila email belum terlihat\n• Unduh desain penting sebagai cadangan sebelum masa aktif selesai\n\nDi toko ini, akses Canva Pro diproses secara manual untuk akun Canva milikmu. Saat checkout, isi Email Canva kamu; setelah pembayaran QRIS terverifikasi, admin memproses pesanan, mengirim akses ke email tersebut, dan mengabari kamu lewat WhatsApp.",
+      "variants": [
+        {
+          "label": "1 Bulan",
+          "price": 10000,
+          "stock": 999999,
+          "ful": "manual"
+        },
+        {
+          "label": "1 Tahun",
+          "price": 50000,
+          "stock": 999999,
+          "ful": "manual"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "zoom-pro",
+      "name": "Zoom Pro",
+      "cat": "premium",
+      "sold": 12,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 11
+      },
+      "brief": [
+        "Bisa di aplikasi Zoom & zoom.us",
+        "Peserta tak perlu akun berbayar",
+        "Simpan rekaman sebelum masa 14 hari habis",
+        "Jangan ubah password/profil akun",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Zoom Pro adalah paket berbayar Zoom yang memungkinkan meeting online berlangsung hingga 30 jam per sesi, jauh lebih lama dari batas 40 menit pada akun gratis. Akun Zoom Pro premium cocok untuk kelas online, rapat kantor, webinar kecil, arisan, atau acara keluarga yang butuh waktu panjang tanpa harus membuat ulang link meeting setiap 40 menit. Di sini kamu bisa beli akun Zoom Pro dari toko untuk membuat meeting selama 14 hari.\n\nYang umumnya didapat di paket Pro:\n• Durasi meeting hingga 30 jam per sesi\n• Kapasitas hingga 100 peserta per meeting\n• Opsi rekam meeting, sesuai setelan akun\n• Fitur kolaborasi seperti whiteboard dan berbagi layar\n• Fitur bantuan AI di meeting, sesuai ketersediaan dan setelan akun\n\nPilihan paket: 14 hari dengan kapasitas 100 peserta per meeting.\n\nCara pakai setelah beli: masuk ke aplikasi Zoom atau zoom.us memakai detail akun yang kamu terima, buat atau jadwalkan meeting, lalu bagikan link undangan ke peserta. Peserta tidak perlu punya akun berbayar untuk ikut bergabung.\n\nTips singkat:\n• Jadwalkan meeting beberapa menit lebih awal dan uji audio serta kamera sebelum acara dimulai\n• Aktifkan ruang tunggu atau kata sandi meeting agar hanya peserta undangan yang bisa masuk\n• Bila merekam meeting, simpan file rekaman ke perangkat kamu sebelum masa 14 hari berakhir\n• Catat tanggal pembelian supaya kamu tahu kapan masa 14 hari berakhir\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan.",
+      "variants": [
+        {
+          "label": "14 Hari 100 Peserta",
+          "price": 10000,
+          "stock": 9,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "wink",
+      "name": "Wink",
+      "cat": "premium",
+      "sold": 23,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 18
+      },
+      "brief": [
+        "Bisa di aplikasi Android & iOS",
+        "Login pakai akun dari toko",
+        "Masa aktif 7 hari — siapkan video dulu",
+        "Simpan hasil ke galeri setelah ekspor",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Wink adalah aplikasi edit dan peningkat kualitas video berbasis AI dari Meitu. Akun Wink premium cocok untuk kreator konten, penjual online, atau siapa saja yang ingin video dan foto dari HP terlihat lebih tajam dan rapi tanpa perlu software edit yang rumit. Hasilnya bisa langsung kamu unggah ke media sosial atau etalase toko online. Di sini kamu bisa beli akun Wink dari toko dengan keanggotaan SVIP aktif selama 7 hari.\n\nKeanggotaan berbayarnya membuka fitur premium seperti:\n• Peningkatan kualitas video hingga 4K untuk video yang buram atau pecah\n• Model AI premium, termasuk perbaikan khusus untuk video malam dan foto lama\n• Efek dan filter eksklusif\n• Ekspor tanpa watermark\n• Alat retouch wajah dan tubuh di video, serta subtitle otomatis\n\nPilihan paket: SVIP 7 hari. Durasi ini pas untuk menyelesaikan satu proyek, misalnya mengedit video promosi produk atau merapikan kumpulan video lama sekaligus.\n\nCara pakai setelah beli: pasang aplikasi Wink dari Play Store atau App Store, masuk memakai detail akun yang kamu terima, lalu pilih video atau foto dan gunakan fitur peningkatan kualitas atau edit yang kamu butuhkan.\n\nTips singkat:\n• Siapkan dulu semua video yang ingin diproses supaya masa aktif 7 hari terpakai maksimal\n• Proses video panjang di jaringan WiFi yang stabil agar unggah dan ekspor tidak terputus\n• Simpan hasil ekspor ke galeri atau penyimpanan lain setelah selesai\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan.",
+      "variants": [
+        {
+          "label": "SVIP - 7 Hari",
+          "price": 10000,
+          "stock": 10,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "scribd-pro",
+      "name": "Scribd Pro",
+      "cat": "premium",
+      "sold": 1,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 1
+      },
+      "brief": [
+        "Bisa di web & aplikasi Android/iOS",
+        "Login pakai akun dari toko",
+        "Jangan bagikan akun ke orang lain",
+        "Jumlah unduhan mengikuti ketentuan Scribd",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Scribd adalah perpustakaan digital berisi jutaan dokumen unggahan pengguna, seperti makalah, laporan, panduan, dan materi belajar, sementara langganannya membuka fitur seperti membaca tanpa iklan dan mengunduh dokumen. Akun Scribd premium cocok untuk mahasiswa, pelajar, guru, peneliti, atau pekerja yang sering mencari referensi. Di sini kamu bisa beli akun Scribd Pro berupa akun berlangganan yang disediakan oleh toko.\n\nYang umumnya didapat di akun Scribd berlangganan, sesuai paket dari penyedia:\n• Akses baca ke koleksi dokumen yang sangat besar, termasuk materi presentasi\n• Membaca tanpa iklan di web maupun aplikasi Android dan iOS\n• Fitur mengunduh dokumen, dengan jumlah unduhan mengikuti ketentuan Scribd\n• Rekomendasi bacaan sesuai minatmu\n\nPilihan paket yang tersedia: Scribd Pro 1 Bulan. Durasi ini pas untuk menyelesaikan tugas akhir, menyusun laporan, atau mengumpulkan bahan belajar menjelang ujian.\n\nCara pakai setelah beli: buka scribd.com atau aplikasi Scribd, pilih masuk, lalu login dengan detail akun yang dikirim. Setelah itu kamu bisa langsung mencari dokumen lewat kolom pencarian dan menyimpannya ke daftar bacaan. Baca juga catatan yang menyertai akun bila ada.\n\nBeberapa tips aman:\n• Simpan detail akun di tempat aman dan jangan dibagikan ke orang lain\n• Catat judul dokumen penting, supaya mudah dicari lagi saat dibutuhkan\n• Hormati hak cipta, gunakan dokumen untuk referensi pribadi dan cantumkan sumbernya\n\nPaket Scribd Pro 1 bulan di sini berupa akun berlangganan yang disediakan oleh toko. Setelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan.",
+      "variants": [
+        {
+          "label": "1 Bulan",
+          "price": 10000,
+          "stock": 10,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "vidio",
+      "name": "Vidio",
+      "cat": "premium",
+      "baru": true,
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "HANYA di TV (Smart TV / Android TV)",
+        "Tidak bisa di HP, tablet, atau browser",
+        "Cek TV mendukung aplikasi Vidio",
+        "Jangan ubah data akun atau bagikan login",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Vidio adalah layanan streaming TV, film, serial, dan olahraga favoritmu, dengan tayangan eksklusif lokal dan internasional. Temukan pengalaman menonton yang #LebihDariHiburan di Vidio. Paket ini cocok untuk kamu yang mau beli akun Vidio premium untuk ditonton bareng keluarga di layar besar.\n\nPerlu dicatat sejak awal: akun ini hanya bisa dipakai di TV, tidak untuk HP, tablet, atau browser di laptop.\n\nSecara umum, langganan Vidio Platinum membuka akses ke:\n• Siaran olahraga pilihan, seperti liga sepak bola Eropa dan kompetisi lokal (daftar liga mengikuti hak siar Vidio saat itu)\n• Vidio Original dan serial eksklusif\n• Film dan serial lokal maupun internasional\n\nDurasinya 1 tahun, jadi cocok untuk kamu yang ingin langganan jangka panjang tanpa perlu memperpanjang tiap bulan. Pertandingan, serial, dan film favorit bisa kamu nikmati langsung dari TV di ruang keluarga.\n\nPilihan paket yang tersedia: 1 Tahun Platinum - Hanya bisa di TV.\n\nCara pakai setelah beli: pesanan diproses otomatis setelah pembayaran berhasil. Buka aplikasi Vidio di smart TV atau Android TV kamu, lalu masuk memakai data yang kamu terima.\n\nTips aman:\n• Pastikan TV kamu mendukung aplikasi Vidio sebelum membeli.\n• Jangan mencoba masuk di HP atau browser, karena paket ini khusus TV.\n• Jangan ubah data akun dan jangan bagikan data login ke orang lain.\n\nRingkasnya: paket Vidio 1 Tahun Platinum, hanya bisa di TV, dan dikirim otomatis.",
+      "variants": [
+        {
+          "label": "1 Tahun Platinum - Hanya bisa di TV",
+          "price": 50000,
+          "stock": 0,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "remini-web",
+      "name": "Remini Web",
+      "cat": "premium",
+      "sold": 3,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 2
+      },
+      "brief": [
+        "Hanya versi web (browser) — tidak di aplikasi",
+        "Berupa link redeem 7 hari",
+        "Jangan bagikan link sebelum dipakai",
+        "Unduh hasil sebelum masa 7 hari habis",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Remini Web adalah versi browser dari Remini, layanan AI untuk memperjelas dan meningkatkan kualitas foto; dengan langganan, hasilnya bisa kamu unduh tanpa watermark. Cocok untuk kamu yang ingin memperbaiki foto buram, foto lama, atau foto produk jualan tanpa aplikasi edit yang rumit. Beli akses Remini premium versi web di sini dengan pembayaran QRIS.\n\nYang umumnya bisa kamu lakukan dengan Remini Web:\n• Mempertajam foto yang buram atau kurang fokus\n• Memperbaiki detail wajah agar terlihat lebih jelas\n• Merestorasi foto lama yang pudar atau berbintik\n• Mengunduh hasil tanpa watermark selama langganan aktif\n\nPilihan paket: 7 Hari. Pas untuk kebutuhan singkat, misalnya merapikan foto keluarga, dokumentasi acara, atau katalog produk dalam satu minggu.\n\nPenting: produk ini berupa link redeem paket 7 hari yang hanya bisa dipakai di versi website, tidak di aplikasi.\n\nCara pakai setelah beli: setelah pembayaran QRIS terverifikasi, link redeem dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan. Buka link tersebut lewat browser di ponsel atau laptop, ikuti langkah redeem, lalu unggah foto yang ingin diperbaiki.\n\nTips aman:\n• Buka link redeem memakai browser, jangan lewat aplikasi Remini.\n• Jangan bagikan link redeem ke orang lain sebelum kamu memakainya.\n• Unduh semua hasil foto sebelum masa 7 hari berakhir.\n\nLink redeem langsung dikirim ke WhatsApp dan halaman status pesanan begitu QRIS terverifikasi.",
+      "variants": [
+        {
+          "label": "7 Hari",
+          "price": 10000,
+          "stock": 0,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "meitu",
+      "name": "Meitu",
+      "cat": "premium",
+      "sold": 102,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 74
+      },
+      "brief": [
+        "Bisa di aplikasi Android & iOS",
+        "Login pakai akun dari toko",
+        "Update aplikasi ke versi terbaru",
+        "Jangan ubah data/pengaturan akun",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Meitu adalah aplikasi edit foto dan video dengan fitur retouch wajah dan efek berbasis AI, sementara keanggotaan berbayarnya membuka filter, stiker, dan materi eksklusif serta fitur retouch lanjutan. Aplikasi ini banyak dipakai untuk merapikan foto selfie, foto produk, sampai konten media sosial. Di sini kamu bisa beli akun Meitu premium dari toko yang bisa dipakai di iOS maupun Android.\n\nYang umumnya terbuka di keanggotaan Meitu berbayar, sesuai paket dari penyedia:\n• Koleksi filter, stiker, riasan, dan materi khusus anggota\n• Retouch lanjutan, misalnya merapikan gigi, poni rambut, kerutan, dan area mata\n• Efek dan alat edit berbasis AI untuk foto maupun video\n• Materi dan fitur baru yang ditambahkan penyedia dari waktu ke waktu\n\nPilihan paket saat ini: 7 Hari dan 14 Hari. Durasi pendek ini pas kalau kamu sedang menyiapkan foto untuk acara tertentu, katalog produk, atau ingin mencoba fitur premium sebelum dipakai rutin.\n\nCara pakai: pasang atau perbarui aplikasi Meitu dari App Store atau Play Store, buka menu profil, lalu login dengan detail akun yang dikirim. Setelah itu cek bagian keanggotaan, dan ikuti catatan yang menyertai akun bila ada langkah tambahan.\n\nTips singkat:\n• Pastikan aplikasi sudah versi terbaru agar semua materi terbuka dengan baik\n• Simpan hasil edit ke galeri, jangan hanya disimpan di dalam aplikasi\n• Jangan ubah data atau pengaturan akun di luar petunjuk yang diberikan\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan.",
+      "variants": [
+        {
+          "label": "7 Hari",
+          "price": 10000,
+          "stock": 0,
+          "ful": "auto"
+        },
+        {
+          "label": "14 Hari",
+          "price": 20000,
+          "stock": 0,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "spotify",
+      "name": "Spotify",
+      "cat": "premium",
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Bisa di HP, PC & browser",
+        "Login pakai akun dari toko (bukan akunmu)",
+        "Keluar dulu dari akun lama sebelum login",
+        "Jangan ubah email/password/paket",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Spotify adalah layanan streaming musik dan podcast yang dipakai banyak orang untuk menemani kerja, belajar, olahraga, sampai perjalanan. Dengan akun Spotify premium, kamu bisa mendengarkan tanpa iklan, mengunduh lagu untuk diputar offline, serta memutar lagu dalam urutan apa pun. Di sini kamu bisa beli akun Spotify Premium berupa akun yang disediakan oleh toko.\n\nYang umumnya didapat di Spotify Premium, sesuai paket dari penyedia:\n• Mendengarkan musik tanpa jeda iklan\n• Mengunduh lagu dan playlist untuk diputar tanpa internet\n• Bebas memilih lagu, mengulang, memutar album sesuai urutan, dan melewati lagu sesukamu\n• Kualitas audio yang lebih tinggi dibanding versi gratis\n\nPilihan paket yang tersedia: 1 Bulan Akun Toko. Artinya kamu memakai akun Spotify yang disediakan oleh toko selama satu bulan, cocok untuk menikmati Premium tanpa ribet mengatur langganan sendiri.\n\nCara pakai setelah beli: buka aplikasi Spotify di HP, PC, atau browser, keluar dulu dari akun lama bila perlu, lalu login dengan detail akun yang dikirim. Setelah masuk, kamu bisa langsung memutar lagu atau mengunduh playlist favorit. Baca juga catatan yang menyertai akun bila ada.\n\nBeberapa tips aman:\n• Simpan detail akun di tempat aman dan jangan dibagikan ke orang lain\n• Unduh playlist saat terhubung Wi-Fi supaya kuota tetap hemat\n• Kalau fitur Premium belum muncul, coba keluar lalu login ulang\n\nPaket 1 bulan di sini memakai akun Spotify yang disediakan oleh toko. Setelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan.",
+      "variants": [
+        {
+          "label": "1 Bulan Akun Toko",
+          "price": 25000,
+          "stock": 0,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "leonardo-ai",
+      "name": "Leonardo AI",
+      "cat": "ai",
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Bisa di web & aplikasi Leonardo AI",
+        "Login pakai akun dari toko · 60K kredit",
+        "Jangan bagikan atau ubah akun",
+        "Simpan hasil sebelum masa 1 bulan habis",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Leonardo AI adalah platform AI untuk membuat dan mengedit gambar serta video dari teks atau gambar referensi, dengan paket berbayar yang memberi kuota generate lebih besar dan akses ke lebih banyak fitur. Cocok untuk desainer, kreator konten, penjual online, atau siapa pun yang butuh visual cepat. Beli akun Leonardo AI premium di sini dengan pembayaran QRIS.\n\nYang umumnya didapat di paket berbayar Leonardo AI:\n• Kuota kredit bulanan yang jauh lebih besar dibanding akun gratis\n• Akses ke lebih banyak model gambar dan video\n• Fitur tambahan sesuai paket Ultimate dari penyedia\n\nPilihan paket: Ultimate 60K Credit 1 Bulan. Di sini kamu mendapat akun paket Ultimate dengan 60K kredit untuk pemakaian 1 bulan, yang disediakan langsung oleh toko.\n\nCara pakai setelah beli: setelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan. Masuk ke situs atau aplikasi Leonardo AI memakai detail tersebut, cek sisa kredit di dasbor, lalu mulai membuat gambar atau video dari prompt.\n\nTips aman:\n• Tulis prompt yang jelas dan coba dulu dengan jumlah hasil sedikit agar kredit lebih hemat.\n• Simpan hasil penting ke perangkatmu sebelum masa pakai 1 bulan berakhir.\n• Jangan bagikan detail akun ke orang lain.\n\nDetail akun Leonardo AI dikirim otomatis ke WhatsApp dan halaman status pesanan setelah QRIS terverifikasi.",
+      "variants": [
+        {
+          "label": "Ultimate 60K Credit 1 Bulan",
+          "price": 200000,
+          "stock": 2,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
       "slug": "google-gemini",
       "name": "Google Gemini",
       "cat": "ai",
@@ -260,6 +746,187 @@
       "patungan": false
     },
     {
+      "slug": "perplexity-ai",
+      "name": "Perplexity AI",
+      "cat": "ai",
+      "baru": true,
+      "patungan": true,
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Bisa di perplexity.ai & aplikasi Android/iOS",
+        "Login pakai akun dari toko",
+        "Jangan ubah email/password akun"
+      ],
+      "desc": "Perplexity AI adalah mesin jawab berbasis AI yang mencari di web dan menyertakan sumber untuk setiap jawaban.",
+      "hidden": true
+    },
+    {
+      "slug": "claude-ai",
+      "name": "Claude AI",
+      "cat": "ai",
+      "baru": true,
+      "patungan": true,
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Bisa di claude.ai & aplikasi Android/iOS/desktop",
+        "Login pakai akun dari toko",
+        "Jangan ubah email/password akun"
+      ],
+      "desc": "Claude adalah asisten AI dari Anthropic untuk menulis, merangkum, analisis dokumen, dan coding.",
+      "hidden": true
+    },
+    {
+      "slug": "chatgpt",
+      "name": "ChatGPT",
+      "cat": "ai",
+      "sold": 21,
+      "auto": true,
+      "baru": true,
+      "noWarranty": true,
+      "patungan": true,
+      "mf": [
+        "Email Aktif GPT"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 11
+      },
+      "brief": [
+        "TANPA GARANSI",
+        "Berupa invite ke workspace (setara Plus)",
+        "Bisa di web & aplikasi ChatGPT",
+        "Jangan simpan data penting/rahasia",
+        "Diproses admin setelah bayar"
+      ],
+      "desc": "ChatGPT adalah asisten AI untuk menulis, merangkum, menerjemahkan, belajar, sampai membantu pekerjaan harian. Paket ini cocok untuk kamu yang ingin mencoba ChatGPT versi berbayar selama sebulan dengan cara yang praktis. Kalau kamu mau beli akun ChatGPT premium, baca dulu keterangan di bawah sampai selesai.\n\nYang perlu kamu tahu sejak awal: paket ini tidak ada garansi.\n\nBentuknya berupa undangan (invite) ke akun/workspace untuk durasi 1 bulan. Paketnya sama kayak Plus Private, jadi fitur yang kamu dapat mengikuti fitur paket Plus yang berlaku di ChatGPT saat itu, misalnya akses model yang lebih baru dan batas pemakaian yang lebih longgar dibanding versi gratis.\n\nContoh pemakaian sehari-hari:\n• Menyusun email, caption, atau laporan kerja\n• Merangkum materi kuliah atau dokumen panjang\n• Brainstorming ide usaha dan konten\n• Membantu belajar bahasa atau menjelaskan konsep yang sulit\n\nPilihan paket yang tersedia: Invite 1 Bulan - No Garansi.\n\nCara pakai setelah beli: pesanan diproses manual oleh admin, yang akan mengabari langkah selanjutnya lewat WhatsApp. Ikuti petunjuk admin untuk bergabung ke workspace tersebut.\n\nTips aman:\n• Pastikan email yang kamu pakai benar dan aktif.\n• Jangan simpan data penting atau rahasia di workspace ini, karena paket tidak bergaransi.\n• Salin atau ekspor hasil kerja penting ke tempat lain secara berkala.\n\nSekali lagi, tidak ada garansi untuk paket ini. Durasi 1 bulan, berupa invite, dan diproses admin. Paketnya sama kayak Plus Private.",
+      "variants": [
+        {
+          "label": "1 Bulan · Invite",
+          "price": 75000,
+          "stock": 0,
+          "ful": "manual",
+          "d": "No Garansi"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "clico-ai",
+      "name": "Clico AI",
+      "cat": "ai",
+      "patungan": true,
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Bisa di web, ekstensi Chrome & aplikasi Mac",
+        "Isi email aktif saat checkout",
+        "Jangan bagikan data login",
+        "Diproses admin setelah bayar"
+      ],
+      "desc": "Clico AI adalah studio AI yang menggabungkan riset web mendalam (deep research), penulisan, serta pembuatan gambar dan video dalam satu tempat, dan bisa dipakai lewat web, ekstensi Chrome, maupun aplikasi Mac. Cocok untuk kamu yang sering menulis, riset, atau membuat konten visual. Kalau kamu ingin beli akun Clico AI premium tanpa ribet, paket di sini bisa jadi pilihan.\n\nPaket berbayarnya memberi kredit bulanan lebih banyak dan akses ke lebih banyak model AI. Secara umum Clico bisa dipakai untuk:\n• Riset mendalam dan ngobrol dengan beberapa model AI\n• Menulis draf lalu mengetiknya langsung ke kolom teks di browser\n• Membaca file seperti PDF, DOCX, PPTX, dan XLSX\n• Membuat dan mengedit gambar, serta mengubah gambar jadi video\n\nPilihan paket yang tersedia: 1 Bulan.\n\nCara pakai setelah beli: isi email kamu saat checkout, lalu bayar lewat QRIS. Setelah pembayaran terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp. Setelah itu masuk ke Clico lewat web, ekstensi Chrome, atau aplikasi Mac sesuai kebutuhan.\n\nTips aman:\n• Pastikan email yang kamu isi aktif dan bisa kamu buka.\n• Pantau sisa kredit di dasbor agar pemakaian tetap terkontrol.\n• Jangan bagikan data login ke orang lain.\n\nUntuk paket 1 bulan ini, isi email kamu saat checkout; setelah pembayaran QRIS terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp.",
+      "hidden": true
+    },
+    {
+      "slug": "creaa-ai",
+      "name": "Creaa AI",
+      "cat": "ai",
+      "sold": 1,
+      "patungan": true,
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Bisa di web Creaa AI",
+        "Isi email aktif saat checkout",
+        "Tiap generate memakai kredit",
+        "Jangan bagikan data login",
+        "Diproses admin setelah bayar"
+      ],
+      "desc": "Creaa AI adalah platform AI untuk membuat video dan gambar dari teks maupun gambar referensi. Cocok untuk kreator konten, pelaku UMKM, atau siapa pun yang butuh visual cepat. Kalau kamu mencari akun Creaa AI premium, paket Reguler ini bisa jadi pilihan.\n\nPaket berbayarnya memberi kredit bulanan untuk generate, dengan hasil tanpa watermark. Secara umum Creaa bisa dipakai untuk:\n• Text-to-video: menulis deskripsi lalu jadi video\n• Image-to-video: menghidupkan gambar referensi jadi video\n• Membuat gambar AI dari teks\n• Memilih beberapa model AI video dan gambar yang tersedia di platform\n\nPilihan paket yang tersedia: Reguler.\n\nCara pakai setelah beli: isi email kamu saat checkout, lalu bayar lewat QRIS. Setelah pembayaran terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp. Setelah itu masuk ke Creaa dan mulai generate dari menu video atau gambar.\n\nTips aman:\n• Tiap generate memakai kredit, jadi uji prompt singkat dulu sebelum membuat video panjang.\n• Simpan hasil yang kamu suka ke perangkat sendiri.\n• Jangan bagikan data login ke orang lain.\n\nUntuk paket Reguler ini, isi email kamu saat checkout; setelah pembayaran QRIS terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp.",
+      "hidden": true
+    },
+    {
+      "slug": "higgsfield-plus",
+      "name": "Higgsfield Plus",
+      "cat": "ai",
+      "sold": 4,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 4
+      },
+      "brief": [
+        "Bisa di web higgsfield.ai (browser)",
+        "Login pakai akun dari toko",
+        "Unduh hasil sebelum masa 7 hari habis",
+        "Jangan bagikan atau ubah akun",
+        "Dikirim otomatis setelah bayar"
+      ],
+      "desc": "Higgsfield adalah platform kreatif berbasis AI untuk membuat gambar, video, dan suara dari teks atau referensi, dengan banyak model AI dalam satu tempat. Paket Plus adalah langganan berbayarnya yang memberi kredit untuk membuat konten dengan model-model tersebut. Akun Higgsfield premium ini cocok untuk kreator konten, desainer, dan pemasar yang ingin mencoba video AI tanpa berlangganan sendiri.\n\nYang umumnya didapat di paket Plus, sesuai paket dari penyedia:\n• Kredit untuk membuat gambar dan video dengan berbagai model AI\n• Akses ke kumpulan model gambar dan video populer dalam satu dasbor\n• Pembuatan konten dari teks maupun dari gambar referensi\n\nPilihan paket yang tersedia: Paket Plus 7 Hari. Masa pakai singkat ini pas untuk menyelesaikan satu kampanye, membuat konten jualan, atau sekadar mencoba kemampuan Higgsfield sebelum berlangganan sendiri.\n\nCara pakai setelah beli: buka higgsfield.ai di browser, pilih masuk, lalu login dengan detail akun yang dikirim. Pilih jenis konten, masukkan teks perintah atau unggah gambar referensi, lalu buat hasilnya. Baca juga catatan yang menyertai akun bila ada.\n\nBeberapa tips aman:\n• Simpan detail akun di tempat aman dan jangan dibagikan ke orang lain\n• Unduh hasil gambar dan video penting sebelum masa 7 hari selesai\n• Rencanakan perintah dulu agar kredit terpakai untuk hasil yang benar-benar kamu butuhkan\n\nDi sini, Higgsfield Plus berupa akun paket Plus yang disediakan toko dengan masa pakai 7 hari. Setelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan.",
+      "variants": [
+        {
+          "label": "Paket Plus 7 Hari",
+          "price": 50000,
+          "stock": 0,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "grok-ai",
+      "name": "Grok AI",
+      "cat": "ai",
+      "sold": 513,
+      "patungan": true,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 292
+      },
+      "brief": [
+        "Bisa di grok.com & aplikasi Android/iOS",
+        "Login pakai akun dari toko",
+        "Jangan ubah pengaturan/password akun",
+        "Jangan masukkan data pribadi sensitif",
+        "Dikirim otomatis setelah bayar · bergaransi selama aktif"
+      ],
+      "desc": "Grok AI adalah asisten AI untuk chat, riset, serta pembuatan gambar dan video; paket SuperGrok menaikkan batas pemakaian dan membuka lebih banyak fitur dibanding akun gratis. Asisten ini berguna untuk pelajar, penulis konten, pemilik usaha, sampai programmer yang butuh teman diskusi cepat. Di sini kamu bisa beli akun Grok AI premium berupa akun SuperGrok yang disediakan toko, dengan beberapa pilihan durasi.\n\nDengan SuperGrok, umumnya kamu mendapat hal berikut, sesuai paket dari penyedia:\n• Batas chat yang lebih longgar dibanding akun gratis\n• Akses ke model Grok yang lebih baru untuk jawaban yang lebih mendalam\n• Pembuatan gambar dan video lewat fitur Imagine\n• Pencarian web dan X secara real-time untuk topik yang sedang ramai\n• Bisa dipakai di web maupun aplikasi iOS dan Android\n\nDurasi yang bisa kamu pilih: 7 Hari, 1 Bulan, 3 Bulan, dan 1 Tahun. Paket 7 Hari cocok untuk mencoba atau mengejar tenggat, sementara paket yang lebih panjang lebih praktis kalau Grok sudah jadi alat kerja harian.\n\nSetelah akun diterima, buka grok.com atau aplikasi Grok, lalu login dengan detail akun yang dikirim. Baca juga catatan yang menyertai akun sebelum mulai memakai.\n\nTips supaya pemakaian lancar:\n• Salin dan simpan hasil chat atau gambar penting di perangkatmu sendiri\n• Hindari memasukkan data pribadi sensitif ke dalam percakapan\n• Jangan ubah pengaturan akun di luar yang dijelaskan pada catatan\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan. Bergaransi selama masa aktif.",
+      "hidden": true
+    },
+    {
+      "slug": "venice-ai",
+      "name": "Venice AI",
+      "cat": "ai",
+      "sold": 31,
+      "patungan": true,
+      "mf": [
+        "Email"
+      ],
+      "rating": {
+        "v": "5",
+        "n": 26
+      },
+      "brief": [
+        "Bisa di web venice.ai & aplikasinya",
+        "Login pakai akun dari toko",
+        "Riwayat chat tersimpan di perangkat — pakai perangkat yang sama",
+        "Jangan ubah password akun",
+        "Dikirim otomatis setelah bayar · bergaransi full"
+      ],
+      "desc": "Venice AI adalah platform AI yang berfokus pada privasi untuk chat serta pembuatan gambar dan video, dengan pembatasan konten yang lebih longgar dibanding banyak layanan AI lain. Akun Venice AI premium cocok untuk kamu yang ingin memakai AI untuk menulis, riset, brainstorming, atau membuat visual, dengan fokus privasi (menurut Venice, riwayat percakapan disimpan di perangkatmu, bukan di server mereka). Di sini kamu bisa beli akun Venice AI berbayar yang disediakan toko.\n\nPaket berbayarnya membuka lebih banyak model dan fitur dengan batas pemakaian lebih tinggi. Yang umumnya didapat di versi Pro:\n• Akses model Pro dan model lanjutan, tidak hanya model dasar\n• Batas chat jauh lebih longgar dibanding akun gratis\n• Pencarian web, unggah dokumen, dan analisis gambar\n• Pembuatan gambar dengan kuota lebih besar, plus alat edit seperti upscale dan hapus latar\n• Pembuatan video dan musik memakai kredit\n\nPilihan paket: 1 bulan.\n\nCara pakai setelah beli: buka venice.ai lewat browser atau aplikasinya, masuk dengan detail akun yang kamu terima, lalu pilih model yang sesuai kebutuhan di menu pemilihan model.\n\nTips singkat:\n• Pakai model yang lebih ringan untuk tugas sederhana agar kuota fitur berbasis kredit tetap awet\n• Untuk gambar, jelaskan gaya, warna, pencahayaan, dan komposisi secara rinci di prompt agar hasilnya lebih sesuai\n• Riwayat chat Venice umumnya tersimpan di browser, jadi pakai perangkat yang sama bila ingin melanjutkan percakapan\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan. Bergaransi full.",
+      "hidden": true
+    },
+    {
       "slug": "google-mail",
       "name": "Google Mail",
       "cat": "lainnya",
@@ -288,6 +955,56 @@
       ],
       "hidden": false,
       "patungan": false
+    },
+    {
+      "slug": "hma-vpn",
+      "name": "HMA VPN",
+      "cat": "lainnya",
+      "baru": true,
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Akses berupa Redeem Code",
+        "Bisa di Android, iOS, Windows & Mac",
+        "Login pakai akun dari toko",
+        "Max Login 10 Perangkat"
+      ],
+      "desc": "HMA VPN (Hide My Ass!) adalah layanan VPN untuk menyembunyikan alamat IP dan mengamankan koneksi internet, dengan server di banyak negara.",
+      "variants": [
+        {
+          "label": "1 Bulan",
+          "price": 10000,
+          "stock": 10,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "surfshark-vpn",
+      "name": "Surfshark VPN",
+      "cat": "lainnya",
+      "sold": 1,
+      "baru": true,
+      "mf": [
+        "Email"
+      ],
+      "brief": [
+        "Bisa di Android, iOS, Windows, Mac & browser",
+        "Login pakai akun dari toko",
+        "Jangan ubah email/password akun"
+      ],
+      "desc": "Surfshark VPN adalah layanan VPN untuk privasi dan keamanan internet, bisa dipakai di banyak perangkat sekaligus dalam satu akun.",
+      "variants": [
+        {
+          "label": "7 Hari",
+          "price": 10000,
+          "stock": 4,
+          "ful": "auto"
+        }
+      ],
+      "hidden": true
     }
   ],
   "owners": [

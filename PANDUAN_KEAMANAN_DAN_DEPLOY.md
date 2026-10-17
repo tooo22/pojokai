@@ -62,3 +62,24 @@ Skrip ini akan otomatis melakukan build katalog statis dan mempublikasikannya ke
    * Aktifkan **Always Use HTTPS** (`ON`).
    * Aktifkan **HTTP Strict Transport Security (HSTS)** (`ON`).
    * Pastikan **Minimum TLS Version** diset ke `TLS 1.2` atau `TLS 1.3`.
+
+---
+
+## 5. Keamanan & Konfigurasi Bot Telegram (`pojokkai_bot`)
+
+Bot Telegram terintegrasi penuh dengan sistem validasi keamanan:
+1. **Proteksi Anti-IDOR**: Fitur cek pesanan (`/start` -> Cek Pesanan) memverifikasi bahwa pengirim pesan Telegram adalah pemilik sah pesanan tersebut. Pengguna lain tidak dapat melihat kredensial atau membatalkan pesanan orang lain.
+2. **Webhook Secret Token**: Endpoint `/api/webhook/telegram` mewajibkan header `X-Telegram-Bot-Api-Secret-Token` yang diverifikasi dengan perbandingan constant-time (`crypto.timingSafeEqual`).
+3. **Daftarkan Webhook ke Telegram**:
+   Gunakan curl atau browser untuk mendaftarkan URL webhook beserta secret token:
+   ```bash
+   curl -X POST "https://api.telegram.org/bot<TOKEN_BOT_ANDA>/setWebhook" \
+        -H "Content-Type: application/json" \
+        -d '{"url": "https://pojok.my.id/api/webhook/telegram", "secret_token": "7480d740b840866fb09d37d625424cfed579374d146538ec291d1190da01ddd5"}'
+   ```
+4. **Sinkronisasi Menu Perintah Bot**:
+   Setelah mendaftarkan token, panggil endpoint sinkronisasi perintah resmi:
+   ```bash
+   curl -X POST "https://pojok.my.id/api/telegram/sync-commands" \
+        -H "X-Telegram-Bot-Api-Secret-Token: 7480d740b840866fb09d37d625424cfed579374d146538ec291d1190da01ddd5"
+   ```

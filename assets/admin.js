@@ -413,24 +413,8 @@ document.addEventListener('click', (e) => { if (e.target.closest('[data-aclose]'
 
 async function reload() {
   catalog = await api('GET', '/api/catalog');
-  // Sinkronisasi produk lokal hanya jika owner terotentikasi
-  if (token && owner) {
+  if (token && owner && catalog?.products) {
     try {
-      const raw = localStorage.getItem('wk:custom_products');
-      if (raw) {
-        const savedProducts = JSON.parse(raw);
-        if (Array.isArray(savedProducts) && savedProducts.length) {
-          const serverSlugs = new Set((catalog.products || []).map((x) => x.slug));
-          for (const sp of savedProducts) {
-            if (!serverSlugs.has(sp.slug)) {
-              catalog.products.push(sp);
-              api('POST', '/api/products', sp).then(() => {
-                toast(`Produk "${sp.name}" berhasil disinkronkan ke cloud!`);
-              }).catch(() => {});
-            }
-          }
-        }
-      }
       localStorage.setItem('wk:custom_products', JSON.stringify(catalog.products));
     } catch {}
   }
@@ -800,31 +784,104 @@ const flash = (row) => {
 async function patch(slug, body, okMsg, done) {
   try {
     const { product } = await api('PATCH', '/api/products/' + slug, body);
-    Object.assign(bySlug(slug), product);
+    const p = bySlug(slug);
+    if (p) Object.assign(p, product);
+    if (catalog?.products) {
+      localStorage.setItem('wk:custom_products', JSON.stringify(catalog.products));
+    }
     if (done) done();
     await window.wk?.refresh();
     toast(okMsg || 'Tersimpan.');
   } catch (e) {
+    if (e.status === 404 || e.message?.toLowerCase().includes('tidak ditemukan')) {
+      catalog.products = (catalog.products || []).filter((x) => x.slug !== slug);
+      localStorage.setItem('wk:custom_products', JSON.stringify(catalog.products));
+      await window.wk?.refresh();
+      render();
+      return toast('Produk sudah tidak ada di server, dihapus dari daftar.', 'err');
+    }
     toast(e.message, 'err');
     await reload();
   }
 }
 
-$('#aProducts').addEventListener('change', (e) => {
-  const input = e.target.closest('[data-k]');
+const inputDebounceTimers = new Map();
+
+function saveFieldInput(input) {
   if (!input) return;
   const row = input.closest('[data-row]');
-  const slug = input.closest('[data-slug]').dataset.slug;
+  const card = input.closest('[data-slug]');
+  if (!row || !card) return;
+  const slug = card.dataset.slug;
   const vi = Number(row.dataset.row);
   const k = input.dataset.k;
+  if (!k) return;
+
   if (k === 'unlim') {
     return patch(slug, { vi, stock: input.checked ? UNLIM : 0 },
       input.checked ? 'Stok jadi tak terbatas.' : 'Stok tak terbatas dimatikan.', () => repaint(slug));
   }
+
   const value = k === 'label' || k === 'ful' ? input.value : Number(input.value);
   if (k !== 'label' && k !== 'ful' && (!Number.isFinite(value) || value < 0)) return toast('Angka tidak valid.', 'err');
-  const nama = { price: 'Harga', stock: 'Stok', strike: 'Harga coret', label: 'Nama paket', ful: 'Pengiriman' }[k];
-  patch(slug, { vi, [k]: value }, `${nama} tersimpan.`, () => { flash(row); syncHead(bySlug(slug)); });
+
+  // Skip jika nilai belum berubah dari catalog
+  const p = bySlug(slug);
+  const v = p?.variants?.[vi];
+  if (v && v[k] === value) return;
+
+  const nama = { price: 'Harga', stock: 'Stok', strike: 'Harga coret', label: 'Nama paket', ful: 'Pengiriman' }[k] || 'Perubahan';
+  patch(slug, { vi, [k]: value }, `${nama} tersimpan.`, () => {
+    flash(row);
+    syncHead(bySlug(slug));
+  });
+}
+
+function handleFieldInputDebounced(input, delay = 500) {
+  if (!input) return;
+  const k = input.dataset.k;
+  if (k === 'unlim' || k === 'ful') {
+    return saveFieldInput(input);
+  }
+  if (inputDebounceTimers.has(input)) {
+    clearTimeout(inputDebounceTimers.get(input));
+  }
+  const timer = setTimeout(() => {
+    inputDebounceTimers.delete(input);
+    saveFieldInput(input);
+  }, delay);
+  inputDebounceTimers.set(input, timer);
+}
+
+$('#aProducts').addEventListener('input', (e) => {
+  const input = e.target.closest('[data-k]');
+  if (!input) return;
+  handleFieldInputDebounced(input, 500);
+});
+
+$('#aProducts').addEventListener('change', (e) => {
+  const input = e.target.closest('[data-k]');
+  if (!input) return;
+  if (inputDebounceTimers.has(input)) {
+    clearTimeout(inputDebounceTimers.get(input));
+    inputDebounceTimers.delete(input);
+  }
+  saveFieldInput(input);
+});
+
+$('#aProducts').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const input = e.target.closest('[data-k]');
+    if (input) {
+      e.preventDefault();
+      if (inputDebounceTimers.has(input)) {
+        clearTimeout(inputDebounceTimers.get(input));
+        inputDebounceTimers.delete(input);
+      }
+      saveFieldInput(input);
+      input.blur();
+    }
+  }
 });
 
 $('#aProducts').addEventListener('click', async (e) => {
@@ -857,14 +914,20 @@ $('#aProducts').addEventListener('click', async (e) => {
   }
 
   if (a === 'delete-confirm') {
-    await api('DELETE', '/api/products/' + p.slug, {});
+    try {
+      await api('DELETE', '/api/products/' + p.slug, {});
+    } catch (err) {
+      if (err.status !== 404 && !err.message?.toLowerCase().includes('tidak ditemukan')) {
+        return toast(err.message, 'err');
+      }
+    }
     catalog.products = catalog.products.filter((x) => x.slug !== p.slug);
     localStorage.setItem('wk:custom_products', JSON.stringify(catalog.products));
     armed.delete(p.slug);
     open.delete(p.slug);
     await window.wk?.refresh();
     render();
-    return toast(`"${p.name}" dihapus permanen.`);
+    return toast(`"${p.name}" dihapus.`);
   }
 
   if (a === 'add-variant') {

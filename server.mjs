@@ -112,7 +112,11 @@ async function getDbFromBlob() {
     const { get } = await import('@vercel/blob');
     for (const acc of ['private', 'public']) {
       try {
-        const res = await get('data/db.json', { access: acc, useCache: false });
+        const res = await get('data/db.json', {
+          access: acc,
+          useCache: false,
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
         if (res && res.stream) {
           blobAccess = acc;
           const text = await new Response(res.stream).text();
@@ -143,9 +147,9 @@ async function saveDbToBlob(dbData) {
   }
 }
 
-async function syncFromCloudIfNeeded() {
+async function syncFromCloudIfNeeded(force = false) {
   if (!process.env.BLOB_READ_WRITE_TOKEN && !process.env.KV_REST_API_URL) return;
-  if (Date.now() - lastCloudSync < 5000) return;
+  if (!force && Date.now() - lastCloudSync < 1000) return;
   lastCloudSync = Date.now();
   const blobDb = await getDbFromBlob();
   if (blobDb && Array.isArray(blobDb.products)) {
@@ -2143,7 +2147,8 @@ async function api(req, res, url) {
   const method = req.method;
 
   if (method === 'GET' && (p === '/api/catalog' || p === '/api/catalog.json')) {
-    await syncFromCloudIfNeeded();
+    const shouldForce = Boolean(ownerOf(req) || req.headers['cache-control']?.includes('no-store'));
+    await syncFromCloudIfNeeded(shouldForce);
     return send(res, 200, catalogFor(req));
   }
 

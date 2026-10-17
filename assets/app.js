@@ -89,28 +89,26 @@ let WA_ADMIN, CATEGORIES, PRODUCTS, HERO_SLIDES, FAQS, TICKER, BUNDLE;
 
 async function loadCatalog() {
   let res;
+  const tok = localStorage.getItem('wk:owner:token') || localStorage.getItem('wk_token');
+  const headers = tok ? { Authorization: 'Bearer ' + tok } : {};
   try {
-    res = await fetch('/api/catalog', { cache: 'no-store' });
+    res = await fetch('/api/catalog', { cache: 'no-store', headers });
   } catch (e) {
     // network or host error, will try static fallback below
   }
   if (!res || !res.ok) {
-    res = await fetch('/api/catalog.json', { cache: 'no-store' });
+    res = await fetch('/api/catalog.json', { cache: 'no-store', headers });
   }
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const c = await res.json();
-  // Sinkronisasi produk kustom tersimpan agar produk baru tidak hilang
   try {
     const raw = localStorage.getItem('wk:custom_products');
     if (raw) {
+      const serverSlugs = new Set((c.products || []).map((x) => x.slug));
       const savedProducts = JSON.parse(raw);
-      if (Array.isArray(savedProducts) && savedProducts.length) {
-        const serverSlugs = new Set((c.products || []).map((x) => x.slug));
-        for (const sp of savedProducts) {
-          if (!serverSlugs.has(sp.slug)) {
-            c.products.push(sp);
-          }
-        }
+      if (Array.isArray(savedProducts) && serverSlugs.size > 0) {
+        const cleaned = savedProducts.filter((p) => serverSlugs.has(p.slug));
+        localStorage.setItem('wk:custom_products', JSON.stringify(cleaned));
       }
     }
   } catch {}
@@ -970,6 +968,8 @@ function closeModal() {
   paymentTimerInterval = null;
   clearInterval(paymentPollInterval);
   paymentPollInterval = null;
+  paymentSuccessHandled = false;
+  isPaymentPollingBusy = false;
   const modal = $('#modal');
   if (modal) {
     modal.classList.add('hidden');
@@ -1604,6 +1604,8 @@ function paymentDialogHTML(order) {
 
 let paymentPollInterval = null;
 let paymentTimerInterval = null;
+let isPaymentPollingBusy = false;
+let paymentSuccessHandled = false;
 
 function startPaymentTimer(order) {
   clearInterval(paymentTimerInterval);
@@ -1742,13 +1744,21 @@ async function requestDynamicQris(order) {
 
 function startPaymentPolling(order, reference) {
   clearInterval(paymentPollInterval);
+  isPaymentPollingBusy = false;
   
   const checkStatusNow = async () => {
+    if (paymentSuccessHandled) {
+      clearInterval(paymentPollInterval);
+      paymentPollInterval = null;
+      return;
+    }
     if (currentModalView !== 'payment' || !activePaymentOrder || activePaymentOrder.code !== order.code) {
       clearInterval(paymentPollInterval);
       paymentPollInterval = null;
       return;
     }
+    if (isPaymentPollingBusy) return;
+    isPaymentPollingBusy = true;
     
     try {
       const res = await fetch(`/api/qris/status?order_id=${encodeURIComponent(order.code)}&reference=${encodeURIComponent(reference || '')}`);
@@ -1760,30 +1770,42 @@ function startPaymentPolling(order, reference) {
         onPaymentSuccess(order);
       }
     } catch {}
+    finally {
+      isPaymentPollingBusy = false;
+    }
   };
 
-  // Check immediately after 600ms, then turbo-poll every 1200ms!
-  setTimeout(checkStatusNow, 600);
-  paymentPollInterval = setInterval(checkStatusNow, 1200);
+  // Check immediately after 800ms, then poll every 1500ms
+  setTimeout(checkStatusNow, 800);
+  paymentPollInterval = setInterval(checkStatusNow, 1500);
 }
 
 function playSuccessChime() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [523.25, 659.25, 783.99, 1046.50];
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.08);
-      gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + i * 0.08 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.45);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + i * 0.08);
-      osc.stop(ctx.currentTime + i * 0.08 + 0.5);
-    });
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+
+    // Suara notifikasi pembayaran 1x jernih ("ting" lonceng manis tanpa nada ganda berulang)
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1046.50, now); // C6 bell tone
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.2, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.55);
+
+    setTimeout(() => {
+      try { ctx.close(); } catch {}
+    }, 600);
   } catch {}
 }
 
@@ -1851,6 +1873,9 @@ function launchSuccessConfetti() {
 }
 
 function onPaymentSuccess(order) {
+  if (paymentSuccessHandled) return;
+  paymentSuccessHandled = true;
+
   clearInterval(paymentTimerInterval);
   paymentTimerInterval = null;
   clearInterval(paymentPollInterval);
@@ -1860,21 +1885,10 @@ function onPaymentSuccess(order) {
   saveOrderLocal(order);
 
   playSuccessChime();
-
   launchSuccessConfetti();
-  const box = $('#dialog');
-  if (!box) return openPaymentSuccessModal(order);
 
-  // Smooth morph transition animation
-  box.style.transition = 'transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease';
-  box.style.transform = 'scale(0.92)';
-  box.style.opacity = '0';
-
-  setTimeout(() => {
-    openPaymentSuccessModal(order);
-    box.style.transform = 'scale(1)';
-    box.style.opacity = '1';
-  }, 220);
+  // Langsung tampilkan popup transaksi berhasil tanpa delay/kedip
+  openPaymentSuccessModal(order);
 }
 
 function openPaymentSuccessModal(order) {
@@ -1889,6 +1903,9 @@ function openPaymentSuccessModal(order) {
   const box = $('#dialog');
   if (!box) return;
 
+  box.style.transition = '';
+  box.style.transform = '';
+  box.style.opacity = '';
   currentModalView = 'success';
 
   const buyerName = esc(order.buyer?.name || 'Kak');
@@ -1970,10 +1987,15 @@ function openPaymentSuccessModal(order) {
 
 
 function openPaymentModal(order) {
+  paymentSuccessHandled = false;
+  isPaymentPollingBusy = false;
   currentModalView = 'payment';
   activePaymentOrder = order;
   const box = $('#dialog');
   if (!box) return;
+  box.style.transition = '';
+  box.style.transform = '';
+  box.style.opacity = '';
   box.innerHTML = paymentDialogHTML(order);
   icons();
   $('#modal').classList.replace('hidden', 'flex');
@@ -2341,6 +2363,7 @@ document.addEventListener('click', (e) => {
     return closeModal();
   }
   if (e.target.closest('#btnManualCheckStatus')) {
+    if (paymentSuccessHandled) return;
     const btn = e.target.closest('#btnManualCheckStatus');
     const icon = btn.querySelector('i');
     if (icon) icon.classList.add('animate-spin');

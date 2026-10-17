@@ -1,0 +1,11 @@
+{
+  "name": "pojokai-security-worker",
+  "version": "1.0.0",
+  "description": "PojokAI Watchdog 24/7 Cloud Worker on Hugging Face",
+  "type": "module",
+  "main": "worker.mjs",
+  "scripts": {
+    "start": "node worker.mjs"
+  },
+  "dependencies": {}
+}

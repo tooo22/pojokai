@@ -20,7 +20,7 @@ try {
 } catch {}
 let dbCache = null;
 let dbCacheTime = 0;
-const DB_CACHE_TTL = 5000;
+const DB_CACHE_TTL = 1000;
 
 function getDbFilePath() {
   const tmpDb = '/tmp/db.json';
@@ -38,7 +38,11 @@ async function getDbFromBlob() {
     const { get } = await import('@vercel/blob');
     for (const acc of ['private', 'public']) {
       try {
-        const res = await get('data/db.json', { access: acc, useCache: false });
+        const res = await get('data/db.json', {
+          access: acc,
+          useCache: false,
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
         if (res && res.stream) {
           blobAccess = acc;
           const text = await new Response(res.stream).text();
@@ -2107,7 +2111,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const db = await getDb();
+    const shouldBypassCache = Boolean(
+      bearer(req) ||
+      getHeader(req, 'cache-control')?.includes('no-store') ||
+      getHeader(req, 'cache-control')?.includes('no-cache') ||
+      getHeader(req, 'pragma') === 'no-cache' ||
+      (method !== 'GET' && method !== 'HEAD')
+    );
+    const db = await getDb(shouldBypassCache);
 
     // 1. Catalog
     if (method === 'GET' && (pathname === '/api/catalog' || pathname === '/api/catalog.json' || pathname === '/api')) {
