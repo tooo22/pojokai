@@ -1,0 +1,14 @@
+name: PojokAI 5-Minute Watchdog Trigger
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-watchdog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger PojokAI Watchdog Audit
+        run: |
+          curl -s -f "https://pojokai.my.id/api/cron/monitor" || echo "Ping dispatched"

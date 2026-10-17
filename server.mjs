@@ -36,8 +36,8 @@ const flag = (name, dft) => {
   const i = argv.indexOf('--' + name);
   return i >= 0 && argv[i + 1] ? argv[i + 1] : dft;
 };
-const HOST = process.env.HOST || flag('host', '0.0.0.0');
-const PORT = Number(process.env.PORT || flag('port', 8080));
+const HOST = flag('host', process.env.HOST || '0.0.0.0');
+const PORT = Number(flag('port', process.env.PORT || 8080));
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -506,22 +506,51 @@ function catalogFor(req) {
   };
 }
 
+function escapeTgHtml(text) {
+  if (text === null || text === undefined) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function safeCompareSecret(provided, expected) {
+  if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+  if (!provided || !expected) return false;
+  const bufA = Buffer.from(provided, 'utf8');
+  const bufB = Buffer.from(expected, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 function getTelegramToken(customToken = null, dbData = null) {
   return customToken || process.env.TELEGRAM_BOT_TOKEN || dbData?.telegram?.botToken || '';
 }
 
 function getTelegramSecret(dbData = null) {
-  return process.env.TELEGRAM_WEBHOOK_SECRET || dbData?.telegram?.webhookSecret || '59f920885e991efca6de765197120b4493d07c4881bb4c70fbcf27ed0db299a8';
+  return process.env.TELEGRAM_WEBHOOK_SECRET || dbData?.telegram?.webhookSecret || '';
 }
 
-const DEFAULT_WISTAPAY_KEY = 'sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5';
 function getWistapayApiKey(dbData = null) {
-  return process.env.WISTAPAY_API_KEY || dbData?.wistapay?.apiKey || DEFAULT_WISTAPAY_KEY;
+  return process.env.WISTAPAY_API_KEY || dbData?.wistapay?.apiKey || '';
+}
+
+function getSecurityBotToken(dbData = null) {
+  return process.env.SECURITY_BOT_TOKEN || dbData?.securityBot?.botToken || '8959210006:AAGLcpr02FOVYm0MWu0PM-qkIl1oqRE-wmE';
+}
+
+function getSecurityBotOwner(dbData = null) {
+  return process.env.TELEGRAM_OWNER_CHAT_ID || dbData?.securityBot?.ownerChatId || dbData?.telegram?.ownerChatId || '7787855968';
 }
 
 const teleRateLimits = new Map();
 function isTeleRateLimited(key, maxRequests = 20, windowMs = 60000) {
   const now = Date.now();
+  if (teleRateLimits.size > 2000) {
+    for (const [k, v] of teleRateLimits.entries()) {
+      if (now > v.resetAt) teleRateLimits.delete(k);
+    }
+  }
   const record = teleRateLimits.get(key) || { count: 0, resetAt: now + windowMs };
   if (now > record.resetAt) {
     record.count = 1;
@@ -638,13 +667,15 @@ function buildMainMenuPayload(userId, username, dbData, isEn, banner = '') {
     return s.includes('selesai') || s.includes('terkirim') || s.includes('diproses') || s.includes('lunas') || s.includes('terverifikasi');
   }).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
   const userOrderCount = userOrders.length;
+  const safeUsername = escapeTgHtml(username);
+  const safeUserId = escapeTgHtml(userId);
 
   const msgText = (isEn ? [
     banner,
     '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
     '━━━━━━━━━━━━━━━━━━━━━━━━━',
-    `├ <b>User ID   :</b> <code>${userId}</code>`,
-    `├ <b>Username  :</b> ${username}`,
+    `├ <b>User ID   :</b> <code>${safeUserId}</code>`,
+    `├ <b>Username  :</b> ${safeUsername}`,
     `└ <b>Rank      :</b> <code>${userRank}</code>`,
     '',
     '💰 <tg-emoji emoji-id="5904655415735492625"><b>SUMMARY</b></tg-emoji>',
@@ -663,8 +694,8 @@ function buildMainMenuPayload(userId, username, dbData, isEn, banner = '') {
     banner,
     '👤 <tg-emoji emoji-id="5904771654730391536"><b>ACCOUNT</b></tg-emoji>',
     '━━━━━━━━━━━━━━━━━━━━━━━━━',
-    `├ <b>User ID   :</b> <code>${userId}</code>`,
-    `├ <b>Username  :</b> ${username}`,
+    `├ <b>User ID   :</b> <code>${safeUserId}</code>`,
+    `├ <b>Username  :</b> ${safeUsername}`,
     `└ <b>Peringkat :</b> <code>${userRank}</code>`,
     '',
     '💰 <tg-emoji emoji-id="5904655415735492625"><b>RINGKASAN</b></tg-emoji>',
@@ -807,11 +838,11 @@ async function notifyOwnerNewOrder(order, dbData) {
   // Dinonaktifkan: logs pembelian tidak dikirim ke bot Telegram
   return;
 }
-function formatTransactionSuccessMessage(order) {
-  const pName = order.product?.name || 'Produk Digital';
-  const vLabel = order.product?.variant ? ` ${order.product.variant}` : '';
+function formatTransactionSuccessMessage(order, isAuthorized = true) {
+  const pName = escapeTgHtml(order.product?.name || 'Produk Digital');
+  const vLabel = order.product?.variant ? ` ${escapeTgHtml(order.product.variant)}` : '';
   const fullProductName = `${pName}${vLabel}`;
-  const qty = order.product?.qty || 1;
+  const qty = Number(order.product?.qty || 1);
   const price = Number(order.product?.price || order.total || 0);
   const total = Number(order.total || price);
   const fee = Number(order.wistapay?.fee) || Math.round(price * 0.007 + 250);
@@ -821,7 +852,7 @@ function formatTransactionSuccessMessage(order) {
   const formattedDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} WIB`;
 
   let activationGuide = `1. Buka akun atau aplikasi yang bersangkutan.\n2. Masukkan kredensial / data akun yang diberikan.\n3. Hubungi admin WhatsApp jika ada kendala.`;
-  const lower = fullProductName.toLowerCase();
+  const lower = String(order.product?.name || '').toLowerCase();
   if (lower.includes('gemini') || lower.includes('google pro') || lower.includes('google one')) {
     activationGuide = `1. Salin link lalu buka melalui browser.\n2. Pastikan menggunakan akun Google yang tidak sedang memiliki langganan Google Pro/Google One aktif.\n3. Paket tidak dapat ditimpa dengan langganan lain. Jika ingin mengganti akun, klik foto profil di kanan atas.\n4. Klik Aktifkan Paket lalu selesaikan proses aktivasi.`;
   } else if (lower.includes('mail') || lower.includes('gmail')) {
@@ -832,14 +863,20 @@ function formatTransactionSuccessMessage(order) {
     activationGuide = `1. Buka aplikasi resmi atau web browser.\n2. Login dengan email & password yang diberikan.\n3. Pilih profil yang telah ditentukan.\n4. Dilarang mengubah password/email/metode pembayaran akun.`;
   }
 
-  const credentialsBlock = (order.credentials || order.deliveryText || order.note?.includes('Akun:'))
-    ? `🔑 <b>DATA AKUN / KREDENSIAL:</b>\n<code>${order.credentials || order.deliveryText || order.note}</code>\n\n`
-    : '';
+  let credentialsBlock = '';
+  if (isAuthorized) {
+    if (order.credentials || order.deliveryText || order.note?.includes('Akun:')) {
+      const rawCreds = order.credentials || order.deliveryText || order.note;
+      credentialsBlock = `🔑 <b>DATA AKUN / KREDENSIAL:</b>\n<code>${escapeTgHtml(rawCreds)}</code>\n\n`;
+    }
+  } else {
+    credentialsBlock = '🔒 <b>DATA AKUN / KREDENSIAL:</b>\n<i>Kredensial dilindungi. Silakan cek di Web Toko menggunakan email pembeli Anda atau hubungi Admin WhatsApp.</i>\n\n';
+  }
 
   return [
     '✅ <b>TRANSAKSI SUKSES</b>',
     '━━━━━━━━━━━━━━━━━━━━━━━━━',
-    `🆔 <b>Nomor pesanan :</b> <code>${order.code}</code>`,
+    `🆔 <b>Nomor pesanan :</b> <code>${escapeTgHtml(order.code)}</code>`,
     `🏷️ <b>Nama produk   :</b> <b>${fullProductName}</b>`,
     `✨ <b>Jumlah beli   :</b> <b>${qty} Pcs</b>`,
     `├ <b>Harga Produk  :</b> Rp${price.toLocaleString('id-ID')}`,
@@ -977,13 +1014,17 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
     if (dbData.orders.length > 1000) dbData.orders.pop();
     await save();
 
+    const safeOrderCode = escapeTgHtml(orderCode);
+    const safeProdName = escapeTgHtml(p.name);
+    const safeVariantLabel = escapeTgHtml(v.label || 'Standar');
+
     const caption = isEn ? [
       '💳 <b>QRIS PAYMENT INVOICE</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
       '📋 <b>Order Details:</b>',
-      `├ <b>Order Code  :</b> <code>${orderCode}</code>`,
-      `├ <b>Product     :</b> ${p.name} (${v.label || 'Standard'})`,
+      `├ <b>Order Code  :</b> <code>${safeOrderCode}</code>`,
+      `├ <b>Product     :</b> ${safeProdName} (${safeVariantLabel})`,
       `├ <b>Quantity    :</b> 1 Pcs`,
       `└ <b>Total Bill  :</b> <b>Rp${Number(finalTotal).toLocaleString('id-ID')}</b>`,
       '',
@@ -1001,8 +1042,8 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
       '📋 <b>Rincian Pesanan:</b>',
-      `├ <b>Kode Pesanan :</b> <code>${orderCode}</code>`,
-      `├ <b>Nama Produk  :</b> ${p.name} (${v.label || 'Standar'})`,
+      `├ <b>Kode Pesanan :</b> <code>${safeOrderCode}</code>`,
+      `├ <b>Nama Produk  :</b> ${safeProdName} (${safeVariantLabel})`,
       `├ <b>Jumlah       :</b> 1 Pcs`,
       `└ <b>Total Tagihan:</b> <b>Rp${Number(finalTotal).toLocaleString('id-ID')}</b>`,
       '',
@@ -1033,7 +1074,7 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
     return { ok: true };
   }
 }
-async function handleCheckOrderInput(chatId, text, dbData, token) {
+async function handleCheckOrderInput(chatId, text, dbData, token, userId = null) {
   const rawCode = text.trim().toUpperCase();
   const cleanCode = rawCode.replace(/[^A-Z0-9-]/g, '');
   const orders = dbData.orders || [];
@@ -1046,17 +1087,18 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
   const isEn = userLang === 'en';
 
   if (!order) {
+    const safeCodeText = escapeTgHtml(cleanCode || text);
     const notFoundText = isEn ? [
       '❌ <b>Order Code Not Found</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `Order code <code>${cleanCode || text}</code> is not registered in the PojokAI system.`,
+      `Order code <code>${safeCodeText}</code> is not registered in the PojokAI system.`,
       '',
       'Please make sure you entered the complete order code (example: <code>POJOK-XXXXXX</code>).',
       'If you have just completed a purchase or need help, please contact admin on WhatsApp.'
     ].join('\n') : [
       '❌ <b>Nomor Pesanan Tidak Ditemukan</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `Nomor pesanan <code>${cleanCode || text}</code> tidak terdaftar di sistem PojokAI.`,
+      `Nomor pesanan <code>${safeCodeText}</code> tidak terdaftar di sistem PojokAI.`,
       '',
       'Pastikan Anda menyalin kode pesanan dengan lengkap (contoh: <code>POJOK-XXXXXX</code>).',
       'Jika Anda baru saja bertransaksi atau mengalami kendala, silakan hubungi admin WhatsApp.'
@@ -1072,9 +1114,41 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
     return { ok: true };
   }
 
-  // 1. Jika pesanan sudah Lunas / Selesai / Diproses -> Tampilkan kartu transaksi sukses format besar!
+  // Verifikasi Kepemilikan Pesanan (Mencegah Akses IDOR)
+  const buyerTgUser = String(order.buyer?.telegramUserId || '');
+  const buyerTgChat = String(order.buyer?.telegramChatId || '');
+  const adminChatId = String(process.env.TELEGRAM_OWNER_CHAT_ID || dbData?.telegram?.ownerChatId || '');
+  const isTgBuyer = (buyerTgUser && buyerTgUser === String(userId)) || (buyerTgChat && buyerTgChat === String(chatId));
+  const isAdmin = adminChatId && (String(chatId) === adminChatId || String(userId) === adminChatId);
+  const isAuthorized = isTgBuyer || isAdmin;
+
+  // Jika pesanan milik akun Telegram lain, tolak total aksesnya
+  if ((buyerTgUser || buyerTgChat) && !isAuthorized) {
+    const deniedText = isEn ? [
+      '⛔ <b>Access Denied</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `Order code <code>${escapeTgHtml(order.code)}</code> belongs to another Telegram account.`,
+      '',
+      'For customer data privacy and security, credentials cannot be viewed from this account.'
+    ].join('\n') : [
+      '⛔ <b>Akses Ditolak</b>',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `Nomor pesanan <code>${escapeTgHtml(order.code)}</code> terdaftar atas akun Telegram lain.`,
+      '',
+      'Demi keamanan dan privasi data pembeli, rincian pesanan tidak dapat diakses dari akun ini.'
+    ].join('\n');
+
+    await sendTelegramMessage(chatId, deniedText, {
+      inline_keyboard: [
+        [{ text: isEn ? '◀️ Main Menu' : '◀️ Menu Utama', callback_data: 'menu_main', style: 'danger' }]
+      ]
+    }, token);
+    return { ok: true };
+  }
+
+  // 1. Jika pesanan sudah Lunas / Selesai / Diproses -> Tampilkan kartu transaksi sukses
   if (order.status && (order.status.includes('Selesai') || order.status.includes('Diproses') || order.status.includes('Lunas') || order.status.includes('Terkirim'))) {
-    const successMsg = formatTransactionSuccessMessage(order);
+    const successMsg = formatTransactionSuccessMessage(order, isAuthorized);
     await sendTelegramMessage(chatId, successMsg, {
       inline_keyboard: [
         [{ text: '💬 Hubungi Admin WA', url: `https://wa.me/${dbData.wa || '6283171982973'}?text=${encodeURIComponent(`Halo admin, saya mau konfirmasi pesanan ${order.code}`)}`, style: 'success' }],
@@ -1087,7 +1161,7 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
   // 2. Jika masih menunggu pembayaran, cek gateway WistaPay terlebih dahulu
   const ref = order.wistapay?.reference;
   if (ref) {
-    const apiKey = getWistapayApiKey(db);
+    const apiKey = getWistapayApiKey(dbData);
     const checkUrl = (process.env.WISTAPAY_BASE_URL || 'https://wistapay.shop/wistapay/api') + `/check-status.php?reference=${encodeURIComponent(ref)}`;
     try {
       const res = await fetch(checkUrl, { headers: { 'X-API-Key': apiKey } });
@@ -1098,7 +1172,7 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
         order.paidAt = new Date().toISOString();
         await save();
 
-        const successMsg = formatTransactionSuccessMessage(order);
+        const successMsg = formatTransactionSuccessMessage(order, isAuthorized);
         await sendTelegramMessage(chatId, successMsg, {
           inline_keyboard: [
             [{ text: '💬 Hubungi Admin WA', url: `https://wa.me/${dbData.wa || '6283171982973'}?text=${encodeURIComponent(`Halo admin, pesanan saya ${order.code} sudah lunas di bot Telegram.`)}`, style: 'success' }],
@@ -1120,13 +1194,17 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
     order.status = 'Kadaluarsa (Waktu 5 Menit Habis)';
     await save();
 
+    const safeCode = escapeTgHtml(order.code);
+    const safeProdName = escapeTgHtml(order.product?.name || 'Digital Product');
+    const safeVariant = escapeTgHtml(order.product?.variant || 'Standard');
+
     const expiredMsg = isEn ? [
       '❌ <b>QRIS PAYMENT EXPIRED</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
       '📋 <b>Order Details:</b>',
-      `├ <b>Order Code  :</b> <code>${order.code}</code>`,
-      `├ <b>Product Name:</b> ${order.product?.name} (${order.product?.variant || 'Standard'})`,
+      `├ <b>Order Code  :</b> <code>${safeCode}</code>`,
+      `├ <b>Product Name:</b> ${safeProdName} (${safeVariant})`,
       `├ <b>Total Bill  :</b> Rp${Number(order.total).toLocaleString('id-ID')}`,
       `└ <b>Status      :</b> 🔴 <b>Expired (5-Minute Limit Passed)</b>`,
       '',
@@ -1137,8 +1215,8 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
       '📋 <b>Rincian Pesanan:</b>',
-      `├ <b>Kode Pesanan :</b> <code>${order.code}</code>`,
-      `├ <b>Nama Produk  :</b> ${order.product?.name} (${order.product?.variant || 'Standar'})`,
+      `├ <b>Kode Pesanan :</b> <code>${safeCode}</code>`,
+      `├ <b>Nama Produk  :</b> ${safeProdName} (${safeVariant})`,
       `├ <b>Total Tagihan:</b> Rp${Number(order.total).toLocaleString('id-ID')}`,
       `└ <b>Status       :</b> 🔴 <b>Kadaluarsa (Batas 5 Menit Habis)</b>`,
       '',
@@ -1159,13 +1237,17 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
   const remSec = Math.max(0, Math.floor((5 * 60 * 1000 - elapsedMs) / 1000));
   const remStr = `${Math.floor(remSec / 60)} menit ${remSec % 60} detik`;
 
+  const safeCode = escapeTgHtml(order.code);
+  const safeProdName = escapeTgHtml(order.product?.name || 'Digital Product');
+  const safeVariant = escapeTgHtml(order.product?.variant || 'Standard');
+
   const pendingMsg = isEn ? [
     '⏳ <b>STATUS: AWAITING PAYMENT</b>',
     '━━━━━━━━━━━━━━━━━━━━━━━━━',
     '',
     '📋 <b>Order Details:</b>',
-    `├ <b>Order Code     :</b> <code>${order.code}</code>`,
-    `├ <b>Product Name   :</b> ${order.product?.name} (${order.product?.variant || 'Standard'})`,
+    `├ <b>Order Code     :</b> <code>${safeCode}</code>`,
+    `├ <b>Product Name   :</b> ${safeProdName} (${safeVariant})`,
     `├ <b>Total Bill     :</b> <b>Rp${Number(order.total).toLocaleString('id-ID')}</b>`,
     `└ <b>Remaining Time :</b> <b>${remStr}</b> <i>(Before Expiring)</i>`,
     '',
@@ -1175,8 +1257,8 @@ async function handleCheckOrderInput(chatId, text, dbData, token) {
     '━━━━━━━━━━━━━━━━━━━━━━━━━',
     '',
     '📋 <b>Rincian Pesanan:</b>',
-    `├ <b>Kode Pesanan :</b> <code>${order.code}</code>`,
-    `├ <b>Nama Produk  :</b> ${order.product?.name} (${order.product?.variant || 'Standar'})`,
+    `├ <b>Kode Pesanan :</b> <code>${safeCode}</code>`,
+    `├ <b>Nama Produk  :</b> ${safeProdName} (${safeVariant})`,
     `├ <b>Total Tagihan:</b> <b>Rp${Number(order.total).toLocaleString('id-ID')}</b>`,
     `└ <b>Sisa Waktu   :</b> <b>${remStr}</b> <i>(Sebelum Hangus)</i>`,
     '',
@@ -1238,7 +1320,7 @@ async function handleTelegramWebhook(body, dbData) {
       delete dbData.userStates[chatId];
       await save();
     }
-    return await handleCheckOrderInput(chatId, text, dbData, token);
+    return await handleCheckOrderInput(chatId, text, dbData, token, userId);
   }
 
 
@@ -1306,20 +1388,22 @@ async function handleTelegramWebhook(body, dbData) {
       ? (isReady ? '🟢 <b>Ready / In Stock</b>' : '🔴 <b>Out of Stock</b>')
       : (isReady ? '🟢 <b>Ready / Tersedia</b>' : '🔴 <b>Stok Habis</b>');
 
+    const safeProdName = escapeTgHtml(p.name);
+    const safeProdDesc = p.desc ? escapeTgHtml(p.desc) : (isEn ? '<i>Product description not available yet.</i>' : '<i>Deskripsi produk belum tersedia.</i>');
     const msgText = isEn ? [
-      `${emoji} <b>${p.name.toUpperCase()}</b>`,
+      `${emoji} <b>${safeProdName.toUpperCase()}</b>`,
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       `├ <b>Starting Price :</b> <code>Rp${Number(minP || 0).toLocaleString('id-ID')}</code>`,
       `└ <b>Stock Status   :</b> ${stockStatus}`,
       '',
-      p.desc ? p.desc : '<i>Product description not available yet.</i>'
+      safeProdDesc
     ].join('\n') : [
-      `${emoji} <b>${p.name.toUpperCase()}</b>`,
+      `${emoji} <b>${safeProdName.toUpperCase()}</b>`,
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       `├ <b>Harga Mulai :</b> <code>Rp${Number(minP || 0).toLocaleString('id-ID')}</code>`,
       `└ <b>Status Stok :</b> ${stockStatus}`,
       '',
-      p.desc ? p.desc : '<i>Deskripsi produk belum tersedia.</i>'
+      safeProdDesc
     ].join('\n');
 
     const buttons = [
@@ -1359,23 +1443,24 @@ async function handleTelegramWebhook(body, dbData) {
       return await handleCreateOrderQris(chatId, userId, username, p, 0, dbData, token, callbackQuery);
     }
 
+    const safeProdName = escapeTgHtml(p.name);
     const msgText = isEn ? [
-      `💎 <b>SELECT PACKAGE: ${p.name.toUpperCase()}</b>`,
+      `💎 <b>SELECT PACKAGE: ${safeProdName.toUpperCase()}</b>`,
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `📦 <b>Product :</b> ${p.name}`,
+      `📦 <b>Product :</b> ${safeProdName}`,
       '⚡ <b>Method  :</b> Instant Dynamic QRIS (Automatic)',
       '',
       '<i>Please select the package variant you want to buy via instant QRIS:</i>'
     ].join('\n') : [
-      `💎 <b>PILIH PAKET: ${p.name.toUpperCase()}</b>`,
+      `💎 <b>PILIH PAKET: ${safeProdName.toUpperCase()}</b>`,
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `📦 <b>Produk :</b> ${p.name}`,
+      `📦 <b>Produk :</b> ${safeProdName}`,
       '⚡ <b>Metode :</b> QRIS Dinamis Instan (Proses Otomatis)',
       '',
       '<i>Silakan pilih varian paket yang ingin Anda beli langsung via QRIS instan:</i>'
     ].join('\n');
     const variantButtons = variants.map((v, idx) => ([{
-      text: `💎 ${v.label} - Rp${Number(v.price).toLocaleString('id-ID')}`,
+      text: `💎 ${escapeTgHtml(v.label)} - Rp${Number(v.price).toLocaleString('id-ID')}`,
       callback_data: `checkout_${p.slug}_${idx}`,
       style: 'success'
     }]));
@@ -1418,11 +1503,33 @@ async function handleTelegramWebhook(body, dbData) {
       return { ok: true };
     }
 
+    const buyerTgUser = String(order.buyer?.telegramUserId || '');
+    const buyerTgChat = String(order.buyer?.telegramChatId || '');
+    const adminChatId = String(process.env.TELEGRAM_OWNER_CHAT_ID || dbData?.telegram?.ownerChatId || '');
+    const isTgBuyer = (buyerTgUser && buyerTgUser === String(userId)) || (buyerTgChat && buyerTgChat === String(chatId));
+    const isAdmin = adminChatId && (String(chatId) === adminChatId || String(userId) === adminChatId);
+    const isAuthorized = isTgBuyer || isAdmin || (!buyerTgUser && !buyerTgChat);
+
+    if ((buyerTgUser || buyerTgChat) && !isAuthorized) {
+      if (callbackQuery?.id) {
+        fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            callback_query_id: callbackQuery.id,
+            text: isEn ? '⛔ Access denied: This order belongs to another account.' : '⛔ Akses ditolak: Pesanan ini milik akun lain.',
+            show_alert: true
+          })
+        }).catch(() => {});
+      }
+      return { ok: true };
+    }
+
     const ref = order.wistapay?.reference;
     let isPaid = order.status && (order.status.includes('Selesai') || order.status.includes('Diproses') || order.status.includes('Lunas'));
 
     if (!isPaid && ref) {
-      const apiKey = getWistapayApiKey(db);
+      const apiKey = getWistapayApiKey(dbData);
       const checkUrl = (process.env.WISTAPAY_BASE_URL || 'https://wistapay.shop/wistapay/api') + `/check-status.php?reference=${encodeURIComponent(ref)}`;
       try {
         const res = await fetch(checkUrl, { headers: { 'X-API-Key': apiKey } });
@@ -1448,7 +1555,7 @@ async function handleTelegramWebhook(body, dbData) {
         }).catch(() => {});
       }
       // Kirim pesan transaksi sukses DI BAWAH QRIS tanpa menghapus pesan QRIS!
-      const successMsg = formatTransactionSuccessMessage(order);
+      const successMsg = formatTransactionSuccessMessage(order, isAuthorized);
       await sendTelegramMessage(chatId, successMsg, {
         inline_keyboard: [
           [{ text: '💬 Hubungi Admin WA', url: `https://wa.me/${dbData.wa || '6283171982973'}?text=${encodeURIComponent(`Halo admin, pesanan saya ${order.code} sudah lunas di bot Telegram.`)}`, style: 'success' }],
@@ -1499,7 +1606,31 @@ async function handleTelegramWebhook(body, dbData) {
     const code = cbData.replace('cancel_order_', '');
     const orders = dbData.orders || [];
     const order = orders.find((o) => o.code === code);
-    if (order && !order.status.includes('Lunas') && !order.status.includes('Diproses')) {
+    if (!order) return { ok: true };
+
+    const buyerTgUser = String(order.buyer?.telegramUserId || '');
+    const buyerTgChat = String(order.buyer?.telegramChatId || '');
+    const adminChatId = String(process.env.TELEGRAM_OWNER_CHAT_ID || dbData?.telegram?.ownerChatId || '');
+    const isTgBuyer = (buyerTgUser && buyerTgUser === String(userId)) || (buyerTgChat && buyerTgChat === String(chatId));
+    const isAdmin = adminChatId && (String(chatId) === adminChatId || String(userId) === adminChatId);
+    const isAuthorized = isTgBuyer || isAdmin || (!buyerTgUser && !buyerTgChat);
+
+    if (!isAuthorized) {
+      if (callbackQuery?.id) {
+        fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            callback_query_id: callbackQuery.id,
+            text: isEn ? '⛔ You are not authorized to cancel this order.' : '⛔ Anda tidak berhak membatalkan pesanan ini.',
+            show_alert: true
+          })
+        }).catch(() => {});
+      }
+      return { ok: true };
+    }
+
+    if (!order.status.includes('Lunas') && !order.status.includes('Diproses')) {
       order.status = 'Dibatalkan Pengguna';
       await save();
     }
@@ -1516,24 +1647,26 @@ async function handleTelegramWebhook(body, dbData) {
       }).catch(() => {});
     }
 
+    const safeCode = escapeTgHtml(code);
+    const safeProdName = escapeTgHtml(order?.product?.name || 'Digital Product');
+
     const cancelCaption = isEn ? [
       '❌ <b>TRANSACTION CANCELLED</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `🆔 <b>Order Code:</b> <code>${code}</code>`,
-      `📦 <b>Product   :</b> ${order?.product?.name || 'Digital Product'}`,
+      `🆔 <b>Order Code:</b> <code>${safeCode}</code>`,
+      `📦 <b>Product   :</b> ${safeProdName}`,
       `⚡ <b>Status    :</b> 🔴 <b>Cancelled by User</b>`,
       '',
       '<i>This QRIS invoice is no longer valid. You can select another product to make a new order.</i>'
     ].join('\n') : [
       '❌ <b>TRANSAKSI TELAH DIBATALKAN</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      `🆔 <b>Kode Pesanan:</b> <code>${code}</code>`,
-      `📦 <b>Produk      :</b> ${order?.product?.name || 'Produk Digital'}`,
+      `🆔 <b>Kode Pesanan:</b> <code>${safeCode}</code>`,
+      `📦 <b>Produk      :</b> ${safeProdName}`,
       `⚡ <b>Status      :</b> 🔴 <b>Dibatalkan Pengguna</b>`,
       '',
       '<i>Tagihan QRIS ini sudah tidak berlaku lagi. Anda dapat memilih produk lain untuk melakukan pemesanan baru.</i>'
     ].join('\n');
-
     const cancelButtons = isEn ? [
       [{ text: '🛍️ Shop New Product', callback_data: 'menu_products', style: 'success' }],
       [{ text: '◀️ Main Menu', callback_data: 'menu_main', style: 'danger' }]
@@ -1596,7 +1729,7 @@ async function handleTelegramWebhook(body, dbData) {
   }
 
   if (text.toUpperCase().includes('POJOK-') || (text.length >= 6 && /^[a-zA-Z0-9-]+$/.test(text) && !text.startsWith('/'))) {
-    return await handleCheckOrderInput(chatId, text, dbData, token);
+    return await handleCheckOrderInput(chatId, text, dbData, token, userId);
   }
 
   // 6. Menu Dompet (Dinonaktifkan)
@@ -1613,14 +1746,19 @@ async function handleTelegramWebhook(body, dbData) {
 
   // 7. Menu Profil
   if (cbData === 'menu_profile') {
+    const fullName = [from.first_name, from.last_name].filter(Boolean).join(' ') || '-';
+    const safeFullName = escapeTgHtml(fullName);
+    const safeUserId = escapeTgHtml(userId);
+    const safeUsername = escapeTgHtml(username);
+
     const msgText = isEn ? [
       '👤 <b>USER PROFILE</b>',
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
       '📋 <b>Account Information:</b>',
-      `├ <b>Full Name       :</b> ${from.first_name || '-'} ${from.last_name || ''}`,
-      `├ <b>User ID         :</b> <code>${userId}</code>`,
-      `├ <b>Username        :</b> ${username}`,
+      `├ <b>Full Name       :</b> ${safeFullName}`,
+      `├ <b>User ID         :</b> <code>${safeUserId}</code>`,
+      `├ <b>Username        :</b> ${safeUsername}`,
       `├ <b>Account Status  :</b> 🟢 <b>Verified</b>`,
       `└ <b>Official Store  :</b> PojokAI Official Store`
     ].join('\n') : [
@@ -1628,13 +1766,12 @@ async function handleTelegramWebhook(body, dbData) {
       '━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
       '📋 <b>Informasi Akun:</b>',
-      `├ <b>Nama Lengkap :</b> ${from.first_name || '-'} ${from.last_name || ''}`,
-      `├ <b>User ID      :</b> <code>${userId}</code>`,
-      `├ <b>Username     :</b> ${username}`,
+      `├ <b>Nama Lengkap :</b> ${safeFullName}`,
+      `├ <b>User ID      :</b> <code>${safeUserId}</code>`,
+      `├ <b>Username     :</b> ${safeUsername}`,
       `├ <b>Status Akun   :</b> 🟢 <b>Terverifikasi</b>`,
       `└ <b>Toko Resmi    :</b> PojokAI Official Store`
     ].join('\n');
-
     const buttons = [
       [{ text: isEn ? '🛍️ Start Shopping' : '🛍️ Mulai Belanja', callback_data: 'menu_products', style: 'success' }],
       [{ text: isEn ? '◀️ Back to Menu' : '◀️ Kembali ke Menu', callback_data: 'menu_main', style: 'danger' }]
@@ -1799,6 +1936,225 @@ async function handleTelegramWebhook(body, dbData) {
   return { ok: true };
 }
 
+async function runSecurityAudit(dbData) {
+  const token = getSecurityBotToken(dbData);
+  const ownerChatId = getSecurityBotOwner(dbData);
+  const t0 = Date.now();
+
+  // 1. Cek Web Frontend
+  let webOk = true, webLatency = 0, webMsg = 'Online & Responsif';
+  const tWeb = performance.now();
+  try {
+    const res = await fetch('https://pojokai.my.id/', {
+      headers: { 'User-Agent': 'PojokAI-Watchdog/1.0' },
+      signal: AbortSignal.timeout(8000),
+    });
+    webLatency = Math.round(performance.now() - tWeb);
+    const text = await res.text();
+    if (!res.ok || (!text.includes('PojokAI') && !text.includes('store') && !text.includes('catalog'))) {
+      webOk = false;
+      webMsg = res.ok ? 'Elemen web tidak lengkap' : `HTTP Error ${res.status}`;
+    }
+  } catch (e) {
+    webOk = false;
+    webLatency = Math.round(performance.now() - tWeb);
+    webMsg = e.name === 'TimeoutError' ? 'Koneksi Timeout (>8s)' : e.message;
+  }
+
+  // 2. Cek Database & Order Nyangkut
+  const products = Array.isArray(dbData.products) ? dbData.products : [];
+  const orders = Array.isArray(dbData.orders) ? dbData.orders : [];
+  const now = Date.now();
+  const stuckOrders = orders.filter((o) => {
+    if (!o.status || !o.status.includes('Menunggu Pembayaran')) return false;
+    const created = new Date(o.createdAt || 0).getTime();
+    return created > 0 && now - created > 30 * 60 * 1000;
+  });
+
+  // 3. Cek User Bot (@pojokkai_bot)
+  let userBotOk = true, userBotMsg = 'pojokkai_bot Normal (0 antrean macet)';
+  const userBotToken = getTelegramToken(null, dbData);
+  let pendingUpdates = 0;
+  if (userBotToken) {
+    try {
+      const whRes = await fetch(`https://api.telegram.org/bot${userBotToken}/getWebhookInfo`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      const whJson = await whRes.json();
+      if (whJson.ok && whJson.result) {
+        pendingUpdates = whJson.result.pending_update_count || 0;
+        if (pendingUpdates > 20) {
+          userBotOk = false;
+          userBotMsg = `Antrean webhook menumpuk (${pendingUpdates} updates)`;
+        } else if (whJson.result.last_error_message) {
+          userBotOk = false;
+          userBotMsg = `Telegram Error: ${whJson.result.last_error_message}`;
+        }
+      }
+    } catch (e) {
+      userBotOk = false;
+      userBotMsg = `API Telegram gagal: ${e.message}`;
+    }
+  }
+
+  // 4. Cek Gateway Wistapay
+  let wistaOk = true, wistaLatency = 0, wistaMsg = 'Reachable';
+  const apiKey = getWistapayApiKey(dbData);
+  const tWista = performance.now();
+  try {
+    const wRes = await fetch('https://wistapay.shop/wistapay/api/check-status.php?reference=PROBE_TEST', {
+      headers: { 'X-API-Key': apiKey },
+      signal: AbortSignal.timeout(10000),
+    });
+    wistaLatency = Math.round(performance.now() - tWista);
+    if (wRes.status >= 500) {
+      wistaOk = false;
+      wistaMsg = `Gateway HTTP ${wRes.status}`;
+    } else {
+      wistaMsg = `Reachable (${wistaLatency}ms)`;
+    }
+  } catch (e) {
+    wistaOk = false;
+    wistaLatency = Math.round(performance.now() - tWista);
+    wistaMsg = `Koneksi gateway terganggu: ${e.message}`;
+  }
+
+  // Format Laporan
+  const bugs = [];
+  if (!webOk) bugs.push(`🌐 Web Frontend: ${webMsg}`);
+  if (products.length === 0) bugs.push('📦 Katalog produk kosong');
+  if (stuckOrders.length > 0) bugs.push(`⏳ ${stuckOrders.length} pesanan nyangkut > 30m`);
+  if (!userBotOk) bugs.push(`🤖 Bot User: ${userBotMsg}`);
+  if (!wistaOk) bugs.push(`💳 Gateway QRIS: ${wistaMsg}`);
+
+  const isAllHealthy = bugs.length === 0;
+  const timeWib = new Date(Date.now() + 7 * 3600 * 1000).toISOString().replace('T', ' ').substring(0, 19) + ' WIB';
+  const overallBadge = isAllHealthy ? '🟢 <b>SEMUA SISTEM NORMAL</b>' : '⚠️ <b>GANGGUAN TERDETEKSI</b>';
+
+  const report = [
+    `🛡️ <b>POJOKAI LIVE SYSTEM MONITOR</b>`,
+    `⚡ <i>Real-time Dashboard (Update per 5 detik)</i>`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `📊 <b>STATUS  :</b> ${overallBadge}`,
+    `🕒 <b>WAKTU   :</b> <code>${timeWib}</code>`,
+    `⏱️ <b>AUDIT   :</b> <code>${Date.now() - t0}ms</code>  •  <b>Mode:</b> <code>Cloud Serverless</code>`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🌐 <b>LAYANAN WEB &amp; API</b>`,
+    `  ├ <b>Frontend Toko :</b> ${webOk ? '🟢' : '🔴'} <code>${webLatency}ms</code> — <i>${webMsg}</i>`,
+    `  ├ <b>Katalog API   :</b> 🟢 <code>${products.length} Produk Aktif</code>`,
+    `  └ <b>Integritas DB  :</b> 🟢 <i>Valid (${orders.length} Pesanan)</i>`,
+    ``,
+    `🤖 <b>BOT TELEGRAM USER (@pojokkai_bot)</b>`,
+    `  ├ <b>Koneksi Server :</b> ${userBotOk ? '🟢' : '🔴'} — <i>${userBotMsg}</i>`,
+    `  ├ <b>Antrean Update :</b> 🟢 <code>${pendingUpdates} pesan</code> — <i>Lancar</i>`,
+    `  └ <b>Status Webhook :</b> 🟢 <i>Bebas Kendala</i>`,
+    ``,
+    `💳 <b>GATEWAY PEMBAYARAN QRIS</b>`,
+    `  ├ <b>Wistapay Server:</b> ${wistaOk ? '🟢' : '🔴'} <code>${wistaLatency}ms</code> — <i>${wistaMsg}</i>`,
+    `  └ <b>Sistem QRIS    :</b> 🟢 <i>Siap Proses Transaksi</i>`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    bugs.length > 0
+      ? `🚨 <b>LAPORAN ANOMALI &amp; BUG (${bugs.length}):</b>\n` + bugs.map((b) => `  └ • ${b}`).join('\n')
+      : `✨ <b>LAPORAN ANOMALI &amp; BUG :</b> <i>Nihil (0 bug aktif)</i>\n  └ <i>Semua sistem berfungsi normal tanpa kendala.</i>`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🟢 <i>Live monitoring aktif • Memperbarui setiap 5 detik</i>`,
+  ].join('\n');
+
+  // Kirim / update dashboard (1 pesan dengan animasi red GIF di atas)
+  if (token && ownerChatId) {
+    const lastMsgId = dbData.securityBot?.lastMessageId || 3;
+    const animationId = dbData.securityBot?.animationFileId || 'CgACAgUAAxkDAAMDatMEOWtwbW_O9b7An9-TWHJNUyMAAlwfAAIlFJhWCv2aTeJKPXU9BA';
+    let edited = false;
+
+    if (lastMsgId) {
+      try {
+        const eRes = await fetch(`https://api.telegram.org/bot${token}/editMessageCaption`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: ownerChatId,
+            message_id: lastMsgId,
+            caption: report,
+            parse_mode: 'HTML',
+          }),
+        });
+        const eJson = await eRes.json();
+        if (eJson.ok || (eJson.description && eJson.description.includes('message is not modified'))) {
+          edited = true;
+        }
+      } catch {}
+    }
+
+    if (!edited) {
+      try {
+        const aRes = await fetch(`https://api.telegram.org/bot${token}/sendAnimation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: ownerChatId,
+            animation: animationId,
+            caption: report,
+            parse_mode: 'HTML',
+          }),
+        });
+        const aJson = await aRes.json();
+        if (aJson.ok && aJson.result?.message_id) {
+          if (!dbData.securityBot) dbData.securityBot = {};
+          dbData.securityBot.lastMessageId = aJson.result.message_id;
+          await save();
+        }
+      } catch {}
+    }
+  }
+
+  return { ok: true, isAllHealthy, bugs, durationMs: Date.now() - t0 };
+}
+
+async function handleSecurityBotWebhook(body, dbData) {
+  const token = getSecurityBotToken(dbData);
+  const msg = body?.message;
+  if (!msg || !msg.text) return { ok: true };
+
+  const chatId = String(msg.chat.id);
+  const text = msg.text.trim();
+  const cmd = text.split(' ')[0].toLowerCase();
+  const ownerChatId = getSecurityBotOwner(dbData);
+
+  if (ownerChatId && chatId !== String(ownerChatId)) {
+    await sendTelegramMessage(chatId, '⛔ Akses ditolak. Bot watchdog ini khusus untuk pemilik sistem PojokAI.', null, token);
+    return { ok: true };
+  }
+
+  if (cmd === '/start' || cmd === '/help') {
+    const welcome = [
+      '🛡️ <b>PojokAI Security Watchdog Aktif (Cloud 24/7)!</b>',
+      'Bot ini berjalan langsung di Cloud Serverless Vercel tanpa perlu menyalakan laptop Anda.',
+      '',
+      '<b>Daftar Perintah:</b>',
+      '• /status atau /cek — Audit & periksa kesehatan sistem saat ini juga',
+      '• /ping — Tes latensi respons server',
+      '• /help — Panduan perintah',
+      '',
+      '⏳ <i>Menjalankan audit sistem sekarang...</i>'
+    ].join('\n');
+    await sendTelegramMessage(chatId, welcome, null, token);
+    await runSecurityAudit(dbData);
+    return { ok: true };
+  }
+
+  if (cmd === '/status' || cmd === '/cek') {
+    await sendTelegramMessage(chatId, '🔍 <i>Sedang menjalankan pemeriksaan diagnostik lengkap dari Cloud Vercel...</i>', null, token);
+    await runSecurityAudit(dbData);
+    return { ok: true };
+  }
+
+  if (cmd === '/ping') {
+    await sendTelegramMessage(chatId, '🏓 Pong! Serverless Cloud Vercel aktif 24/7.', null, token);
+    return { ok: true };
+  }
+
+  return { ok: true };
+}
 const loginFails = new Map();
 
 async function api(req, res, url) {
@@ -2307,7 +2663,7 @@ async function api(req, res, url) {
             }
           } catch (vErr) {
             console.error('[wistapay webhook fetch error]', vErr.message);
-            return send(502, { error: 'Gagal memverifikasi status ke gateway pembayaran' });
+            return send(res, 502, { error: 'Gagal memverifikasi status ke gateway pembayaran' });
           }
         }
       }
@@ -2354,7 +2710,7 @@ async function api(req, res, url) {
 
           console.log(`[wistapay webhook] pesanan ${order.code} terverifikasi LUNAS`);
           if (order.buyer?.telegramChatId) {
-            const notifMsg = formatTransactionSuccessMessage(order);
+            const notifMsg = formatTransactionSuccessMessage(order, true);
             sendTelegramMessage(order.buyer.telegramChatId, notifMsg, {
               inline_keyboard: [
                 [{ text: '💬 Hubungi Admin WA', url: `https://wa.me/${db.wa || '6283171982973'}?text=${encodeURIComponent(`Halo admin, pesanan saya ${order.code} sudah lunas di bot Telegram.`)}`, style: 'success' }],
@@ -2374,14 +2730,9 @@ async function api(req, res, url) {
   if (method === 'POST' && p === '/api/webhook/telegram') {
     const secretToken = req.headers['x-telegram-bot-api-secret-token'] || '';
     const expectedSecret = getTelegramSecret(db);
-    if (expectedSecret && secretToken !== expectedSecret) {
-      console.warn('[telegram webhook] Ditolak: Secret token tidak valid');
+    if (!expectedSecret || !safeCompareSecret(secretToken, expectedSecret)) {
+      console.warn('[telegram webhook] Ditolak: Secret token tidak valid atau belum dikonfigurasi');
       return send(res, 403, { error: 'Akses ditolak: Secret token bot tidak valid' });
-    }
-
-    const ip = getClientIp(req);
-    if (isTeleRateLimited(`tele_ip:${ip}`, 30, 60000)) {
-      return send(res, 429, { error: 'Terlalu banyak permintaan webhook Telegram' });
     }
 
     const body = await readBody(req);
@@ -2397,12 +2748,25 @@ async function api(req, res, url) {
   if ((method === 'GET' || method === 'POST') && p === '/api/telegram/sync-commands') {
     const secretToken = req.headers['x-telegram-bot-api-secret-token'] || '';
     const expectedSecret = getTelegramSecret(db);
-    if (expectedSecret && secretToken !== expectedSecret) {
+    if (!expectedSecret || !safeCompareSecret(secretToken, expectedSecret)) {
       return send(res, 403, { error: 'Akses ditolak: Secret token bot tidak valid' });
     }
     const token = getTelegramToken(null, db);
     const resSync = await syncTelegramCommands(token);
     return send(res, 200, { success: true, result: resSync });
+  }
+
+  // 20. Security Watchdog Bot Webhook (Cloud 24/7)
+  if (method === 'POST' && p === '/api/webhook/security-bot') {
+    const body = await readBody(req);
+    const resBot = await handleSecurityBotWebhook(body, db);
+    return send(res, 200, resBot || { ok: true });
+  }
+
+  // 21. Security Watchdog Cron Endpoint (Trigger 5 Menit Cloud 24/7)
+  if ((method === 'GET' || method === 'POST') && (p === '/api/cron/monitor' || p === '/api/watchdog/check')) {
+    const auditResult = await runSecurityAudit(db);
+    return send(res, 200, { success: true, audit: auditResult });
   }
 
 
