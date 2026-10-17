@@ -2062,7 +2062,7 @@ async function runSecurityAudit(dbData) {
 
   // Kirim / update dashboard (1 pesan dengan animasi red GIF di atas)
   if (token && ownerChatId) {
-    const lastMsgId = dbData.securityBot?.lastMessageId || 3;
+    const lastMsgId = dbData.securityBot?.lastMessageId || 13;
     const animationId = dbData.securityBot?.animationFileId || 'CgACAgUAAxkDAAMDatMEOWtwbW_O9b7An9-TWHJNUyMAAlwfAAIlFJhWCv2aTeJKPXU9BA';
     let edited = false;
 
@@ -2125,34 +2125,15 @@ async function handleSecurityBotWebhook(body, dbData) {
     return { ok: true };
   }
 
-  if (cmd === '/start' || cmd === '/help') {
-    const welcome = [
-      '🛡️ <b>PojokAI Security Watchdog Aktif (Cloud 24/7)!</b>',
-      'Bot ini berjalan langsung di Cloud Serverless Vercel tanpa perlu menyalakan laptop Anda.',
-      '',
-      '<b>Daftar Perintah:</b>',
-      '• /status atau /cek — Audit & periksa kesehatan sistem saat ini juga',
-      '• /ping — Tes latensi respons server',
-      '• /help — Panduan perintah',
-      '',
-      '⏳ <i>Menjalankan audit sistem sekarang...</i>'
-    ].join('\n');
-    await sendTelegramMessage(chatId, welcome, null, token);
-    await runSecurityAudit(dbData);
-    return { ok: true };
+  // Hapus pesan command dari user agar chat selalu bersih tanpa tumpukan pesan
+  if (msg.message_id) {
+    try {
+      await deleteTelegramMessage(chatId, msg.message_id, token);
+    } catch {}
   }
 
-  if (cmd === '/status' || cmd === '/cek') {
-    await sendTelegramMessage(chatId, '🔍 <i>Sedang menjalankan pemeriksaan diagnostik lengkap dari Cloud Vercel...</i>', null, token);
-    await runSecurityAudit(dbData);
-    return { ok: true };
-  }
-
-  if (cmd === '/ping') {
-    await sendTelegramMessage(chatId, '🏓 Pong! Serverless Cloud Vercel aktif 24/7.', null, token);
-    return { ok: true };
-  }
-
+  // Langsung perbarui 1 pesan dashboard live (dengan red GIF di atas)
+  await runSecurityAudit(dbData);
   return { ok: true };
 }
 const loginFails = new Map();
