@@ -67,6 +67,20 @@ function toast(msg, kind = 'ok') {
 function setLabel() {
   $('#masukLabel').textContent = owner ? 'Panel' : 'Masuk';
   $('#masukBtn').setAttribute('aria-label', owner ? 'Buka panel owner' : 'Masuk sebagai owner');
+  const navLogout = $('#navLogoutBtn');
+  if (navLogout) {
+    if (owner) {
+      navLogout.classList.remove('hidden');
+      navLogout.classList.add('inline-flex');
+      navLogout.title = `Keluar (${owner.email || 'Owner'})`;
+    } else {
+      const buyer = typeof window.getStoredBuyer === 'function' ? window.getStoredBuyer() : null;
+      if (!buyer) {
+        navLogout.classList.add('hidden');
+        navLogout.classList.remove('inline-flex');
+      }
+    }
+  }
   if (!owner && typeof window.updateBuyerNav === 'function') window.updateBuyerNav();
 }
 
@@ -146,15 +160,21 @@ $('#aDownloadDb')?.addEventListener('click', async () => {
 });
 $('#navBackBtn')?.addEventListener('click', () => setPanel(false));
 $('#aBackBtn')?.addEventListener('click', () => setPanel(false));
-$('#aLogout').addEventListener('click', async () => {
+async function doOwnerLogout() {
   try { await api('POST', '/api/logout', {}); } catch { /* sesi sudah hilang */ }
   forgetSession();
   setPanel(false);
+  await window.wk?.refresh();
   toast('Sesi owner ditutup.');
-});
+}
+$('#aLogout')?.addEventListener('click', doOwnerLogout);
+$('#aTopLogoutBtn')?.addEventListener('click', doOwnerLogout);
+window.ownerLogout = doOwnerLogout;
+window.isOwnerActive = () => Boolean(owner);
 
 function forgetSession() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('wk_token');
   localStorage.removeItem('wk:admin_active');
   document.documentElement.classList.remove('preload-admin');
   document.cookie = 'wk_token=; Path=/; Max-Age=0; SameSite=Lax';

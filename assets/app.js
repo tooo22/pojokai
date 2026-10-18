@@ -65,17 +65,35 @@ function generateOrderCode() {
 function updateBuyerNav() {
   const label = $('#masukLabel');
   if (!label) return;
-  if (label.textContent === 'Panel') return; // owner sedang aktif
+  const navLogout = $('#navLogoutBtn');
+  if (window.isOwnerActive?.()) {
+    label.textContent = 'Panel';
+    if (navLogout) {
+      navLogout.classList.remove('hidden');
+      navLogout.classList.add('inline-flex');
+    }
+    return;
+  }
   const buyer = getStoredBuyer();
   if (buyer && buyer.name) {
     const firstName = buyer.name.trim().split(/\s+/)[0] || 'Akun';
     label.textContent = firstName.length > 10 ? firstName.slice(0, 10) + '…' : firstName;
     $('#masukBtn')?.setAttribute('aria-label', `Akun: ${buyer.name}`);
+    if (navLogout) {
+      navLogout.classList.remove('hidden');
+      navLogout.classList.add('inline-flex');
+      navLogout.title = `Keluar (${buyer.name})`;
+    }
   } else {
     label.textContent = 'Masuk';
     $('#masukBtn')?.setAttribute('aria-label', 'Masuk sebagai pembeli atau owner');
+    if (navLogout && !window.isOwnerActive?.()) {
+      navLogout.classList.add('hidden');
+      navLogout.classList.remove('inline-flex');
+    }
   }
 }
+window.getStoredBuyer = getStoredBuyer;
 window.updateBuyerNav = updateBuyerNav;
 
 let currentModalView = null; // 'product' | 'bundle' | 'auth' | 'account' | 'payment' | 'orders'
@@ -595,7 +613,6 @@ function bundleCheckout() {
       qty: 1,
       price: b.price || 0,
     },
-    total: total,
     note: [note, `Email: ${email}`, `WA: ${wa}`].filter(Boolean).join(' | '),
     status: 'Menunggu Pengiriman',
   };
@@ -984,7 +1001,7 @@ function closeModal() {
     if (location.hash.startsWith('#produk/')) {
       history.replaceState(null, '', location.pathname + location.search);
     }
-    document.title = 'PojokAI — Toko Akun Digital & Jasa Sosmed via WhatsApp';
+    document.title = 'PojokAI — Toko Akun Digital & Nokos OTP via WhatsApp';
   } catch {}
 }
 
@@ -1063,7 +1080,6 @@ function checkout() {
       qty: m.qty,
       price: v ? v.price : 0,
     },
-    total: total,
     note: noteItems.join(' | '),
     status: 'Menunggu Pengiriman',
   };
@@ -2460,8 +2476,24 @@ document.addEventListener('click', (e) => {
     return openBuyerOrdersModal();
   }
 
+  const navLogout = e.target.closest('#navLogoutBtn');
+  if (navLogout) {
+    if (window.isOwnerActive?.() && typeof window.ownerLogout === 'function') {
+      return window.ownerLogout();
+    }
+    const buyer = getStoredBuyer();
+    if (buyer) {
+      setStoredBuyer(null);
+      updateBuyerNav();
+      toast('Berhasil keluar dari akun pembeli.');
+      return;
+    }
+    return;
+  }
+
   if (e.target.closest('#buyerLogoutBtn')) {
     setStoredBuyer(null);
+    updateBuyerNav();
     toast('Berhasil keluar dari akun pembeli.');
     return closeModal();
   }

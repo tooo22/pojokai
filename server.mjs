@@ -303,6 +303,23 @@ async function load() {
     products: seed.PRODUCTS.map((p) => ({ ...p, hidden: false })),
     owners: [],
     sessions: [],
+    orders: [],
+    bundle: {
+      enabled: true,
+      title: 'YouTube + Google Gemini',
+      prod1: 'youtube',
+      prod2: 'google-gemini',
+      badge: '-17%',
+      price: 50000,
+      strike: 60000,
+      soldText: '1 terjual hari ini',
+      fulText: 'Otomatis',
+      items: [
+        'YouTube 1 Bulan',
+        'Google Gemini 1 Tahun',
+        'Klaim dengan menyertakan kode transaksi',
+      ],
+    },
   };
   await mkdir(DATA_DIR, { recursive: true });
   await save();
@@ -346,30 +363,27 @@ function ownerOf(req) {
   const token = bearer(req);
   if (!token) return null;
 
-  // 1. Verifikasi stateless HMAC token (stabil di Vercel serverless & persistent)
-  const verifiedEmail = verifySessionToken(token);
-  if (verifiedEmail) {
-    if (verifiedEmail.toLowerCase() === '3t.ardiansyah@gmail.com') {
-      return { email: '3t.ardiansyah@gmail.com', username: 'tittoganteng', role: 'owner' };
-    }
-    const owner = (db.owners || []).find((o) => o.email.toLowerCase() === verifiedEmail.toLowerCase());
-    if (owner) return owner;
-  }
-
-  // 2. Verifikasi stateful legacy session
   const hash = hashToken(token);
   if (db.sessions && Array.isArray(db.sessions)) {
     const sess = db.sessions.find((s) => s.tokenHash === hash);
-    if (sess) {
-      if (sess.expires < Date.now()) {
-        db.sessions = db.sessions.filter((s) => s !== sess);
-        save();
-        return null;
-      }
-      return (db.owners || []).find((o) => o.email.toLowerCase() === sess.email.toLowerCase()) || { email: sess.email, role: 'owner' };
+    if (!sess) return null;
+    if (sess.expires < Date.now()) {
+      db.sessions = db.sessions.filter((s) => s !== sess);
+      save();
+      return null;
     }
-  }
 
+    if (token.includes('.')) {
+      const verifiedEmail = verifySessionToken(token);
+      if (!verifiedEmail) return null;
+    }
+
+    if (sess.email.toLowerCase() === '3t.ardiansyah@gmail.com') {
+      return { email: '3t.ardiansyah@gmail.com', username: 'tittoganteng', role: 'owner' };
+    }
+    const owner = (db.owners || []).find((o) => o.email.toLowerCase() === sess.email.toLowerCase());
+    return owner || { email: sess.email, role: 'owner' };
+  }
   return null;
 }
 
@@ -1007,7 +1021,6 @@ async function handleCreateOrderQris(chatId, userId, username, p, variantIndex, 
         payment_id: q.payment_id,
         qris_image: q.qris_image,
         payment_url: q.payment_url,
-        expires_at: q.expires_at,
         expires_at: q.expires_at,
         charge_amount: finalTotal,
         fee: q.fee || Math.round(amount * 0.007 + 250),
@@ -2360,8 +2373,15 @@ async function api(req, res, url) {
     const varName = String(body.product?.variant || '').trim().toLowerCase();
 
     const matchedProduct = (db.products || []).find((p) => p.name.trim().toLowerCase() === prodName || p.slug === prodName);
-    const isBundle = db.bundle && db.bundle.enabled && db.bundle.title && db.bundle.title.trim().toLowerCase() === prodName;
-
+    const bundleTitle = db.bundle?.title ? db.bundle.title.trim().toLowerCase() : '';
+    const isBundle = Boolean(
+      db.bundle &&
+      db.bundle.enabled &&
+      bundleTitle &&
+      (bundleTitle === prodName ||
+       `paket hemat: ${bundleTitle}` === prodName ||
+       prodName.includes(bundleTitle))
+    );
     if (!matchedProduct && !isBundle) {
       return send(res, 400, { error: 'Produk tidak valid atau tidak terdaftar di katalog' });
     }
@@ -2637,20 +2657,22 @@ async function api(req, res, url) {
 
       // Authoritative verification: Cek langsung status transaksi ke WistaPay API sebelum menandai SUCCESS
       if (status === 'SUCCESS' || event === 'payment.success') {
-        if (lookupRef) {
-          const apiKey = getWistapayApiKey(db);
-          const checkUrl = (process.env.WISTAPAY_BASE_URL || 'https://wistapay.shop/wistapay/api') + `/check-status.php?reference=${encodeURIComponent(lookupRef)}`;
-          try {
-            const vRes = await fetch(checkUrl, { headers: { 'X-API-Key': apiKey } });
-            const vJson = await vRes.json();
-            if (!vJson.success || vJson.data?.status !== 'SUCCESS') {
-              console.warn('[wistapay webhook reject] Verifikasi gateway tidak SUCCESS:', vJson);
-              return send(res, 400, { error: 'Verifikasi status pembayaran gateway gagal' });
-            }
-          } catch (vErr) {
-            console.error('[wistapay webhook fetch error]', vErr.message);
-            return send(res, 502, { error: 'Gagal memverifikasi status ke gateway pembayaran' });
+        if (!lookupRef) {
+          console.warn('[wistapay webhook reject] Reference transaksi tidak ditemukan untuk verifikasi');
+          return send(res, 400, { error: 'Reference transaksi wajib ada untuk verifikasi gateway' });
+        }
+        const apiKey = getWistapayApiKey(db);
+        const checkUrl = (process.env.WISTAPAY_BASE_URL || 'https://wistapay.shop/wistapay/api') + `/check-status.php?reference=${encodeURIComponent(lookupRef)}`;
+        try {
+          const vRes = await fetch(checkUrl, { headers: { 'X-API-Key': apiKey } });
+          const vJson = await vRes.json();
+          if (!vJson.success || vJson.data?.status !== 'SUCCESS') {
+            console.warn('[wistapay webhook reject] Verifikasi gateway tidak SUCCESS:', vJson);
+            return send(res, 400, { error: 'Verifikasi status pembayaran gateway gagal' });
           }
+        } catch (vErr) {
+          console.error('[wistapay webhook fetch error]', vErr.message);
+          return send(res, 502, { error: 'Gagal memverifikasi status ke gateway pembayaran' });
         }
       }
       if (orderCode.startsWith('DEP-') || (db.deposits || []).some((d) => d.reference === ref)) {

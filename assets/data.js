@@ -48,9 +48,9 @@ const HERO_SLIDES = [
     items: [['🛡️', 'Akun bergaransi'], ['⚡', 'Dikirim otomatis ke WA'], ['⭐', 'Ribuan pembeli puas']],
   },
   {
-    eyebrow: 'Baru · Jasa sosmed', title: 'Naikkan followers & views', line2: 'Otomatis, tanpa password.',
-    sub: 'Pilih akun Indonesia atau global · bayar QRIS', cta: 'Lihat jasa sosmed', href: '#sosmed',
-    items: [['📸', '+1.000 followers Instagram'], ['🎵', '+5.000 views TikTok'], ['▶️', '+500 subscribers YouTube']],
+    eyebrow: 'Ready · Nokos OTP', title: 'Nomor Kosong Virtual OTP', line2: 'WhatsApp, Telegram & Banyak Lagi.',
+    sub: 'Tersedia nomor Indo (+62) & Luar Negeri · SMS OTP instan · garansi replace', cta: 'Lihat Layanan Nokos', href: '#nokos',
+    items: [['📱', 'Nokos WhatsApp (+62 & Luar)'], ['✈️', 'Nokos Telegram Instan'], ['⚡', 'Garansi SMS OTP Masuk']],
   },
   {
     eyebrow: 'Akun premium hemat', title: 'ChatGPT, Netflix, Canva & lainnya', line2: 'Aktif instan, harga bersahabat.',
@@ -75,6 +75,6 @@ const FAQS = [
 const TICKER = [
   ['Surfshark VPN', null, '3 menit lalu'], ['YouTube', 5, '5 menit lalu'], ['CapCut Pro', 35, '30 menit lalu'],
   ['Canva', 2, '1 jam lalu'], ['Meitu', 3, '2 jam lalu'], ['Netflix Premium', 9, '6 jam lalu'],
-  ['Google Mail', 3, '13 jam lalu'], ['Google Gemini', null, '15 jam lalu'], ['Instagram Followers', 2, '16 jam lalu'],
-  ['ChatGPT', 5, '19 jam lalu'], ['TikTok Likes', null, '20 jam lalu'], ['Alight Motion', null, '21 jam lalu'],
+  ['Google Mail', 3, '13 jam lalu'], ['Google Gemini', null, '15 jam lalu'], ['Nokos WhatsApp Indo', 4, '12 menit lalu'],
+  ['ChatGPT', 5, '19 jam lalu'], ['Nokos Telegram', null, '25 menit lalu'], ['Alight Motion', null, '21 jam lalu'],
 ];
