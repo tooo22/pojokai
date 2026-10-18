@@ -579,45 +579,79 @@ const NOKOSMURAH_PLATFORMS = {
 let cachedNokosPrices = null;
 let lastNokosPricesFetch = 0;
 
+const NOKOSMURAH_BASE_PRICES = {
+  whatsapp: { costIdr: 4277, product_id: 1368869152, platform_id: 1, count: 58000 },
+  telegram: { costIdr: 1561, product_id: 1370455108, platform_id: 2, count: 68000 },
+  tiktok: { costIdr: 521, product_id: 1368739240, platform_id: 7, count: 70000 },
+  google: { costIdr: 621, product_id: 864973327, platform_id: 5, count: 50000 },
+  openai: { costIdr: 623, product_id: 1368912555, platform_id: 20, count: 25000 },
+  instagram: { costIdr: 624, product_id: 1369390117, platform_id: 3, count: 53000 },
+  twitter: { costIdr: 522, product_id: 632466347, platform_id: 6, count: 110000 },
+  facebook: { costIdr: 628, product_id: 1369146248, platform_id: 4, count: 9000 },
+  discord: { costIdr: 534, product_id: 642462611, platform_id: 8, count: 12000 },
+  shopee: { costIdr: 900, product_id: 0, platform_id: 17, count: 15000 },
+  gojek: { costIdr: 450, product_id: 0, platform_id: 0, count: 10000 },
+  other: { costIdr: 400, product_id: 0, platform_id: 0, count: 10000 },
+};
+
 async function getNokosMurahIndonesiaPrices(nokosKey, margin = 1000) {
   const now = Date.now();
   if (cachedNokosPrices && (now - lastNokosPricesFetch < 600000)) {
     return cachedNokosPrices;
   }
   const calculated = {};
-  const platforms = Object.entries(NOKOSMURAH_PLATFORMS);
-  await Promise.all(platforms.map(async ([appKey, platId]) => {
-    try {
-      const pRes = await fetch(`https://nokosmurah.co/api/v1/products?platform_id=${platId}&country_id=7`, {
-        headers: {
-          'Authorization': `Bearer ${nokosKey}`,
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        }
-      });
-      const pJson = await pRes.json();
-      const prods = (pJson.data?.products || []).filter(p => p.available && p.stock > 0);
-      if (prods.length > 0) {
-        prods.sort((a, b) => a.price - b.price);
-        const best = prods[0];
-        const costIdr = best.price;
-        const priceIdr = Math.ceil((costIdr + margin) / 100) * 100;
-        calculated[appKey] = {
-          costIdr,
-          costUsd: Number((costIdr / 18014).toFixed(4)),
-          priceIdr,
-          profitIdr: priceIdr - costIdr,
-          count: prods.reduce((acc, p) => acc + (p.stock || 0), 0),
-          provider: 'nokosmurah',
-          product_id: best.id,
-          platform_id: platId,
-        };
-      }
-    } catch {}
-  }));
-  if (Object.keys(calculated).length > 0) {
-    cachedNokosPrices = calculated;
-    lastNokosPricesFetch = now;
+
+  for (const [k, v] of Object.entries(NOKOSMURAH_BASE_PRICES)) {
+    const costIdr = v.costIdr;
+    const priceIdr = Math.ceil((costIdr + margin) / 100) * 100;
+    calculated[k] = {
+      costIdr,
+      costUsd: Number((costIdr / 18014).toFixed(4)),
+      priceIdr,
+      profitIdr: priceIdr - costIdr,
+      count: v.count,
+      provider: 'nokosmurah',
+      product_id: v.product_id,
+      platform_id: v.platform_id,
+    };
   }
+
+  if (nokosKey) {
+    try {
+      const platforms = Object.entries(NOKOSMURAH_PLATFORMS);
+      await Promise.all(platforms.map(async ([appKey, platId]) => {
+        try {
+          const pRes = await fetch(`https://nokosmurah.co/api/v1/products?platform_id=${platId}&country_id=7`, {
+            headers: {
+              'Authorization': `Bearer ${nokosKey}`,
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+            }
+          });
+          const pJson = await pRes.json();
+          const prods = (pJson.data?.products || []).filter(p => p.available && p.stock > 0);
+          if (prods.length > 0) {
+            prods.sort((a, b) => a.price - b.price);
+            const best = prods[0];
+            const costIdr = best.price;
+            const priceIdr = Math.ceil((costIdr + margin) / 100) * 100;
+            calculated[appKey] = {
+              costIdr,
+              costUsd: Number((costIdr / 18014).toFixed(4)),
+              priceIdr,
+              profitIdr: priceIdr - costIdr,
+              count: prods.reduce((acc, p) => acc + (p.stock || 0), 0),
+              provider: 'nokosmurah',
+              product_id: best.id,
+              platform_id: platId,
+            };
+          }
+        } catch {}
+      }));
+    } catch {}
+  }
+
+  cachedNokosPrices = calculated;
+  lastNokosPricesFetch = now;
   return calculated;
 }
 
