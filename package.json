@@ -1,7 +1,7 @@
 {
   "name": "pojokai",
   "version": "1.0.0",
-  "description": "Toko Akun Digital & Nokos OTP via WhatsApp",
+  "description": "Toko Akun Digital & Jasa Sosmed via WhatsApp",
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
