@@ -3617,18 +3617,18 @@ initConstructionNotice();
 
 /* ---------- Portal Nokos OTP (5sim Integration) ---------- */
 const NOKOS_APPS = [
-  { id: 'whatsapp', name: 'WhatsApp', price: 'Rp3.500', icon: 'message-circle' },
-  { id: 'telegram', name: 'Telegram', price: 'Rp2.500', icon: 'send' },
-  { id: 'tiktok', name: 'TikTok', price: 'Rp2.000', icon: 'music' },
-  { id: 'google', name: 'Google / Gmail', price: 'Rp1.500', icon: 'mail' },
-  { id: 'openai', name: 'OpenAI / ChatGPT', price: 'Rp3.000', icon: 'bot' },
-  { id: 'twitter', name: 'Twitter / X', price: 'Rp1.500', icon: 'hash' },
-  { id: 'instagram', name: 'Instagram', price: 'Rp2.000', icon: 'camera' },
-  { id: 'discord', name: 'Discord', price: 'Rp2.000', icon: 'gamepad-2' },
-  { id: 'facebook', name: 'Facebook', price: 'Rp2.000', icon: 'users' },
-  { id: 'shopee', name: 'Shopee', price: 'Rp2.500', icon: 'shopping-cart' },
-  { id: 'gojek', name: 'Gojek', price: 'Rp3.000', icon: 'bike' },
-  { id: 'other', name: 'Aplikasi Lainnya', price: 'Rp1.500', icon: 'layers' },
+  { id: 'whatsapp', name: 'WhatsApp', price: 'Rp10.500', icon: 'message-circle', costIdr: 9240, profitIdr: 1260 },
+  { id: 'telegram', name: 'Telegram', price: 'Rp6.000', icon: 'send', costIdr: 4950, profitIdr: 1050 },
+  { id: 'tiktok', name: 'TikTok', price: 'Rp1.500', icon: 'music', costIdr: 424, profitIdr: 1076 },
+  { id: 'google', name: 'Google / Gmail', price: 'Rp2.500', icon: 'mail', costIdr: 1355, profitIdr: 1145 },
+  { id: 'openai', name: 'OpenAI / ChatGPT', price: 'Rp2.500', icon: 'bot', costIdr: 1269, profitIdr: 1231 },
+  { id: 'twitter', name: 'Twitter / X', price: 'Rp2.000', icon: 'hash', costIdr: 677, profitIdr: 1323 },
+  { id: 'instagram', name: 'Instagram', price: 'Rp2.000', icon: 'camera', costIdr: 508, profitIdr: 1492 },
+  { id: 'discord', name: 'Discord', price: 'Rp1.500', icon: 'gamepad-2', costIdr: 254, profitIdr: 1246 },
+  { id: 'facebook', name: 'Facebook', price: 'Rp3.000', icon: 'users', costIdr: 1693, profitIdr: 1307 },
+  { id: 'shopee', name: 'Shopee', price: 'Rp2.500', icon: 'shopping-cart', costIdr: 1015, profitIdr: 1485 },
+  { id: 'gojek', name: 'Gojek', price: 'Rp2.000', icon: 'bike', costIdr: 931, profitIdr: 1069 },
+  { id: 'other', name: 'Aplikasi Lainnya', price: 'Rp1.500', icon: 'layers', costIdr: 232, profitIdr: 1268 },
 ];
 
 let activeNokosOrder = null;
@@ -3679,10 +3679,36 @@ function renderNokosAppGrid() {
   icons();
 }
 
+async function loadNokosLivePrices(country = 'indonesia') {
+  try {
+    const res = await fetch(`/api/fivesim/prices?country=${encodeURIComponent(country)}`);
+    const data = await res.json();
+    if (data.ok && data.prices) {
+      NOKOS_APPS.forEach((app) => {
+        const pInfo = data.prices[app.id];
+        if (pInfo && pInfo.priceIdr) {
+          app.price = rp(pInfo.priceIdr);
+          app.costIdr = pInfo.costIdr;
+          app.costUsd = pInfo.costUsd;
+          app.profitIdr = pInfo.profitIdr;
+          app.count = pInfo.count;
+        }
+      });
+      renderNokosAppGrid();
+      updateNokosPriceEstimate();
+    }
+  } catch {}
+}
+
 function updateNokosPriceEstimate() {
   const app = NOKOS_APPS.find((a) => a.id === selectedNokosApp) || NOKOS_APPS[0];
   const el = $('#nokosPriceEstimate');
-  if (el) el.textContent = app.price;
+  if (!el) return;
+  if (app.costIdr) {
+    el.innerHTML = `<span>${esc(app.price)}</span> <small class="text-[11px] text-muted font-normal block sm:inline">(Modal 5sim: ${rp(app.costIdr)} + Untung Toko: ${rp(app.profitIdr || 1000)})</small>`;
+  } else {
+    el.textContent = app.price;
+  }
 }
 
 function switchNokosTab(tab) {
@@ -3767,11 +3793,11 @@ function openNokosModal(initialApp = 'whatsapp') {
   modal.classList.remove('hidden');
   modal.classList.add('flex');
   document.documentElement.style.overflow = 'hidden';
-
   renderNokosAppGrid();
   updateNokosPriceEstimate();
   switchNokosTab('buy');
   checkFivesimConfig();
+  loadNokosLivePrices($('#nokosCountrySelect')?.value || 'indonesia');
   icons();
 
   setTimeout(() => $('#nokosDialog')?.focus({ preventScroll: true }), 50);
@@ -3935,6 +3961,10 @@ function initNokosPortal() {
     selectedNokosApp = card.dataset.appId;
     renderNokosAppGrid();
     updateNokosPriceEstimate();
+  });
+
+  $('#nokosCountrySelect')?.addEventListener('change', (e) => {
+    loadNokosLivePrices(e.target.value);
   });
 
   $('#nokosSubmitBuyBtn')?.addEventListener('click', buyNokosOrder);

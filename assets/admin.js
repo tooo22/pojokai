@@ -1772,6 +1772,16 @@ function open5simDialog() {
         <input id="a5simKeyInput" type="password" class="input h-10 w-full rounded-xl text-xs font-mono" placeholder="Masukkan API Key 5sim...">
         <p class="mt-1 text-[11px] text-subtle">Ambil API Key dari <a href="https://5sim.net/settings/security" target="_blank" rel="noopener" class="text-primary underline">5sim.net &rarr; Settings &rarr; API</a></p>
       </div>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div>
+          <label class="block font-semibold text-main mb-1" for="a5simMarginInput">Margin Untung (Rp/Nomer):</label>
+          <input id="a5simMarginInput" type="number" class="input h-10 w-full rounded-xl text-xs font-bold" value="1000" placeholder="1000">
+        </div>
+        <div>
+          <label class="block font-semibold text-main mb-1" for="a5simRateInput">Estimasi Kurs USD (Rp):</label>
+          <input id="a5simRateInput" type="number" class="input h-10 w-full rounded-xl text-xs font-bold" value="16500" placeholder="16500">
+        </div>
+      </div>
       <div id="a5simStatusBox" class="hidden rounded-xl border border-line bg-surface-2 p-3 space-y-1">
         <div class="flex items-center justify-between">
           <span class="text-muted">Status 5sim:</span>
@@ -1816,10 +1826,13 @@ function open5simDialog() {
   $('#a5simForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const apiKey = ($('#a5simKeyInput')?.value || '').trim();
-    if (!apiKey) return toast('API Key tidak boleh kosong', 'err');
+    const marginIdr = Number($('#a5simMarginInput')?.value) || 1000;
+    const usdRate = Number($('#a5simRateInput')?.value) || 16500;
+    const payload = { fivesim: { marginIdr, usdRate } };
+    if (apiKey) payload.fivesim.apiKey = apiKey;
     try {
-      await api('PATCH', '/api/settings', { fivesim: { apiKey } });
-      toast('API Key 5sim berhasil disimpan!', 'ok');
+      await api('PATCH', '/api/settings', payload);
+      toast(`Pengaturan 5sim disimpan! Untung: Rp${marginIdr.toLocaleString('id-ID')}/nomer`, 'ok');
       closeADialog();
     } catch (err) {
       toast(err.message, 'err');

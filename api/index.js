@@ -2312,6 +2312,8 @@ export default async function handler(req, res) {
           apiKey: typeof body.fivesim.apiKey === 'string' ? body.fivesim.apiKey.trim() : (db.fivesim?.apiKey || ''),
           defaultCountry: body.fivesim.defaultCountry || db.fivesim?.defaultCountry || 'indonesia',
           defaultOperator: body.fivesim.defaultOperator || db.fivesim?.defaultOperator || 'any',
+          usdRate: Number(body.fivesim.usdRate) || db.fivesim?.usdRate || 16500,
+          marginIdr: body.fivesim.marginIdr !== undefined ? Number(body.fivesim.marginIdr) : (db.fivesim?.marginIdr ?? 1000),
         };
         await saveDb(db);
       }
@@ -2321,6 +2323,8 @@ export default async function handler(req, res) {
           hasKey: Boolean(getFivesimApiKey(db)),
           defaultCountry: db.fivesim?.defaultCountry || 'indonesia',
           defaultOperator: db.fivesim?.defaultOperator || 'any',
+          usdRate: db.fivesim?.usdRate || 16500,
+          marginIdr: db.fivesim?.marginIdr ?? 1000,
         }
       });
     }
@@ -2354,11 +2358,48 @@ export default async function handler(req, res) {
 
     if (method === 'GET' && pathname === '/api/fivesim/prices') {
       const country = String(url.searchParams.get('country') || db.fivesim?.defaultCountry || 'indonesia').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const rateUsd = Number(db.fivesim?.usdRate) || 16500;
+      const margin = Number(db.fivesim?.marginIdr ?? 1000);
       try {
         const fRes = await fetch(`https://5sim.net/v1/guest/prices?country=${encodeURIComponent(country)}`);
         if (!fRes.ok) return send(fRes.status, { ok: false, error: `Gagal memuat harga 5sim (HTTP ${fRes.status})` });
         const data = await fRes.json();
-        return send(200, { ok: true, country, prices: data[country] || {} });
+        const rawCountryPrices = data[country] || {};
+
+        const calculated = {};
+        for (const [prod, ops] of Object.entries(rawCountryPrices)) {
+          if (!ops || typeof ops !== 'object') continue;
+          const opList = Object.entries(ops);
+          if (!opList.length) continue;
+          const inStock = opList.filter(([_, v]) => (v.count || 0) > 0);
+          const chosen = inStock.length > 0
+            ? inStock.sort((a, b) => a[1].cost - b[1].cost)[0]
+            : opList.sort((a, b) => a[1].cost - b[1].cost)[0];
+
+          const costUsd = Number(chosen[1].cost) || 0;
+          const totalCount = opList.reduce((acc, [_, v]) => acc + (v.count || 0), 0);
+          const costIdr = Math.round(costUsd * rateUsd);
+          const priceIdr = Math.ceil((costIdr + margin) / 500) * 500;
+          const profitIdr = priceIdr - costIdr;
+
+          calculated[prod] = {
+            costUsd,
+            costIdr,
+            priceIdr,
+            profitIdr,
+            count: totalCount,
+            operator: chosen[0],
+          };
+        }
+
+        return send(200, {
+          ok: true,
+          country,
+          usdRate: rateUsd,
+          marginIdr: margin,
+          prices: calculated,
+          raw: rawCountryPrices,
+        });
       } catch (err) {
         return send(500, { ok: false, error: 'Gagal mengambil harga 5sim: ' + err.message });
       }
