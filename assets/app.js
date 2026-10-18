@@ -3614,3 +3614,445 @@ window.openConstructionModal = openConstructionModal;
 window.closeConstructionModal = closeConstructionModal;
 
 initConstructionNotice();
+
+/* ---------- Portal Nokos OTP (5sim Integration) ---------- */
+const NOKOS_APPS = [
+  { id: 'whatsapp', name: 'WhatsApp', price: 'Rp3.500', icon: 'message-circle' },
+  { id: 'telegram', name: 'Telegram', price: 'Rp2.500', icon: 'send' },
+  { id: 'tiktok', name: 'TikTok', price: 'Rp2.000', icon: 'music' },
+  { id: 'google', name: 'Google / Gmail', price: 'Rp1.500', icon: 'mail' },
+  { id: 'openai', name: 'OpenAI / ChatGPT', price: 'Rp3.000', icon: 'bot' },
+  { id: 'twitter', name: 'Twitter / X', price: 'Rp1.500', icon: 'hash' },
+  { id: 'instagram', name: 'Instagram', price: 'Rp2.000', icon: 'camera' },
+  { id: 'discord', name: 'Discord', price: 'Rp2.000', icon: 'gamepad-2' },
+  { id: 'facebook', name: 'Facebook', price: 'Rp2.000', icon: 'users' },
+  { id: 'shopee', name: 'Shopee', price: 'Rp2.500', icon: 'shopping-cart' },
+  { id: 'gojek', name: 'Gojek', price: 'Rp3.000', icon: 'bike' },
+  { id: 'other', name: 'Aplikasi Lainnya', price: 'Rp1.500', icon: 'layers' },
+];
+
+let activeNokosOrder = null;
+let nokosPollInterval = null;
+let selectedNokosApp = 'whatsapp';
+
+function getStoredNokosOrder() {
+  try {
+    const raw = localStorage.getItem('pojokai:active_nokos_order');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredNokosOrder(order) {
+  activeNokosOrder = order;
+  try {
+    if (order) {
+      localStorage.setItem('pojokai:active_nokos_order', JSON.stringify(order));
+    } else {
+      localStorage.removeItem('pojokai:active_nokos_order');
+    }
+  } catch {}
+}
+
+function renderNokosAppGrid() {
+  const grid = $('#nokosAppGrid');
+  if (!grid) return;
+  grid.innerHTML = NOKOS_APPS.map((app) => {
+    const isSelected = app.id === selectedNokosApp;
+    return `
+      <button type="button" data-app-id="${app.id}" class="nokos-app-card flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition cursor-pointer ${
+        isSelected
+          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
+          : 'border-line bg-surface hover:bg-surface-2 text-main'
+      }">
+        <span class="grid size-7 shrink-0 place-items-center rounded-lg bg-surface-2 text-main">
+          <i data-lucide="${app.icon}" class="size-4"></i>
+        </span>
+        <div class="min-w-0 flex-1">
+          <span class="block truncate text-xs font-bold leading-tight">${esc(app.name)}</span>
+          <span class="block text-[10px] text-muted">${esc(app.price)}</span>
+        </div>
+      </button>
+    `;
+  }).join('');
+  icons();
+}
+
+function updateNokosPriceEstimate() {
+  const app = NOKOS_APPS.find((a) => a.id === selectedNokosApp) || NOKOS_APPS[0];
+  const el = $('#nokosPriceEstimate');
+  if (el) el.textContent = app.price;
+}
+
+function switchNokosTab(tab) {
+  const tabs = ['buy', 'otp', 'settings'];
+  tabs.forEach((t) => {
+    const btn = $(`#nokosTabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    const view = $(`#nokosView${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    if (t === tab) {
+      btn?.classList.add('bg-primary', 'text-primary-fg', 'shadow-sm');
+      btn?.classList.remove('text-muted');
+      view?.classList.remove('hidden');
+    } else {
+      btn?.classList.remove('bg-primary', 'text-primary-fg', 'shadow-sm');
+      btn?.classList.add('text-muted');
+      view?.classList.add('hidden');
+    }
+  });
+
+  if (tab === 'buy') {
+    renderNokosAppGrid();
+    checkFivesimConfig();
+  } else if (tab === 'otp') {
+    if (activeNokosOrder) {
+      $('#nokosActiveBox')?.classList.remove('hidden');
+      $('#nokosNoOrderState')?.classList.add('hidden');
+      renderNokosOrderData(activeNokosOrder);
+      if (activeNokosOrder.status === 'PENDING') {
+        startNokosPolling(activeNokosOrder.id);
+      }
+    } else {
+      $('#nokosActiveBox')?.classList.add('hidden');
+      $('#nokosNoOrderState')?.classList.remove('hidden');
+    }
+  } else if (tab === 'settings') {
+    loadFivesimSettings();
+  }
+}
+
+async function checkFivesimConfig() {
+  try {
+    const res = await fetch('/api/fivesim/config');
+    const data = await res.json();
+    const alert = $('#nokosKeyAlert');
+    if (alert) {
+      if (!data.hasKey) {
+        alert.classList.remove('hidden');
+        alert.classList.add('flex');
+      } else {
+        alert.classList.add('hidden');
+        alert.classList.remove('flex');
+      }
+    }
+    return data;
+  } catch {
+    return { hasKey: false };
+  }
+}
+
+async function loadFivesimSettings() {
+  const config = await checkFivesimConfig();
+  if (config.hasKey) {
+    try {
+      const pRes = await fetch('/api/fivesim/profile');
+      const pData = await pRes.json();
+      if (pData.ok && pData.profile) {
+        $('#nokosProfileCard')?.classList.remove('hidden');
+        if ($('#nokosBalanceDisplay')) $('#nokosBalanceDisplay').textContent = `${pData.profile.balance} RUB`;
+        if ($('#nokosEmailDisplay')) $('#nokosEmailDisplay').textContent = pData.profile.email || '-';
+      }
+    } catch {}
+  }
+}
+
+function openNokosModal(initialApp = 'whatsapp') {
+  if (initialApp && NOKOS_APPS.some((a) => a.id === initialApp)) {
+    selectedNokosApp = initialApp;
+  }
+  const modal = $('#nokosModal');
+  if (!modal) return;
+
+  activeNokosOrder = getStoredNokosOrder();
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.documentElement.style.overflow = 'hidden';
+
+  renderNokosAppGrid();
+  updateNokosPriceEstimate();
+  switchNokosTab('buy');
+  checkFivesimConfig();
+  icons();
+
+  setTimeout(() => $('#nokosDialog')?.focus({ preventScroll: true }), 50);
+}
+
+function closeNokosModal() {
+  stopNokosPolling();
+  const modal = $('#nokosModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+  const hasOther = ['#modal', '#aModal', '#constructionModal'].some((s) => {
+    const el = $(s);
+    return el && !el.classList.contains('hidden');
+  });
+  if (!hasOther) {
+    document.documentElement.style.overflow = '';
+  }
+}
+
+function renderNokosOrderData(order) {
+  if (!order) return;
+  const phone = order.phone ? (String(order.phone).startsWith('+') ? order.phone : '+' + order.phone) : '-';
+  if ($('#nokosDisplayPhone')) $('#nokosDisplayPhone').textContent = phone;
+  if ($('#nokosDisplayAppBadge')) $('#nokosDisplayAppBadge').textContent = (order.product || selectedNokosApp || 'Nokos').toUpperCase();
+  if ($('#nokosDisplayCountryBadge')) $('#nokosDisplayCountryBadge').textContent = (order.country || 'Indonesia').toUpperCase();
+
+  const smsList = order.sms || [];
+  const hasSms = smsList.length > 0;
+
+  if (hasSms) {
+    const lastSms = smsList[smsList.length - 1];
+    const code = lastSms.code || (lastSms.text ? lastSms.text.match(/\b\d{4,8}\b/)?.[0] : '') || '-';
+    $('#nokosOtpEmptyState')?.classList.add('hidden');
+    $('#nokosOtpSuccessState')?.classList.remove('hidden');
+    if ($('#nokosOtpCodeDisplay')) $('#nokosOtpCodeDisplay').textContent = code;
+    if ($('#nokosSmsTextDisplay')) $('#nokosSmsTextDisplay').textContent = lastSms.text || '(SMS Masuk)';
+    if ($('#nokosStatusText')) $('#nokosStatusText').textContent = 'Kode OTP Berhasil Masuk!';
+    $('#nokosStatusDot')?.classList.add('text-emerald-500');
+    stopNokosPolling();
+  } else {
+    $('#nokosOtpEmptyState')?.classList.remove('hidden');
+    $('#nokosOtpSuccessState')?.classList.add('hidden');
+    if ($('#nokosStatusText')) $('#nokosStatusText').textContent = order.status === 'PENDING' ? 'Menunggu SMS OTP masuk...' : `Status: ${order.status}`;
+  }
+}
+
+function startNokosPolling(orderId) {
+  stopNokosPolling();
+  if (!orderId) return;
+
+  const poll = async () => {
+    try {
+      const res = await fetch(`/api/fivesim/check?orderId=${encodeURIComponent(orderId)}`);
+      const data = await res.json();
+      if (data.ok && data.order) {
+        setStoredNokosOrder(data.order);
+        renderNokosOrderData(data.order);
+        if (data.order.status !== 'PENDING' && (data.order.sms?.length || 0) > 0) {
+          stopNokosPolling();
+        }
+      }
+    } catch {}
+  };
+
+  poll();
+  nokosPollInterval = setInterval(poll, 4000);
+}
+
+function stopNokosPolling() {
+  if (nokosPollInterval) {
+    clearInterval(nokosPollInterval);
+    nokosPollInterval = null;
+  }
+}
+
+async function buyNokosOrder() {
+  const btn = $('#nokosSubmitBuyBtn');
+  const origHtml = btn?.innerHTML;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="size-4 animate-spin"></i><span>Menghubungi 5sim...</span>';
+    icons();
+  }
+
+  const country = $('#nokosCountrySelect')?.value || 'indonesia';
+  const operator = $('#nokosOperatorSelect')?.value || 'any';
+
+  try {
+    const res = await fetch('/api/fivesim/buy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product: selectedNokosApp, country, operator }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || 'Gagal membeli nomor dari 5sim');
+    }
+
+    setStoredNokosOrder(data.order);
+    toast('Nomor berhasil didapatkan! Menunggu OTP...', 'ok');
+    switchNokosTab('otp');
+  } catch (err) {
+    toast(err.message, 'err');
+    const cfg = await checkFivesimConfig();
+    if (!cfg.hasKey) {
+      switchNokosTab('settings');
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+      icons();
+    }
+  }
+}
+
+async function performNokosAction(action) {
+  if (!activeNokosOrder?.id) return;
+  const orderId = activeNokosOrder.id;
+
+  try {
+    const res = await fetch('/api/fivesim/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, action }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || `Gagal menjalankan aksi ${action}`);
+
+    if (action === 'finish') {
+      toast('Order selesai dan nomor berhasil digunakan!', 'ok');
+      setStoredNokosOrder(null);
+      switchNokosTab('otp');
+    } else if (action === 'cancel') {
+      toast('Order dibatalkan. Saldo 5sim dikembalikan.', 'ok');
+      setStoredNokosOrder(null);
+      switchNokosTab('otp');
+    } else if (action === 'ban') {
+      toast('Nomor dilaporkan banned.', 'err');
+      setStoredNokosOrder(null);
+      switchNokosTab('otp');
+    }
+  } catch (err) {
+    toast(err.message, 'err');
+  }
+}
+
+function initNokosPortal() {
+  $('#nokosModalClose')?.addEventListener('click', closeNokosModal);
+  $('#nokosTabBtnBuy')?.addEventListener('click', () => switchNokosTab('buy'));
+  $('#nokosTabBtnOtp')?.addEventListener('click', () => switchNokosTab('otp'));
+  $('#nokosTabBtnSettings')?.addEventListener('click', () => switchNokosTab('settings'));
+  $('#nokosGoSettingsBtn')?.addEventListener('click', () => switchNokosTab('settings'));
+  $('#nokosGoBuyBtn')?.addEventListener('click', () => switchNokosTab('buy'));
+
+  $('#nokosAppGrid')?.addEventListener('click', (e) => {
+    const card = e.target.closest('[data-app-id]');
+    if (!card) return;
+    selectedNokosApp = card.dataset.appId;
+    renderNokosAppGrid();
+    updateNokosPriceEstimate();
+  });
+
+  $('#nokosSubmitBuyBtn')?.addEventListener('click', buyNokosOrder);
+
+  $('#nokosCopyPhoneBtn')?.addEventListener('click', () => {
+    const phone = $('#nokosDisplayPhone')?.textContent?.trim();
+    if (phone && phone !== '-') {
+      navigator.clipboard?.writeText(phone);
+      toast('Nomor HP disalin ke clipboard!', 'ok');
+    }
+  });
+
+  $('#nokosCopyOtpBtn')?.addEventListener('click', () => {
+    const code = $('#nokosOtpCodeDisplay')?.textContent?.trim();
+    if (code && code !== '------') {
+      navigator.clipboard?.writeText(code);
+      toast('Kode OTP disalin!', 'ok');
+    }
+  });
+
+  $('#nokosBtnFinish')?.addEventListener('click', () => performNokosAction('finish'));
+  $('#nokosBtnCancel')?.addEventListener('click', () => performNokosAction('cancel'));
+  $('#nokosBtnBan')?.addEventListener('click', () => performNokosAction('ban'));
+
+  $('#nokosFetchOrderBtn')?.addEventListener('click', async () => {
+    const val = $('#nokosTrackOrderIdInput')?.value?.trim();
+    if (!val) return toast('Masukkan ID Order 5sim terlebih dahulu.', 'err');
+    try {
+      const res = await fetch(`/api/fivesim/check?orderId=${encodeURIComponent(val)}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Order tidak ditemukan');
+      setStoredNokosOrder(data.order);
+      renderNokosOrderData(data.order);
+      $('#nokosActiveBox')?.classList.remove('hidden');
+      $('#nokosNoOrderState')?.classList.add('hidden');
+      if (data.order.status === 'PENDING') startNokosPolling(data.order.id);
+      toast('Data order berhasil dimuat!', 'ok');
+    } catch (err) {
+      toast(err.message, 'err');
+    }
+  });
+
+  $('#nokosToggleKeyVisibility')?.addEventListener('click', () => {
+    const input = $('#nokosApiKeyInput');
+    if (input) {
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+  });
+
+  $('#nokosTestKeyBtn')?.addEventListener('click', async () => {
+    const btn = $('#nokosTestKeyBtn');
+    const orig = btn?.innerHTML;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="size-3.5 animate-spin"></i><span>Mengecek...</span>';
+      icons();
+    }
+    try {
+      const res = await fetch('/api/fivesim/profile');
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Koneksi gagal');
+      $('#nokosProfileCard')?.classList.remove('hidden');
+      if ($('#nokosBalanceDisplay')) $('#nokosBalanceDisplay').textContent = `${data.profile.balance} RUB`;
+      if ($('#nokosEmailDisplay')) $('#nokosEmailDisplay').textContent = data.profile.email || '-';
+      toast(`Koneksi 5sim Berhasil! Saldo: ${data.profile.balance} RUB`, 'ok');
+    } catch (err) {
+      toast(err.message, 'err');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        icons();
+      }
+    }
+  });
+
+  $('#nokosSettingsForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const apiKey = ($('#nokosApiKeyInput')?.value || '').trim();
+    if (!apiKey) return toast('API Key tidak boleh kosong', 'err');
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fivesim: { apiKey } }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan API Key');
+      toast('API Key 5sim berhasil disimpan!', 'ok');
+      loadFivesimSettings();
+      checkFivesimConfig();
+    } catch (err) {
+      toast(err.message, 'err');
+    }
+  });
+
+  $('#nokosModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'nokosModal') closeNokosModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const m = $('#nokosModal');
+      if (m && !m.classList.contains('hidden')) closeNokosModal();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-open-nokos]');
+    if (btn) {
+      e.preventDefault();
+      const app = btn.dataset.openNokos;
+      openNokosModal(app === 'all' || !app ? 'whatsapp' : app);
+    }
+  });
+}
+
+window.openNokosModal = openNokosModal;
+window.closeNokosModal = closeNokosModal;
+
+initNokosPortal();

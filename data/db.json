@@ -19,6 +19,11 @@
   "wistapay": {
     "apiKey": "sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5"
   },
+  "fivesim": {
+    "apiKey": "",
+    "defaultCountry": "indonesia",
+    "defaultOperator": "any"
+  },
   "userLanguages": {},
   "categories": [
     {

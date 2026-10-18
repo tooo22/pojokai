@@ -438,6 +438,10 @@ function getWistapayApiKey(db = null) {
   return process.env.WISTAPAY_API_KEY || db?.wistapay?.apiKey || '';
 }
 
+function getFivesimApiKey(db = null) {
+  return process.env.FIVESIM_API_KEY || db?.fivesim?.apiKey || '';
+}
+
 function getSecurityBotToken(db = null) {
   return process.env.SECURITY_BOT_TOKEN || db?.securityBot?.botToken || '8959210006:AAGLcpr02FOVYm0MWu0PM-qkIl1oqRE-wmE';
 }
@@ -2302,7 +2306,135 @@ export default async function handler(req, res) {
         db.wa = cleanWa;
         await saveDb(db);
       }
-      return send(200, { wa: db.wa });
+      if (body.fivesim !== undefined) {
+        db.fivesim = {
+          ...(db.fivesim || {}),
+          apiKey: typeof body.fivesim.apiKey === 'string' ? body.fivesim.apiKey.trim() : (db.fivesim?.apiKey || ''),
+          defaultCountry: body.fivesim.defaultCountry || db.fivesim?.defaultCountry || 'indonesia',
+          defaultOperator: body.fivesim.defaultOperator || db.fivesim?.defaultOperator || 'any',
+        };
+        await saveDb(db);
+      }
+      return send(200, {
+        wa: db.wa,
+        fivesim: {
+          hasKey: Boolean(getFivesimApiKey(db)),
+          defaultCountry: db.fivesim?.defaultCountry || 'indonesia',
+          defaultOperator: db.fivesim?.defaultOperator || 'any',
+        }
+      });
+    }
+
+    // 5sim API Routes
+    if (method === 'GET' && pathname === '/api/fivesim/config') {
+      const hasKey = Boolean(getFivesimApiKey(db));
+      return send(200, {
+        ok: true,
+        hasKey,
+        defaultCountry: db.fivesim?.defaultCountry || 'indonesia',
+        defaultOperator: db.fivesim?.defaultOperator || 'any',
+      });
+    }
+
+    if (method === 'GET' && pathname === '/api/fivesim/profile') {
+      const apiKey = getFivesimApiKey(db);
+      if (!apiKey) return send(400, { ok: false, error: 'API Key 5sim belum diatur. Silakan masukkan API Key di panel pengaturan.' });
+      try {
+        const fRes = await fetch('https://5sim.net/v1/user/profile', {
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        });
+        if (fRes.status === 401) return send(401, { ok: false, error: 'API Key 5sim tidak valid atau kedaluwarsa.' });
+        if (!fRes.ok) return send(fRes.status, { ok: false, error: `5sim error HTTP ${fRes.status}` });
+        const profile = await fRes.json();
+        return send(200, { ok: true, profile: { id: profile.id, email: profile.email, balance: profile.balance, rating: profile.rating } });
+      } catch (err) {
+        return send(500, { ok: false, error: 'Gagal menghubungi server 5sim: ' + (err.message || 'Network error') });
+      }
+    }
+
+    if (method === 'GET' && pathname === '/api/fivesim/prices') {
+      const country = String(url.searchParams.get('country') || db.fivesim?.defaultCountry || 'indonesia').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      try {
+        const fRes = await fetch(`https://5sim.net/v1/guest/prices?country=${encodeURIComponent(country)}`);
+        if (!fRes.ok) return send(fRes.status, { ok: false, error: `Gagal memuat harga 5sim (HTTP ${fRes.status})` });
+        const data = await fRes.json();
+        return send(200, { ok: true, country, prices: data[country] || {} });
+      } catch (err) {
+        return send(500, { ok: false, error: 'Gagal mengambil harga 5sim: ' + err.message });
+      }
+    }
+
+    if (method === 'POST' && pathname === '/api/fivesim/buy') {
+      const apiKey = getFivesimApiKey(db);
+      if (!apiKey) return send(400, { ok: false, error: 'API Key 5sim belum diatur. Silakan masukkan API Key 5sim terlebih dahulu.' });
+      const body = await readBody(req);
+      const product = String(body.product || 'whatsapp').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const country = String(body.country || db.fivesim?.defaultCountry || 'indonesia').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const operator = String(body.operator || db.fivesim?.defaultOperator || 'any').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+      try {
+        const buyUrl = `https://5sim.net/v1/user/buy/activation/${country}/${operator}/${product}`;
+        const fRes = await fetch(buyUrl, {
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        });
+        const rawText = await fRes.text();
+        if (!fRes.ok) {
+          let errText = rawText || `Error HTTP ${fRes.status}`;
+          if (errText.includes('no free phones')) errText = `Stok nomor untuk ${product} di negara ${country} sedang kosong. Coba negara lain atau coba lagi sebentar.`;
+          else if (errText.includes('not enough user balance')) errText = 'Saldo akun 5sim tidak mencukupi untuk membeli nomor ini.';
+          else if (errText.includes('bad service')) errText = `Layanan ${product} tidak tersedia untuk negara ${country}.`;
+          return send(400, { ok: false, error: errText });
+        }
+        let order;
+        try { order = JSON.parse(rawText); } catch { order = { raw: rawText }; }
+        return send(200, { ok: true, order });
+      } catch (err) {
+        return send(500, { ok: false, error: 'Gagal melakukan pembelian nomor: ' + err.message });
+      }
+    }
+
+    if (method === 'GET' && pathname === '/api/fivesim/check') {
+      const apiKey = getFivesimApiKey(db);
+      if (!apiKey) return send(400, { ok: false, error: 'API Key 5sim belum diatur.' });
+      const orderId = String(url.searchParams.get('orderId') || '').trim();
+      if (!orderId) return send(400, { ok: false, error: 'Order ID wajib diisi.' });
+
+      try {
+        const fRes = await fetch(`https://5sim.net/v1/user/check/${encodeURIComponent(orderId)}`, {
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        });
+        if (!fRes.ok) {
+          const t = await fRes.text();
+          return send(400, { ok: false, error: t || `Error HTTP ${fRes.status}` });
+        }
+        const order = await fRes.json();
+        return send(200, { ok: true, order });
+      } catch (err) {
+        return send(500, { ok: false, error: 'Gagal mengecek status order: ' + err.message });
+      }
+    }
+
+    if (method === 'POST' && pathname === '/api/fivesim/action') {
+      const apiKey = getFivesimApiKey(db);
+      if (!apiKey) return send(400, { ok: false, error: 'API Key 5sim belum diatur.' });
+      const body = await readBody(req);
+      const orderId = String(body.orderId || '').trim();
+      const action = String(body.action || '').toLowerCase().trim();
+      if (!orderId || !['finish', 'cancel', 'ban'].includes(action)) {
+        return send(400, { ok: false, error: 'Parameter orderId dan action (finish|cancel|ban) wajib valid.' });
+      }
+
+      try {
+        const fRes = await fetch(`https://5sim.net/v1/user/${action}/${encodeURIComponent(orderId)}`, {
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        });
+        const raw = await fRes.text();
+        let json;
+        try { json = JSON.parse(raw); } catch { json = { message: raw }; }
+        return send(200, { ok: true, action, result: json });
+      } catch (err) {
+        return send(500, { ok: false, error: 'Gagal menjalankan aksi order: ' + err.message });
+      }
     }
 
     // 11. Password
