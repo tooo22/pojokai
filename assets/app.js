@@ -3880,7 +3880,7 @@ async function buyNokosOrder() {
   const origHtml = btn?.innerHTML;
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2" class="size-4 animate-spin"></i><span>Menghubungi 5sim...</span>';
+    btn.innerHTML = '<i data-lucide="loader-2" class="size-4 animate-spin"></i><span>Menghubungi server...</span>';
     icons();
   }
 
@@ -3895,7 +3895,7 @@ async function buyNokosOrder() {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      throw new Error(data.error || 'Gagal membeli nomor dari 5sim');
+      throw new Error(data.error || 'Gagal membeli nomor virtual');
     }
 
     setStoredNokosOrder(data.order);
@@ -3934,7 +3934,7 @@ async function performNokosAction(action) {
       setStoredNokosOrder(null);
       switchNokosTab('otp');
     } else if (action === 'cancel') {
-      toast('Order dibatalkan. Saldo 5sim dikembalikan.', 'ok');
+      toast('Order dibatalkan. Saldo dikembalikan.', 'ok');
       setStoredNokosOrder(null);
       switchNokosTab('otp');
     } else if (action === 'ban') {
@@ -3991,7 +3991,7 @@ function initNokosPortal() {
 
   $('#nokosFetchOrderBtn')?.addEventListener('click', async () => {
     const val = $('#nokosTrackOrderIdInput')?.value?.trim();
-    if (!val) return toast('Masukkan ID Order 5sim terlebih dahulu.', 'err');
+    if (!val) return toast('Masukkan ID Order terlebih dahulu.', 'err');
     try {
       const res = await fetch(`/api/fivesim/check?orderId=${encodeURIComponent(val)}`);
       const data = await res.json();
@@ -4029,7 +4029,7 @@ function initNokosPortal() {
       $('#nokosProfileCard')?.classList.remove('hidden');
       if ($('#nokosBalanceDisplay')) $('#nokosBalanceDisplay').textContent = `${data.profile.balance} RUB`;
       if ($('#nokosEmailDisplay')) $('#nokosEmailDisplay').textContent = data.profile.email || '-';
-      toast(`Koneksi 5sim Berhasil! Saldo: ${data.profile.balance} RUB`, 'ok');
+      toast('Server Provider Siap & Terhubung!', 'ok');
     } catch (err) {
       toast(err.message, 'err');
     } finally {
@@ -4043,17 +4043,20 @@ function initNokosPortal() {
 
   $('#nokosSettingsForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const apiKey = ($('#nokosApiKeyInput')?.value || '').trim();
-    if (!apiKey) return toast('API Key tidak boleh kosong', 'err');
+    const nokosmurahKey = ($('#nokosMurahKeyInput')?.value || '').trim();
+    const fivesimKey = ($('#nokosApiKeyInput')?.value || '').trim();
+    const payload = {};
+    if (nokosmurahKey) payload.nokosmurah = { apiKey: nokosmurahKey };
+    if (fivesimKey) payload.fivesim = { apiKey: fivesimKey };
     try {
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fivesim: { apiKey } }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal menyimpan API Key');
-      toast('API Key 5sim berhasil disimpan!', 'ok');
+      toast('Pengaturan API Provider berhasil disimpan!', 'ok');
       loadFivesimSettings();
       checkFivesimConfig();
     } catch (err) {
