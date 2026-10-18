@@ -3705,7 +3705,7 @@ function updateNokosPriceEstimate() {
   const el = $('#nokosPriceEstimate');
   if (!el) return;
   if (app.costIdr) {
-    el.innerHTML = `<span>${esc(app.price)}</span> <small class="text-[11px] text-muted font-normal block sm:inline">(Modal 5sim: ${rp(app.costIdr)} + Untung Toko: ${rp(app.profitIdr || 1000)})</small>`;
+    el.innerHTML = `<span>${esc(app.price)}</span> <small class="text-[11px] text-muted font-normal block sm:inline">(Modal: ${rp(app.costIdr)} + Untung Toko: ${rp(app.profitIdr || 1000)})</small>`;
   } else {
     el.textContent = app.price;
   }

@@ -1772,6 +1772,11 @@ function open5simDialog() {
         <input id="a5simKeyInput" type="password" class="input h-10 w-full rounded-xl text-xs font-mono" placeholder="Masukkan API Key 5sim...">
         <p class="mt-1 text-[11px] text-subtle">Ambil API Key dari <a href="https://5sim.net/settings/security" target="_blank" rel="noopener" class="text-primary underline">5sim.net &rarr; Settings &rarr; API</a></p>
       </div>
+      <div>
+        <label class="block font-semibold text-main mb-1" for="aNokosKeyInput">NokosMurah API Key (Lokal Indonesia):</label>
+        <input id="aNokosKeyInput" type="password" class="input h-10 w-full rounded-xl text-xs font-mono" placeholder="nokosmurah_live_...">
+        <p class="mt-1 text-[11px] text-subtle">Untuk nomor Indonesia murah (WA Rp4.800, Tele Rp1.500) dari <a href="https://nokosmurah.co/dashboard#apidev" target="_blank" rel="noopener" class="text-primary underline">nokosmurah.co &rarr; Developer API</a></p>
+      </div>
       <div class="grid grid-cols-2 gap-2 pt-1">
         <div>
           <label class="block font-semibold text-main mb-1" for="a5simMarginInput">Margin Untung (Rp/Nomer):</label>
@@ -1826,13 +1831,15 @@ function open5simDialog() {
   $('#a5simForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const apiKey = ($('#a5simKeyInput')?.value || '').trim();
+    const nokosmurahKey = ($('#aNokosKeyInput')?.value || '').trim();
     const marginIdr = Number($('#a5simMarginInput')?.value) || 1000;
-    const usdRate = Number($('#a5simRateInput')?.value) || 16500;
+    const usdRate = Number($('#a5simRateInput')?.value) || 18014;
     const payload = { fivesim: { marginIdr, usdRate } };
     if (apiKey) payload.fivesim.apiKey = apiKey;
+    if (nokosmurahKey) payload.nokosmurah = { apiKey: nokosmurahKey, marginIdr };
     try {
       await api('PATCH', '/api/settings', payload);
-      toast(`Pengaturan 5sim disimpan! Untung: Rp${marginIdr.toLocaleString('id-ID')}/nomer`, 'ok');
+      toast(`Pengaturan Nokos disimpan! Untung: Rp${marginIdr.toLocaleString('id-ID')}/nomer`, 'ok');
       closeADialog();
     } catch (err) {
       toast(err.message, 'err');

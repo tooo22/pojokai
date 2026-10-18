@@ -2427,31 +2427,6 @@ export default async function handler(req, res) {
         defaultOperator: db.fivesim?.defaultOperator || 'any',
       });
     }
-
-    if (method === 'GET' && pathname === '/api/fivesim/debug-nokos') {
-      const nokosKey = getNokosMurahApiKey(db);
-      try {
-        const t0 = Date.now();
-        const r = await fetch('https://nokosmurah.co/api/v1/balance', {
-          headers: {
-            'Authorization': `Bearer ${nokosKey}`,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-          }
-        });
-        const text = await r.text();
-        return send(200, {
-          ok: true,
-          status: r.status,
-          ms: Date.now() - t0,
-          hasKey: Boolean(nokosKey),
-          keyPrefix: nokosKey.slice(0, 15),
-          body: text.slice(0, 500)
-        });
-      } catch (e) {
-        return send(500, { ok: false, error: e.message, code: e.code });
-      }
-    }
-
     if (method === 'GET' && pathname === '/api/fivesim/profile') {
       const apiKey = getFivesimApiKey(db);
       if (!apiKey) return send(400, { ok: false, error: 'API Key 5sim belum diatur. Silakan masukkan API Key di panel pengaturan.' });
