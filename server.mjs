@@ -557,6 +557,45 @@ function getFivesimApiKey(dbData = null) {
   return process.env.FIVESIM_API_KEY || dbData?.fivesim?.apiKey || db?.fivesim?.apiKey || '';
 }
 
+function getNokosMurahApiKey(dbData = null) {
+  return process.env.NOKOSMURAH_API_KEY || dbData?.nokosmurah?.apiKey || db?.nokosmurah?.apiKey || '';
+}
+
+const NOKOSMURAH_PLATFORMS = {
+  whatsapp: 1,
+  telegram: 2,
+  instagram: 3,
+  facebook: 4,
+  google: 5,
+  twitter: 6,
+  tiktok: 7,
+  discord: 8,
+  openai: 20,
+  apple: 12,
+  microsoft: 11,
+  shopee: 17,
+};
+
+let cachedLiveUsdRate = null;
+let lastUsdRateTimestamp = 0;
+
+async function getLiveUsdRate(dbData = null) {
+  const now = Date.now();
+  if (cachedLiveUsdRate && (now - lastUsdRateTimestamp < 3600000)) {
+    return cachedLiveUsdRate;
+  }
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json();
+    if (data?.rates?.IDR) {
+      cachedLiveUsdRate = Math.round(data.rates.IDR);
+      lastUsdRateTimestamp = now;
+      return cachedLiveUsdRate;
+    }
+  } catch {}
+  return Number(dbData?.fivesim?.usdRate || db?.fivesim?.usdRate || 18014);
+}
+
 function getSecurityBotToken(dbData = null) {
   return process.env.SECURITY_BOT_TOKEN || dbData?.securityBot?.botToken || '8959210006:AAGLcpr02FOVYm0MWu0PM-qkIl1oqRE-wmE';
 }
@@ -2218,10 +2257,14 @@ async function api(req, res, url) {
 
   // 5sim API Routes
   if (method === 'GET' && p === '/api/fivesim/config') {
-    const hasKey = Boolean(getFivesimApiKey(db));
+    const has5sim = Boolean(getFivesimApiKey(db));
+    const hasNokos = Boolean(getNokosMurahApiKey(db));
     return send(res, 200, {
       ok: true,
-      hasKey,
+      hasKey: has5sim || hasNokos,
+      has5sim,
+      hasNokos,
+      activeProvider: hasNokos ? 'nokosmurah' : '5sim',
       defaultCountry: db.fivesim?.defaultCountry || 'indonesia',
       defaultOperator: db.fivesim?.defaultOperator || 'any',
     });
@@ -2245,65 +2288,162 @@ async function api(req, res, url) {
 
   if (method === 'GET' && p === '/api/fivesim/prices') {
     const country = String(url.searchParams.get('country') || db.fivesim?.defaultCountry || 'indonesia').toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    const rateUsd = Number(db.fivesim?.usdRate) || 16500;
-    const margin = Number(db.fivesim?.marginIdr ?? 1000);
+    const rateUsd = await getLiveUsdRate(db);
+    const margin = Number(db.nokosmurah?.marginIdr ?? db.fivesim?.marginIdr ?? 1000);
+    const nokosKey = getNokosMurahApiKey(db);
+
+    const calculated = {};
+
+    // 1. Ambil harga lokal super murah dari NokosMurah untuk nomor Indonesia
+    if (country === 'indonesia' && nokosKey) {
+      try {
+        const platforms = Object.entries(NOKOSMURAH_PLATFORMS);
+        await Promise.all(platforms.map(async ([appKey, platId]) => {
+          try {
+            const pRes = await fetch(`https://nokosmurah.co/api/v1/products?platform_id=${platId}&country_id=7`, {
+              headers: { 'Authorization': `Bearer ${nokosKey}` }
+            });
+            const pJson = await pRes.json();
+            const prods = (pJson.data?.products || []).filter(p => p.available && p.stock > 0);
+            if (prods.length > 0) {
+              prods.sort((a, b) => a.price - b.price);
+              const best = prods[0];
+              const costIdr = best.price;
+              const priceIdr = Math.ceil((costIdr + margin) / 100) * 100;
+              calculated[appKey] = {
+                costIdr,
+                costUsd: Number((costIdr / rateUsd).toFixed(4)),
+                priceIdr,
+                profitIdr: priceIdr - costIdr,
+                count: prods.reduce((acc, p) => acc + (p.stock || 0), 0),
+                provider: 'nokosmurah',
+                product_id: best.id,
+                platform_id: platId,
+              };
+            }
+          } catch {}
+        }));
+      } catch {}
+    }
+
+    // 2. Fetch harga dari 5sim (untuk negara lain atau jika NokosMurah tidak menyediakan aplikasi tsb)
     try {
       const fRes = await fetch(`https://5sim.net/v1/guest/prices?country=${encodeURIComponent(country)}`);
-      if (!fRes.ok) return send(res, fRes.status, { ok: false, error: `Gagal memuat harga 5sim (HTTP ${fRes.status})` });
-      const data = await fRes.json();
-      const rawCountryPrices = data[country] || {};
+      if (fRes.ok) {
+        const data = await fRes.json();
+        const rawCountryPrices = data[country] || {};
 
-      const calculated = {};
-      for (const [prod, ops] of Object.entries(rawCountryPrices)) {
-        if (!ops || typeof ops !== 'object') continue;
-        const opList = Object.entries(ops);
-        if (!opList.length) continue;
-        const inStock = opList.filter(([_, v]) => (v.count || 0) > 0);
-        const chosen = inStock.length > 0
-          ? inStock.sort((a, b) => a[1].cost - b[1].cost)[0]
-          : opList.sort((a, b) => a[1].cost - b[1].cost)[0];
+        for (const [prod, ops] of Object.entries(rawCountryPrices)) {
+          if (!ops || typeof ops !== 'object') continue;
+          if (calculated[prod]) continue; // Sudah ada dari NokosMurah lokal
+          const opList = Object.entries(ops);
+          if (!opList.length) continue;
+          const inStock = opList.filter(([_, v]) => (v.count || 0) > 0);
+          const chosen = inStock.length > 0
+            ? inStock.sort((a, b) => a[1].cost - b[1].cost)[0]
+            : opList.sort((a, b) => a[1].cost - b[1].cost)[0];
 
-        const costUsd = Number(chosen[1].cost) || 0;
-        const totalCount = opList.reduce((acc, [_, v]) => acc + (v.count || 0), 0);
-        const costIdr = Math.round(costUsd * rateUsd);
-        const priceIdr = Math.ceil((costIdr + margin) / 500) * 500;
-        const profitIdr = priceIdr - costIdr;
+          const costUsd = Number(chosen[1].cost) || 0;
+          const totalCount = opList.reduce((acc, [_, v]) => acc + (v.count || 0), 0);
+          const costIdr = Math.round(costUsd * rateUsd);
+          const priceIdr = Math.ceil((costIdr + margin) / 500) * 500;
+          const profitIdr = priceIdr - costIdr;
 
-        calculated[prod] = {
-          costUsd,
-          costIdr,
-          priceIdr,
-          profitIdr,
-          count: totalCount,
-          operator: chosen[0],
-        };
+          calculated[prod] = {
+            costUsd,
+            costIdr,
+            priceIdr,
+            profitIdr,
+            count: totalCount,
+            operator: chosen[0],
+            provider: '5sim',
+          };
+        }
       }
+    } catch (err) {}
 
-      return send(res, 200, {
-        ok: true,
-        country,
-        usdRate: rateUsd,
-        marginIdr: margin,
-        prices: calculated,
-        raw: rawCountryPrices,
-      });
-    } catch (err) {
-      return send(res, 500, { ok: false, error: 'Gagal mengambil harga 5sim: ' + err.message });
-    }
+    return send(res, 200, {
+      ok: true,
+      country,
+      usdRate: rateUsd,
+      marginIdr: margin,
+      prices: calculated,
+    });
   }
 
   if (method === 'POST' && p === '/api/fivesim/buy') {
-    const apiKey = getFivesimApiKey(db);
-    if (!apiKey) return send(res, 400, { ok: false, error: 'API Key 5sim belum diatur. Silakan masukkan API Key 5sim terlebih dahulu.' });
     const body = await readBody(req);
     const product = String(body.product || 'whatsapp').toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    const country = String(body.country || db.fivesim?.defaultCountry || 'indonesia').toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    const operator = String(body.operator || db.fivesim?.defaultOperator || 'any').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const country = String(body.country || 'indonesia').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const nokosKey = getNokosMurahApiKey(db);
+    const fivesimKey = getFivesimApiKey(db);
 
+    // 1. Coba lewat NokosMurah jika negara Indonesia
+    if (country === 'indonesia' && nokosKey && NOKOSMURAH_PLATFORMS[product]) {
+      const platId = NOKOSMURAH_PLATFORMS[product];
+      try {
+        const pRes = await fetch(`https://nokosmurah.co/api/v1/products?platform_id=${platId}&country_id=7`, {
+          headers: { 'Authorization': `Bearer ${nokosKey}` }
+        });
+        const pJson = await pRes.json();
+        const prods = (pJson.data?.products || []).filter(p => p.available && p.stock > 0);
+        if (prods.length > 0) {
+          prods.sort((a, b) => a.price - b.price);
+          const best = prods[0];
+          const idempotency = `pojok-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          const oRes = await fetch('https://nokosmurah.co/api/v1/order/create', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${nokosKey}`,
+              'Content-Type': 'application/json',
+              'Idempotency-Key': idempotency,
+            },
+            body: JSON.stringify({
+              server: 1,
+              product_id: best.id,
+              country_id: 7,
+              platform_id: platId,
+            }),
+          });
+          const oJson = await oRes.json();
+          if (oJson.success && oJson.data) {
+            return send(res, 200, {
+              ok: true,
+              order: {
+                id: oJson.data.order_id,
+                phone: oJson.data.phone,
+                product,
+                country: 'indonesia',
+                price: oJson.data.price,
+                status: 'PENDING',
+                provider: 'nokosmurah',
+                created_at: oJson.data.created_at || new Date().toISOString(),
+                sms: [],
+              }
+            });
+          }
+          if (oJson.message && oJson.message.toLowerCase().includes('insufficient balance')) {
+            const reqAmount = oJson.data?.balance_required ? `Rp ${Number(oJson.data.balance_required).toLocaleString('id-ID')}` : 'saldo';
+            return send(res, 400, {
+              ok: false,
+              error: `Saldo akun NokosMurah tidak mencukupi (dibutuhkan ${reqAmount}). Silakan top up saldo via QRIS di dashboard nokosmurah.co.`
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[nokosmurah:buy] Error:', err.message);
+      }
+    }
+
+    // 2. Fallback / Jalur 5sim
+    if (!fivesimKey) {
+      return send(res, 400, { ok: false, error: 'API Key belum siap. Pastikan saldo NokosMurah atau 5sim telah terisi.' });
+    }
+    const operator = String(body.operator || db.fivesim?.defaultOperator || 'any').toLowerCase().replace(/[^a-z0-9_-]/g, '');
     try {
       const buyUrl = `https://5sim.net/v1/user/buy/activation/${country}/${operator}/${product}`;
       const fRes = await fetch(buyUrl, {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        headers: { 'Authorization': `Bearer ${fivesimKey}`, 'Accept': 'application/json' }
       });
       const rawText = await fRes.text();
       if (!fRes.ok) {
@@ -2315,6 +2455,7 @@ async function api(req, res, url) {
       }
       let order;
       try { order = JSON.parse(rawText); } catch { order = { raw: rawText }; }
+      order.provider = '5sim';
       return send(res, 200, { ok: true, order });
     } catch (err) {
       return send(res, 500, { ok: false, error: 'Gagal melakukan pembelian nomor: ' + err.message });
@@ -2322,47 +2463,107 @@ async function api(req, res, url) {
   }
 
   if (method === 'GET' && p === '/api/fivesim/check') {
-    const apiKey = getFivesimApiKey(db);
-    if (!apiKey) return send(res, 400, { ok: false, error: 'API Key 5sim belum diatur.' });
     const orderId = String(url.searchParams.get('orderId') || '').trim();
     if (!orderId) return send(res, 400, { ok: false, error: 'Order ID wajib diisi.' });
+    const nokosKey = getNokosMurahApiKey(db);
+    const fivesimKey = getFivesimApiKey(db);
 
-    try {
-      const fRes = await fetch(`https://5sim.net/v1/user/check/${encodeURIComponent(orderId)}`, {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-      });
-      if (!fRes.ok) {
-        const t = await fRes.text();
-        return send(res, 400, { ok: false, error: t || `Error HTTP ${fRes.status}` });
-      }
-      const order = await fRes.json();
-      return send(res, 200, { ok: true, order });
-    } catch (err) {
-      return send(res, 500, { ok: false, error: 'Gagal mengecek status order: ' + err.message });
+    // Cek NokosMurah dulu
+    if (nokosKey) {
+      try {
+        const nRes = await fetch(`https://nokosmurah.co/api/v1/order/check?order_id=${encodeURIComponent(orderId)}`, {
+          headers: { 'Authorization': `Bearer ${nokosKey}` }
+        });
+        const nJson = await nRes.json();
+        if (nJson.success && nJson.data) {
+          const d = nJson.data;
+          const smsList = [];
+          if (d.otp_code) {
+            smsList.push({
+              code: d.otp_code,
+              text: `Kode OTP ${d.service || 'Nokos'}: ${d.otp_code}`,
+              date: d.created_at,
+            });
+          }
+          if (Array.isArray(d.otps)) {
+            d.otps.forEach(o => {
+              if (o.code && !smsList.some(s => s.code === o.code)) {
+                smsList.push({ code: o.code, text: `Kode OTP: ${o.code}`, date: o.received_at });
+              }
+            });
+          }
+          const st = (d.status === 'otp_received' || d.status === 'success') ? 'RECEIVED' : (d.status === 'pending' ? 'PENDING' : String(d.status).toUpperCase());
+          return send(res, 200, {
+            ok: true,
+            order: {
+              id: d.order_id,
+              phone: d.phone,
+              product: d.service,
+              country: 'indonesia',
+              provider: 'nokosmurah',
+              price: d.price,
+              status: st,
+              sms: smsList,
+            }
+          });
+        }
+      } catch {}
     }
+
+    // Cek 5sim
+    if (fivesimKey) {
+      try {
+        const fRes = await fetch(`https://5sim.net/v1/user/check/${encodeURIComponent(orderId)}`, {
+          headers: { 'Authorization': `Bearer ${fivesimKey}`, 'Accept': 'application/json' }
+        });
+        if (fRes.ok) {
+          const order = await fRes.json();
+          order.provider = '5sim';
+          return send(res, 200, { ok: true, order });
+        }
+      } catch {}
+    }
+
+    return send(res, 400, { ok: false, error: 'Order ID tidak ditemukan pada sistem.' });
   }
 
   if (method === 'POST' && p === '/api/fivesim/action') {
-    const apiKey = getFivesimApiKey(db);
-    if (!apiKey) return send(res, 400, { ok: false, error: 'API Key 5sim belum diatur.' });
     const body = await readBody(req);
     const orderId = String(body.orderId || '').trim();
     const action = String(body.action || '').toLowerCase().trim();
-    if (!orderId || !['finish', 'cancel', 'ban'].includes(action)) {
-      return send(res, 400, { ok: false, error: 'Parameter orderId dan action (finish|cancel|ban) wajib valid.' });
+    const nokosKey = getNokosMurahApiKey(db);
+    const fivesimKey = getFivesimApiKey(db);
+
+    // Aksi NokosMurah
+    if (nokosKey) {
+      try {
+        const actPath = action === 'cancel' || action === 'ban' ? 'cancel' : 'finish';
+        const nRes = await fetch(`https://nokosmurah.co/api/v1/order/${actPath}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${nokosKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: Number(orderId) || orderId }),
+        });
+        const nJson = await nRes.json();
+        if (nJson.success) {
+          return send(res, 200, { ok: true, action, result: nJson });
+        }
+      } catch {}
     }
 
-    try {
-      const fRes = await fetch(`https://5sim.net/v1/user/${action}/${encodeURIComponent(orderId)}`, {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-      });
-      const raw = await fRes.text();
-      let json;
-      try { json = JSON.parse(raw); } catch { json = { message: raw }; }
-      return send(res, 200, { ok: true, action, result: json });
-    } catch (err) {
-      return send(res, 500, { ok: false, error: 'Gagal menjalankan aksi order: ' + err.message });
+    // Aksi 5sim
+    if (fivesimKey && ['finish', 'cancel', 'ban'].includes(action)) {
+      try {
+        const fRes = await fetch(`https://5sim.net/v1/user/${action}/${encodeURIComponent(orderId)}`, {
+          headers: { 'Authorization': `Bearer ${fivesimKey}`, 'Accept': 'application/json' }
+        });
+        const raw = await fRes.text();
+        let json;
+        try { json = JSON.parse(raw); } catch { json = { message: raw }; }
+        return send(res, 200, { ok: true, action, result: json });
+      } catch {}
     }
+
+    return send(res, 200, { ok: true, action, result: { message: 'Aksi diproses' } });
   }
 
   if (method === 'GET' && (p === '/api/session' || p === '/api/session.json')) {

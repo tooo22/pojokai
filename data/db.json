@@ -19,11 +19,16 @@
   "wistapay": {
     "apiKey": "sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5"
   },
+  "nokosmurah": {
+    "apiKey": "nokosmurah_live_29fea984bc9996d2d8f2e8d6f3fd808c",
+    "enabled": true,
+    "marginIdr": 1000
+  },
   "fivesim": {
     "apiKey": "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE4MjM4NTAwOTgsImlhdCI6MTc5MjMxNDA5OCwicmF5IjoiMzUyMjBlNTRiMjVmN2Q4NzBlYzYzOTQwZjk1ZTg2ZjAiLCJzdWIiOjQ2NDI1OTJ9.Nqwj2-YfBAuDvHeuOkpsTGn5DC6dV6KFIy-h3CioPgbdBvWw1xbujfyAiFtjwkBgfas5GKLuDJHSk1wndp2CahGrdA4DKV06UoS-9Gp6BUPIrj0ani8HIQkOIhG0_rdntWhvoLMWTF2TY7rm6wPO1zQYebfZNuUgykWEKOd0hsRsDxX2obs4ejDCksrKi1_6dQdL3nj5j97hSug4JfenF7RRcSNflPUe-3wziJdVeRe6D27gn03rEf5dGcT43ZAU0dpLHHQmEFTP7QaQHhcY3r55ZgEov-z8LpVcSJZmgHqXVKmLYU8J-Sqt_amaBJvX1D5MAfvQ2xQ_0e7kTzw6fA",
     "defaultCountry": "indonesia",
     "defaultOperator": "any",
-    "usdRate": 16500,
+    "usdRate": 18014,
     "marginIdr": 1000
   },
   "userLanguages": {},

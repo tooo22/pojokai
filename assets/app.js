@@ -3617,18 +3617,18 @@ initConstructionNotice();
 
 /* ---------- Portal Nokos OTP (5sim Integration) ---------- */
 const NOKOS_APPS = [
-  { id: 'whatsapp', name: 'WhatsApp', price: 'Rp10.500', icon: 'message-circle', costIdr: 9240, profitIdr: 1260 },
-  { id: 'telegram', name: 'Telegram', price: 'Rp6.000', icon: 'send', costIdr: 4950, profitIdr: 1050 },
-  { id: 'tiktok', name: 'TikTok', price: 'Rp1.500', icon: 'music', costIdr: 424, profitIdr: 1076 },
-  { id: 'google', name: 'Google / Gmail', price: 'Rp2.500', icon: 'mail', costIdr: 1355, profitIdr: 1145 },
-  { id: 'openai', name: 'OpenAI / ChatGPT', price: 'Rp2.500', icon: 'bot', costIdr: 1269, profitIdr: 1231 },
-  { id: 'twitter', name: 'Twitter / X', price: 'Rp2.000', icon: 'hash', costIdr: 677, profitIdr: 1323 },
-  { id: 'instagram', name: 'Instagram', price: 'Rp2.000', icon: 'camera', costIdr: 508, profitIdr: 1492 },
-  { id: 'discord', name: 'Discord', price: 'Rp1.500', icon: 'gamepad-2', costIdr: 254, profitIdr: 1246 },
-  { id: 'facebook', name: 'Facebook', price: 'Rp3.000', icon: 'users', costIdr: 1693, profitIdr: 1307 },
-  { id: 'shopee', name: 'Shopee', price: 'Rp2.500', icon: 'shopping-cart', costIdr: 1015, profitIdr: 1485 },
-  { id: 'gojek', name: 'Gojek', price: 'Rp2.000', icon: 'bike', costIdr: 931, profitIdr: 1069 },
-  { id: 'other', name: 'Aplikasi Lainnya', price: 'Rp1.500', icon: 'layers', costIdr: 232, profitIdr: 1268 },
+  { id: 'whatsapp', name: 'WhatsApp', price: 'Rp4.900', icon: 'message-circle', costIdr: 3874, profitIdr: 1026 },
+  { id: 'telegram', name: 'Telegram', price: 'Rp2.600', icon: 'send', costIdr: 1561, profitIdr: 1039 },
+  { id: 'tiktok', name: 'TikTok', price: 'Rp1.600', icon: 'music', costIdr: 521, profitIdr: 1079 },
+  { id: 'google', name: 'Google / Gmail', price: 'Rp1.700', icon: 'mail', costIdr: 621, profitIdr: 1079 },
+  { id: 'openai', name: 'OpenAI / ChatGPT', price: 'Rp1.700', icon: 'bot', costIdr: 623, profitIdr: 1077 },
+  { id: 'twitter', name: 'Twitter / X', price: 'Rp1.600', icon: 'hash', costIdr: 522, profitIdr: 1078 },
+  { id: 'instagram', name: 'Instagram', price: 'Rp1.700', icon: 'camera', costIdr: 624, profitIdr: 1076 },
+  { id: 'discord', name: 'Discord', price: 'Rp1.600', icon: 'gamepad-2', costIdr: 534, profitIdr: 1066 },
+  { id: 'facebook', name: 'Facebook', price: 'Rp1.700', icon: 'users', costIdr: 628, profitIdr: 1072 },
+  { id: 'shopee', name: 'Shopee', price: 'Rp2.000', icon: 'shopping-cart', costIdr: 900, profitIdr: 1100 },
+  { id: 'gojek', name: 'Gojek', price: 'Rp1.500', icon: 'bike', costIdr: 450, profitIdr: 1050 },
+  { id: 'other', name: 'Aplikasi Lainnya', price: 'Rp1.500', icon: 'layers', costIdr: 400, profitIdr: 1100 },
 ];
 
 let activeNokosOrder = null;
