@@ -461,6 +461,51 @@ const NOKOSMURAH_PLATFORMS = {
   shopee: 17,
 };
 
+let cachedNokosPrices = null;
+let lastNokosPricesFetch = 0;
+
+async function getNokosMurahIndonesiaPrices(nokosKey, margin = 1000) {
+  const now = Date.now();
+  if (cachedNokosPrices && (now - lastNokosPricesFetch < 600000)) {
+    return cachedNokosPrices;
+  }
+  const calculated = {};
+  const platforms = Object.entries(NOKOSMURAH_PLATFORMS);
+  await Promise.all(platforms.map(async ([appKey, platId]) => {
+    try {
+      const pRes = await fetch(`https://nokosmurah.co/api/v1/products?platform_id=${platId}&country_id=7`, {
+        headers: {
+          'Authorization': `Bearer ${nokosKey}`,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        }
+      });
+      const pJson = await pRes.json();
+      const prods = (pJson.data?.products || []).filter(p => p.available && p.stock > 0);
+      if (prods.length > 0) {
+        prods.sort((a, b) => a.price - b.price);
+        const best = prods[0];
+        const costIdr = best.price;
+        const priceIdr = Math.ceil((costIdr + margin) / 100) * 100;
+        calculated[appKey] = {
+          costIdr,
+          costUsd: Number((costIdr / 18014).toFixed(4)),
+          priceIdr,
+          profitIdr: priceIdr - costIdr,
+          count: prods.reduce((acc, p) => acc + (p.stock || 0), 0),
+          provider: 'nokosmurah',
+          product_id: best.id,
+          platform_id: platId,
+        };
+      }
+    } catch {}
+  }));
+  if (Object.keys(calculated).length > 0) {
+    cachedNokosPrices = calculated;
+    lastNokosPricesFetch = now;
+  }
+  return calculated;
+}
+
 let cachedLiveUsdRate = null;
 let lastUsdRateTimestamp = 0;
 
@@ -2410,32 +2455,8 @@ export default async function handler(req, res) {
       // 1. Ambil harga lokal super murah dari NokosMurah untuk nomor Indonesia
       if (country === 'indonesia' && nokosKey) {
         try {
-          const platforms = Object.entries(NOKOSMURAH_PLATFORMS);
-          await Promise.all(platforms.map(async ([appKey, platId]) => {
-            try {
-              const pRes = await fetch(`https://nokosmurah.co/api/v1/products?platform_id=${platId}&country_id=7`, {
-                headers: { 'Authorization': `Bearer ${nokosKey}` }
-              });
-              const pJson = await pRes.json();
-              const prods = (pJson.data?.products || []).filter(p => p.available && p.stock > 0);
-              if (prods.length > 0) {
-                prods.sort((a, b) => a.price - b.price);
-                const best = prods[0];
-                const costIdr = best.price;
-                const priceIdr = Math.ceil((costIdr + margin) / 100) * 100;
-                calculated[appKey] = {
-                  costIdr,
-                  costUsd: Number((costIdr / rateUsd).toFixed(4)),
-                  priceIdr,
-                  profitIdr: priceIdr - costIdr,
-                  count: prods.reduce((acc, p) => acc + (p.stock || 0), 0),
-                  provider: 'nokosmurah',
-                  product_id: best.id,
-                  platform_id: platId,
-                };
-              }
-            } catch {}
-          }));
+          const nokosPrices = await getNokosMurahIndonesiaPrices(nokosKey, margin);
+          Object.assign(calculated, nokosPrices);
         } catch {}
       }
 
