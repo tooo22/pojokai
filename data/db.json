@@ -5,19 +5,19 @@
     "ownerChatId": "7787855968",
     "botUsername": "pojokkai_bot",
     "enabled": true,
-    "webhookSecret": "59f920885e991efca6de765197120b4493d07c4881bb4c70fbcf27ed0db299a8"
+    "webhookSecret": ""
   },
   "securityBot": {
-    "botToken": "8959210006:AAGLcpr02FOVYm0MWu0PM-qkIl1oqRE-wmE",
+    "botToken": "",
     "ownerChatId": "7787855968",
     "botUsername": "PojokSecurity_bot",
     "enabled": true,
     "lastMessageId": 13,
     "animationFileId": "CgACAgUAAxkDAAMDatMEOWtwbW_O9b7An9-TWHJNUyMAAlwfAAIlFJhWCv2aTeJKPXU9BA",
-    "webhookSecret": "sec_59f920885e991efca6de765197120b4493d07c4881bb4c70fbcf27ed0db299a8"
+    "webhookSecret": ""
   },
   "wistapay": {
-    "apiKey": "sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5"
+    "apiKey": ""
   },
   "userLanguages": {},
   "categories": [

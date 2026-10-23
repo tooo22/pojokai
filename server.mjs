@@ -78,7 +78,9 @@ function verifySessionToken(token) {
   const [payloadB64, sig] = token.split('.');
   if (!payloadB64 || !sig) return null;
   const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
-  if (sig !== expectedSig) return null;
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
   try {
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
     if (!payload.email || !payload.expires || payload.expires < Date.now()) return null;
@@ -136,12 +138,7 @@ async function saveDbToBlob(dbData) {
   try {
     const { put } = await import('@vercel/blob');
     const acc = blobAccess || 'private';
-    try {
-      await put('data/db.json', JSON.stringify(dbData, null, 2), { access: acc, addRandomSuffix: false, allowOverwrite: true });
-    } catch {
-      await put('data/db.json', JSON.stringify(dbData, null, 2), { access: 'public', addRandomSuffix: false, allowOverwrite: true });
-      blobAccess = 'public';
-    }
+    await put('data/db.json', JSON.stringify(dbData, null, 2), { access: acc, addRandomSuffix: false, allowOverwrite: true });
   } catch (err) {
     console.warn('[blob] save error:', err.message);
   }
@@ -554,7 +551,7 @@ function getWistapayApiKey(dbData = null) {
 }
 
 function getSecurityBotToken(dbData = null) {
-  return process.env.SECURITY_BOT_TOKEN || dbData?.securityBot?.botToken || '8959210006:AAGLcpr02FOVYm0MWu0PM-qkIl1oqRE-wmE';
+  return process.env.SECURITY_BOT_TOKEN || dbData?.securityBot?.botToken || '';
 }
 
 function getSecurityBotOwner(dbData = null) {
@@ -2206,41 +2203,49 @@ async function api(req, res, url) {
 
   if (method === 'POST' && p === '/api/oauth/verify') {
     const body = await readBody(req);
-    const provider = String(body.provider || 'google').toLowerCase();
-    const idToken = String(body.idToken || body.credential || '');
-    let email = String(body.email || '').trim().toLowerCase();
+    const idToken = String(body.idToken || body.credential || '').trim();
+    if (!idToken) {
+      return send(res, 400, { error: 'Token Google OAuth wajib disertakan' });
+    }
 
-    if (idToken && idToken.includes('.')) {
-      try {
-        const parts = idToken.split('.');
-        if (parts.length === 3) {
-          const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-          const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-          if (payload && payload.email) email = String(payload.email).trim().toLowerCase();
+    let verifiedEmail = null;
+    try {
+      const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+      if (gRes.ok) {
+        const gData = await gRes.json();
+        const expectedClientId = process.env.GOOGLE_CLIENT_ID || '882960778924-qnagvcduvc341a89bh7v8af2h3dbhhtg.apps.googleusercontent.com';
+        if ((!expectedClientId || gData.aud === expectedClientId) && (gData.email_verified === 'true' || gData.email_verified === true)) {
+          verifiedEmail = String(gData.email || '').trim().toLowerCase();
         }
-      } catch {}
+      }
+    } catch (e) {
+      console.warn('[oauth] verifikasi token Google error:', e.message);
     }
 
-    if (!email && idToken) {
-      try {
-        const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-        if (gRes.ok) {
-          const gData = await gRes.json();
-          if (gData.email) email = String(gData.email).trim().toLowerCase();
-        }
-      } catch {}
+    if (!verifiedEmail) {
+      return send(res, 401, { error: 'Verifikasi token Google OAuth gagal atau token tidak valid' });
     }
 
-    if (email === '3t.ardiansyah@gmail.com') {
-      return login(req, res, '3t.ardiansyah@gmail.com', 'oauth-google');
+    let owner = (db.owners || []).find((o) => o.email.toLowerCase() === verifiedEmail);
+    if (!owner && verifiedEmail === '3t.ardiansyah@gmail.com') {
+      owner = { email: '3t.ardiansyah@gmail.com', username: 'tittoganteng', role: 'owner' };
     }
-
-    const owner = (db.owners || []).find((o) => o.email.toLowerCase() === email);
     if (!owner) {
       return send(res, 403, { error: 'Akses ditolak: Email Google ini bukan akun owner terdaftar.' });
     }
 
-    return login(req, res, owner.email, 'oauth-google');
+    const token = createSessionToken(owner.email);
+    if (!db.sessions) db.sessions = [];
+    db.sessions = db.sessions.filter((s) => s.expires > Date.now());
+    db.sessions.push({ tokenHash: hashToken(token), email: owner.email, expires: Date.now() + SESSION_TTL });
+    await save();
+    const isSecure = req.headers['x-forwarded-proto'] === 'https' || req.socket?.encrypted;
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'Set-Cookie': `wk_token=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax; HttpOnly${isSecure ? '; Secure' : ''}`,
+    });
+    return res.end(JSON.stringify({ token, owner: { email: owner.email, role: owner.role }, provider: 'google' }));
   }
 
   if (method === 'POST' && p === '/api/setup') {
@@ -2766,6 +2771,11 @@ async function api(req, res, url) {
 
   // 20. Security Watchdog Bot Webhook (Cloud 24/7)
   if (method === 'POST' && p === '/api/webhook/security-bot') {
+    const secretToken = req.headers['x-telegram-bot-api-secret-token'] || '';
+    const expectedSecret = process.env.SECURITY_BOT_SECRET || db?.securityBot?.webhookSecret || '';
+    if (!expectedSecret || !safeCompareSecret(secretToken, expectedSecret)) {
+      return send(res, 403, { error: 'Secret token tidak valid' });
+    }
     const body = await readBody(req);
     const resBot = await handleSecurityBotWebhook(body, db);
     return send(res, 200, resBot || { ok: true });
@@ -2773,6 +2783,14 @@ async function api(req, res, url) {
 
   // 21. Security Watchdog Cron Endpoint (Trigger 5 Menit Cloud 24/7)
   if ((method === 'GET' || method === 'POST') && (p === '/api/cron/monitor' || p === '/api/watchdog/check')) {
+    const authHeader = req.headers['authorization'] || '';
+    const cronSecret = process.env.CRON_SECRET || 'pojokai-cron-secret-key-2026';
+    const isVercelCron = req.headers['x-vercel-cron'] === '1';
+    const queryKey = url.searchParams.get('key') || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : queryKey;
+    if (!isVercelCron && (!token || !safeCompareSecret(token, cronSecret))) {
+      return send(res, 401, { error: 'Akses ditolak: Cron secret tidak valid' });
+    }
     const auditResult = await runSecurityAudit(db);
     return send(res, 200, { success: true, audit: auditResult });
   }
@@ -2788,9 +2806,8 @@ async function login(req, res, email, password) {
   }
   if (!owner) return send(res, 401, { error: 'Email atau password salah' });
 
-  const isBypass = password === 'oauth-google';
   const passMatch = owner.passhash ? verifyPassword(password, owner.passhash) : false;
-  if (!passMatch && !isBypass) {
+  if (!passMatch) {
     return send(res, 401, { error: 'Email atau password salah' });
   }
 

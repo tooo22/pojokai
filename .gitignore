@@ -32,3 +32,4 @@ data/backups/
 *.tar.gz
 
 .env*
+!.env.example

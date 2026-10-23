@@ -79,6 +79,29 @@ r = await call('GET', '/api/orders?code=POJOK-TESTPR');
 const order = r.json?.orders?.[0];
 assert('Order status remains Menunggu Pengiriman (not fake paid)', order?.status === 'Menunggu Pengiriman');
 
+// 6. C-04: OAuth Fake Token / Email-only Bypass rejected
+r = await call('POST', '/api/oauth/verify', { email: 'admin@sec.com' });
+assert('OAuth request without valid idToken is rejected with 400', r.status === 400);
+
+r = await call('POST', '/api/oauth/verify', { email: 'admin@sec.com', idToken: 'fake.jwt.token' });
+assert('OAuth request with forged idToken is rejected with 401', r.status === 401);
+
+// 7. C-05: Password Bypass string "oauth-google" rejected
+r = await call('POST', '/api/login', { username: 'admin@sec.com', password: 'oauth-google' });
+assert('Login with bypass password "oauth-google" rejected with 401', r.status === 401);
+
+// 8. H-04: Security Bot webhook without secret rejected
+r = await call('POST', '/api/webhook/security-bot', { message: { chat: { id: '7787855968' }, text: '/status' } });
+assert('Security bot webhook without secret token rejected with 403', r.status === 403);
+
+// 9. M-01: Cron monitor without auth rejected
+r = await call('GET', '/api/cron/monitor');
+assert('Cron monitor without secret rejected with 401', r.status === 401);
+
+// 10. M-02: Cron monitor with valid secret accepted
+r = await call('GET', '/api/cron/monitor', null, { Authorization: 'Bearer pojokai-cron-secret-key-2026' });
+assert('Cron monitor with valid secret succeeds with 200', r.status === 200 && r.json?.success);
+
 srv.kill();
 rmSync(TMP_DB, { force: true });
-console.log(`\nCompleted: ${passed}/6 security checks passed.`);
+console.log(`\nCompleted: ${passed}/12 security checks passed.`);
