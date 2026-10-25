@@ -33,3 +33,7 @@ data/backups/
 
 .env*
 !.env.example
+
+# Rust build artifacts
+target/
+**/target/

@@ -629,12 +629,16 @@ function bundleCheckout() {
 
 /* ---------- FAQ & ticker ---------- */
 function renderFaq() {
-  $('#faq').innerHTML = FAQS.map(([q, a]) => `<details class="card group transition-colors">
+  $('#faq').innerHTML = (FAQS || []).map((f) => {
+    const q = Array.isArray(f) ? f[0] : (f?.q || '');
+    const a = Array.isArray(f) ? f[1] : (f?.a || '');
+    return `<details class="card group transition-colors">
     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 font-medium">${esc(q)}
       <span class="faq-icon grid size-7 shrink-0 place-items-center rounded-[10px] bg-surface-2 text-muted transition"><i data-lucide="plus" class="size-3.5"></i></span>
     </summary>
     <p class="px-4 pb-4 text-sm text-muted">${esc(a)}</p>
-  </details>`).join('');
+  </details>`;
+  }).join('');
 }
 
 function renderTicker() {

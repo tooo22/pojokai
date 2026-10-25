@@ -9,7 +9,9 @@
     "build:css": "tailwindcss -i assets/tailwind-input.css -o assets/tailwind.css --minify",
     "build": "node build.mjs && tailwindcss -i assets/tailwind-input.css -o assets/tailwind.css --minify",
     "deploy": "npm run build && vercel --prod",
-    "deploy:vercel": "npm run build && vercel --prod"
+    "deploy:vercel": "npm run build && vercel --prod",
+    "start:rust": "backend-rs\\target\\release\\backend-rs.exe",
+    "build:rust": "cd backend-rs && cargo build --release"
   },
   "keywords": [],
   "author": "",
