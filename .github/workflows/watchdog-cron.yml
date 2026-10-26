@@ -11,4 +11,5 @@ jobs:
     steps:
       - name: Trigger PojokAI Watchdog Audit
         run: |
-          curl -s -f -H "Authorization: Bearer pojokai-cron-secret-key-2026" "https://pojokai.my.id/api/cron/monitor" || echo "Ping dispatched"
+          CRON_TOKEN="${{ secrets.CRON_SECRET || 'pojokai-cron-secret-key-2026' }}"
+          curl -s -f -H "Authorization: Bearer $CRON_TOKEN" "https://pojokai.my.id/api/cron/monitor" || echo "Ping dispatched"

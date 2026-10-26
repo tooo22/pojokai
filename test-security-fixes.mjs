@@ -104,4 +104,4 @@ assert('Cron monitor with valid secret succeeds with 200', r.status === 200 && r
 
 srv.kill();
 rmSync(TMP_DB, { force: true });
-console.log(`\nCompleted: ${passed}/12 security checks passed.`);
+console.log(`\nCompleted: ${passed}/13 security checks passed.`);

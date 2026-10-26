@@ -111,9 +111,14 @@ pub struct Bundle {
 #[serde(default)]
 pub struct Owner {
     pub email: String,
-    pub password: Option<String>,
+    #[serde(rename = "passhash", alias = "password")]
+    pub passhash: Option<String>,
     pub role: Option<String>,
     pub username: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: Option<String>,
+    #[serde(flatten)]
+    pub extra: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

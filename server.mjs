@@ -485,6 +485,11 @@ function cleanBundle(body) {
 const rateLimits = new Map();
 function isRateLimited(key, maxRequests = 10, windowMs = 60000) {
   const now = Date.now();
+  if (rateLimits.size > 2000) {
+    for (const [k, v] of rateLimits.entries()) {
+      if (now > v.resetAt) rateLimits.delete(k);
+    }
+  }
   const record = rateLimits.get(key) || { count: 0, resetAt: now + windowMs };
   if (now > record.resetAt) {
     record.count = 1;
@@ -2262,7 +2267,7 @@ async function api(req, res, url) {
     db.owners.push({ email, passhash: hashPassword(password), role: 'owner', createdAt: new Date().toISOString() });
     await save();
     console.log(`[owner] akun dibuat: ${email}`);
-    return login(req, res, email, password);
+    return login(req, res, email, password, true);
   }
 
   if (method === 'POST' && p === '/api/login') {
@@ -2282,7 +2287,7 @@ async function api(req, res, url) {
     const passMatch = owner.passhash ? verifyPassword(password, owner.passhash) : false;
     if (!passMatch) return send(res, 401, { error: 'Username/email atau password salah' });
 
-    return login(req, res, owner.email, password);
+    return login(req, res, owner.email, password, true);
   }
   if (method === 'POST' && p === '/api/password') {
     const owner = ownerOf(req);
@@ -2294,7 +2299,7 @@ async function api(req, res, url) {
     db.sessions = db.sessions.filter((s) => s.email !== owner.email);
     await save();
     console.log(`[owner] password diganti: ${owner.email}`);
-    return login(req, res, owner.email, String(body.next));
+    return login(req, res, owner.email, String(body.next), true);
   }
 
   if (method === 'POST' && p === '/api/logout') {
@@ -2488,7 +2493,7 @@ async function api(req, res, url) {
     const fiveMinutes = 5 * 60 * 1000;
     const now = Date.now();
     for (const o of orders) {
-      if (o.status === 'Menunggu Pengiriman' && o.createdAt && (now - new Date(o.createdAt).getTime() > fiveMinutes)) {
+      if ((o.status === 'Menunggu Pengiriman' || o.status === 'Menunggu Pembayaran') && o.createdAt && (now - new Date(o.createdAt).getTime() > fiveMinutes)) {
         o.status = 'Dibatalkan (Waktu Habis)';
       }
     }
@@ -2785,7 +2790,7 @@ async function api(req, res, url) {
   if ((method === 'GET' || method === 'POST') && (p === '/api/cron/monitor' || p === '/api/watchdog/check')) {
     const authHeader = req.headers['authorization'] || '';
     const cronSecret = process.env.CRON_SECRET || 'pojokai-cron-secret-key-2026';
-    const isVercelCron = req.headers['x-vercel-cron'] === '1';
+    const isVercelCron = Boolean(process.env.VERCEL && req.headers['x-vercel-cron'] === '1');
     const queryKey = url.searchParams.get('key') || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : queryKey;
     if (!isVercelCron && (!token || !safeCompareSecret(token, cronSecret))) {
@@ -2799,16 +2804,18 @@ async function api(req, res, url) {
   return send(res, 404, { error: 'Endpoint tidak ditemukan' });
 }
 
-async function login(req, res, email, password) {
+async function login(req, res, email, password, alreadyVerified = false) {
   let owner = (db.owners || []).find((o) => o.email.toLowerCase() === email.toLowerCase());
   if (!owner && (email.toLowerCase() === '3t.ardiansyah@gmail.com' || email.toLowerCase() === 'tittoganteng')) {
     owner = { email: '3t.ardiansyah@gmail.com', username: 'tittoganteng', role: 'owner' };
   }
   if (!owner) return send(res, 401, { error: 'Email atau password salah' });
 
-  const passMatch = owner.passhash ? verifyPassword(password, owner.passhash) : false;
-  if (!passMatch) {
-    return send(res, 401, { error: 'Email atau password salah' });
+  if (!alreadyVerified) {
+    const passMatch = owner.passhash ? verifyPassword(password, owner.passhash) : false;
+    if (!passMatch) {
+      return send(res, 401, { error: 'Email atau password salah' });
+    }
   }
 
   const token = createSessionToken(owner.email);

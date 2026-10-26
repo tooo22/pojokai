@@ -2,14 +2,14 @@ import http from 'node:http';
 
 // --- Configuration (Support Environment Variables & Defaults) ---
 const config = {
-  monitorBotToken: process.env.MONITOR_BOT_TOKEN || '8959210006:AAGLcpr02FOVYm0MWu0PM-qkIl1oqRE-wmE',
+  monitorBotToken: process.env.MONITOR_BOT_TOKEN || '',
   userBotToken: process.env.USER_BOT_TOKEN || '',
   ownerChatId: process.env.MONITOR_CHAT_ID || '7787855968',
   intervalSeconds: parseInt(process.env.INTERVAL_SECONDS, 10) || 5,
   lastMessageId: parseInt(process.env.LAST_MESSAGE_ID, 10) || 3,
   animationFileId: 'CgACAgUAAxkDAAMDatMEOWtwbW_O9b7An9-TWHJNUyMAAlwfAAIlFJhWCv2aTeJKPXU9BA',
   webUrl: process.env.POJOKAI_WEB_URL || 'https://pojokai.my.id',
-  wistapayApiKey: process.env.WISTAPAY_API_KEY || 'sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5'
+  wistapayApiKey: process.env.WISTAPAY_API_KEY || ''
 };
 
 const state = {

@@ -225,6 +225,25 @@ function verifySessionToken(token) {
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
+const rateLimits = new Map();
+function isRateLimited(key, maxRequests = 10, windowMs = 60000) {
+  const now = Date.now();
+  if (rateLimits.size > 2000) {
+    for (const [k, v] of rateLimits.entries()) {
+      if (now > v.resetAt) rateLimits.delete(k);
+    }
+  }
+  const record = rateLimits.get(key) || { count: 0, resetAt: now + windowMs };
+  if (now > record.resetAt) {
+    record.count = 1;
+    record.resetAt = now + windowMs;
+    rateLimits.set(key, record);
+    return false;
+  }
+  record.count++;
+  rateLimits.set(key, record);
+  return record.count > maxRequests;
+}
 
 function getHeader(req, name) {
   if (req.headers && typeof req.headers.get === 'function') {
@@ -2200,6 +2219,10 @@ export default async function handler(req, res) {
       if (db.owners && db.owners.length > 0) {
         return send(403, { error: 'Akun owner sudah ada. Setup ditutup.' });
       }
+      const ip = getClientIp(req);
+      if (isRateLimited(`setup:${ip}`, 5, 300000)) {
+        return send(429, { error: 'Terlalu banyak permintaan setup' });
+      }
       const body = await readBody(req);
       const email = String(body.email || '').trim().toLowerCase();
       const password = String(body.password || '');
@@ -2227,6 +2250,10 @@ export default async function handler(req, res) {
 
       if (!identifier || !password) {
         return send(400, { error: 'Username/email dan password wajib diisi' });
+      }
+      const ip = getClientIp(req);
+      if (identifier && (isRateLimited(`login:${ip}:${identifier}`, 5, 120000) || isRateLimited(`login:${identifier}`, 5, 120000))) {
+        return send(429, { error: 'Terlalu banyak percobaan login gagal. Silakan coba lagi dalam 2 menit.' });
       }
 
       const owner = (db.owners || []).find((o) => o.email === identifier || o.username === identifier) || (identifier === 'tittoganteng' || identifier === '3t.ardiansyah@gmail.com' ? { email: '3t.ardiansyah@gmail.com', username: 'tittoganteng', role: 'owner' } : null);
@@ -2359,6 +2386,10 @@ export default async function handler(req, res) {
 
     // 14. Orders (Create)
     if (method === 'POST' && pathname === '/api/orders') {
+      const ip = getClientIp(req);
+      if (isRateLimited(`order_ip:${ip}`, 50, 300000) || isRateLimited('order_global', 50, 300000)) {
+        return send(429, { error: 'Batas pembuatan pesanan tercapai (maksimal 50 transaksi per 5 menit). Silakan tunggu sebentar.' });
+      }
       const body = await readBody(req);
       if (!body.code || !body.product) {
         return send(400, { error: 'Data pesanan tidak lengkap' });
@@ -2481,6 +2512,13 @@ export default async function handler(req, res) {
       const email = (urlObj.searchParams.get('email') || (q.includes('@') ? q : '')).trim().toLowerCase();
       const orders = db.orders || [];
 
+      const fiveMinutes = 5 * 60 * 1000;
+      const now = Date.now();
+      for (const o of orders) {
+        if ((o.status === 'Menunggu Pengiriman' || o.status === 'Menunggu Pembayaran') && o.createdAt && (now - new Date(o.createdAt).getTime() > fiveMinutes)) {
+          o.status = 'Dibatalkan (Waktu Habis)';
+        }
+      }
       const sanitizeForBuyer = (o) => ({
         ...o,
         buyer: {
@@ -2539,6 +2577,10 @@ export default async function handler(req, res) {
 
     // 16. WistaPay Dynamic QRIS (Create)
     if (method === 'POST' && pathname === '/api/qris/create') {
+      const ip = getClientIp(req);
+      if (isRateLimited(`qris_ip:${ip}`, 50, 300000) || isRateLimited('qris_global', 50, 300000)) {
+        return send(429, { error: 'Batas pembuatan QRIS tercapai (maksimal 50 transaksi per 5 menit). Silakan tunggu sebentar.' });
+      }
       const body = await readBody(req);
       const orderCode = String(body.order_id || body.code || '').trim().toUpperCase();
       const order = (db.orders || []).find((o) => o.code === orderCode);
@@ -2772,7 +2814,7 @@ export default async function handler(req, res) {
     if ((method === 'GET' || method === 'POST') && (pathname === '/api/cron/monitor' || pathname === '/api/watchdog/check')) {
       const authHeader = req.headers['authorization'] || req.headers?.get?.('authorization') || '';
       const cronSecret = process.env.CRON_SECRET || 'pojokai-cron-secret-key-2026';
-      const isVercelCron = (req.headers['x-vercel-cron'] || req.headers?.get?.('x-vercel-cron')) === '1';
+      const isVercelCron = Boolean(process.env.VERCEL && ((req.headers['x-vercel-cron'] || req.headers?.get?.('x-vercel-cron')) === '1'));
       const queryKey = urlObj?.searchParams?.get('key') || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : queryKey;
       if (!isVercelCron && (!token || !safeCompareSecret(token, cronSecret))) {

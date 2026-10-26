@@ -1838,11 +1838,6 @@ function switchAdminTab(tab) {
   icons();
 }
 
-const isUnpaid = (status) => {
-  const s = String(status || '').toLowerCase();
-  return s.includes('menunggu') && !s.includes('pengiriman');
-};
-
 const isCompleted = (status) => {
   const s = String(status || '').toLowerCase();
   return s.includes('selesai') || s.includes('terkirim') || s.includes('sukses');
@@ -1855,16 +1850,21 @@ const isCancelled = (status) => {
 
 const isProcessing = (status) => {
   const s = String(status || '').toLowerCase();
-  if (isCompleted(status) || isCancelled(status) || isUnpaid(status)) return false;
+  if (isCompleted(status) || isCancelled(status)) return false;
   return (
     s.includes('proses') ||
     s.includes('diproses') ||
     s.includes('lunas') ||
     s.includes('verifikasi') ||
-    s.includes('pengiriman') ||
     s === 'paid' ||
     s === 'success'
   );
+};
+
+const isUnpaid = (status) => {
+  const s = String(status || '').toLowerCase();
+  if (isCompleted(status) || isCancelled(status) || isProcessing(status)) return false;
+  return s.includes('menunggu') || s.includes('pending') || s.includes('belum bayar') || !s;
 };
 
 function updateOrderCounters() {

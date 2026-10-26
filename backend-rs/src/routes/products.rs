@@ -132,3 +132,31 @@ pub async fn update_bundle(
 
     Json(json!({ "ok": true, "bundle": patch })).into_response()
 }
+
+#[derive(serde::Deserialize)]
+pub struct SettingsPayload {
+    pub wa: Option<String>,
+}
+
+pub async fn update_settings(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<SettingsPayload>,
+) -> Response {
+    let mut db = state.db.db.write().await;
+    if owner_of(&headers, &db, &state.session_secret).is_none() {
+        return (StatusCode::UNAUTHORIZED, Json(json!({ "error": "Akses ditolak" }))).into_response();
+    }
+
+    if let Some(wa) = body.wa {
+        let clean_wa: String = wa.chars().filter(|c| c.is_ascii_digit()).collect();
+        if clean_wa.len() < 9 {
+            return (StatusCode::BAD_REQUEST, Json(json!({ "error": "Nomor WhatsApp tidak valid (minimal 9 digit)" }))).into_response();
+        }
+        db.wa = clean_wa.clone();
+        let _ = state.db.save().await;
+        return Json(json!({ "wa": clean_wa })).into_response();
+    }
+
+    Json(json!({ "wa": db.wa })).into_response()
+}
