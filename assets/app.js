@@ -948,7 +948,7 @@ function renderProductDescription(desc) {
     ${summary}
     <div class="mt-2.5 flex gap-2">
       ${auto ? `<button type="button" data-cart class="inline-flex h-12 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border-2 border-primary px-3 text-sm font-bold text-main transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:px-4"><i data-lucide="shopping-cart" class="size-4"></i><span>+ Keranjang</span></button>` : ''}
-      <button type="button" data-checkout ${!v || (!v.stock && !p.patungan) ? 'disabled' : ''} class="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-[10px] bg-primary text-[15px] font-bold uppercase tracking-wide text-primary-fg transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60 cursor-pointer">${v && !v.stock ? '<span class="truncate">Stok habis</span>' : `<i data-lucide="shopping-bag" class="size-4 shrink-0"></i><span class="truncate">${label}</span>`}</button>
+      <button type="button" data-checkout ${(!v && !p.patungan) || (v && !v.stock) ? 'disabled' : ''} class="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-[10px] bg-primary text-[15px] font-bold uppercase tracking-wide text-primary-fg transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60 cursor-pointer">${v && !v.stock ? '<span class="truncate">Stok habis</span>' : `<i data-lucide="shopping-bag" class="size-4 shrink-0"></i><span class="truncate">${label}</span>`}</button>
     </div>
     <p class="mt-2 text-center text-[11px] text-subtle">${note}</p>
   </div>`;
@@ -1094,6 +1094,14 @@ function checkout() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(order),
   }).catch(() => {});
+
+  if (!v || total < 1000) {
+    const pesan = `Halo admin PojokAI, saya mau pesan ${p.name} (${v ? v.label : 'Ikut Patungan'}).\nKode: ${orderCode}\nEmail: ${email}\nWA: ${wa}`;
+    window.open(waLink(pesan), '_blank', 'noopener');
+    toast('Membuka WhatsApp Admin PojokAI…');
+    closeModal();
+    return;
+  }
 
   openPaymentModal(order);
 }

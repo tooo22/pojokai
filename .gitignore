@@ -13,6 +13,7 @@ node_modules/
 *.pem
 *.secret
 credentials*.json
+monitor-config.json
 
 # Logs
 *.log

@@ -49,7 +49,7 @@ Buka file **`monitor-config.json`** di folder project ini:
   "ownerChatId": "7787855968",
   "intervalMinutes": 5,
   "webUrl": "https://pojokai.my.id",
-  "wistapayApiKey": "sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5"
+  "wistapayApiKey": "YOUR_WISTAPAY_API_KEY_HERE"
 }
 ```
 > *Catatan:* `ownerChatId` sudah otomatis diset ke ID Telegram Anda (`7787855968`).

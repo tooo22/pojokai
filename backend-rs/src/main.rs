@@ -5,6 +5,7 @@ mod routes;
 
 use std::path::PathBuf;
 use axum::{
+    response::IntoResponse,
     routing::{get, patch, post},
     Router,
 };
@@ -69,25 +70,51 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_routes = Router::new()
         .route("/catalog", get(routes::catalog::get_catalog))
         .route("/bundle", get(routes::catalog::get_bundle).patch(routes::products::update_bundle))
+        .route("/settings", patch(routes::products::update_settings))
         .route("/session", get(routes::auth::get_session))
+        .route("/oauth/config", get(routes::auth::oauth_config))
+        .route("/oauth/verify", post(routes::auth::oauth_verify))
         .route("/login", post(routes::auth::login))
         .route("/logout", post(routes::auth::logout))
         .route("/setup", post(routes::auth::setup))
         .route("/password", post(routes::auth::change_password))
         .route("/products", post(routes::products::create_product))
         .route("/products/:slug", patch(routes::products::update_product).delete(routes::products::delete_product))
-        .route("/orders", get(routes::orders::get_orders).post(routes::orders::create_order))
+        .route("/orders", get(routes::orders::get_orders).post(routes::orders::create_order).patch(routes::orders::update_order).delete(routes::orders::delete_order))
         .route("/orders/expire", post(routes::orders::expire_order))
         .route("/qris/create", post(routes::qris::create_qris))
         .route("/qris/status", get(routes::qris::get_qris_status))
+        .route("/webhook/wistapay", post(routes::qris::wistapay_webhook))
         .route("/wistapay-webhook", post(routes::qris::wistapay_webhook))
+        .route("/webhook/telegram", post(routes::telegram::telegram_webhook))
         .route("/telegram-webhook", post(routes::telegram::telegram_webhook));
 
-    let static_service = ServeDir::new(&root_dir).append_index_html_on_directories(true);
+    let assets_service = ServeDir::new(root_dir.join("assets"));
+    let logo_service = ServeDir::new(root_dir.join("pojokai_logo"));
+    let index_path = root_dir.join("index.html");
+
+    let fallback_handler = move |req: axum::extract::Request| {
+        let index_path = index_path.clone();
+        async move {
+            let path = req.uri().path();
+            if path.contains('.') && !path.ends_with(".html") {
+                return (axum::http::StatusCode::NOT_FOUND, "File tidak ditemukan").into_response();
+            }
+            match tokio::fs::read(&index_path).await {
+                Ok(bytes) => (
+                    [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+                    bytes,
+                ).into_response(),
+                Err(_) => (axum::http::StatusCode::NOT_FOUND, "index.html tidak ditemukan").into_response(),
+            }
+        }
+    };
 
     let app = Router::new()
         .nest("/api", api_routes)
-        .fallback_service(static_service)
+        .nest_service("/assets", assets_service)
+        .nest_service("/pojokai_logo", logo_service)
+        .fallback(fallback_handler)
         .layer(CorsLayer::permissive())
         .with_state(state);
 
