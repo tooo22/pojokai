@@ -3618,3 +3618,56 @@ window.openConstructionModal = openConstructionModal;
 window.closeConstructionModal = closeConstructionModal;
 
 initConstructionNotice();
+
+
+/* ---------- Smooth Scroll (Lenis - Figcraft / Apple Momentum Scroll) ---------- */
+function initSmoothScroll() {
+  if (typeof window.Lenis === 'undefined') return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const lenis = new window.Lenis({
+    duration: 1.25,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    orientation: 'vertical',
+    gestureOrientation: 'vertical',
+    smoothWheel: true,
+    wheelMultiplier: 1.0,
+    touchMultiplier: 1.5,
+    infinite: false,
+  });
+
+  function raf(time) {
+    lenis.raf(time);
+    requestAnimationFrame(raf);
+  }
+  requestAnimationFrame(raf);
+  window.lenis = lenis;
+
+  // Sinkronkan state modal / dialog yang mengubah overflow
+  const observer = new MutationObserver(() => {
+    const isHidden = document.documentElement.style.overflow === 'hidden' || document.body.style.overflow === 'hidden';
+    if (isHidden) {
+      lenis.stop();
+    } else {
+      lenis.start();
+    }
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+
+  // Handle anchor link clicks with smooth glide
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const hash = a.getAttribute('href');
+    if (!hash || hash === '#' || hash.startsWith('#produk/') || hash.startsWith('#admin')) return;
+    try {
+      const target = document.querySelector(hash);
+      if (target) {
+        e.preventDefault();
+        lenis.scrollTo(target, { offset: -70, duration: 1.2 });
+      }
+    } catch {}
+  });
+}
+
+initSmoothScroll();

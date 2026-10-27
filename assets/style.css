@@ -531,3 +531,47 @@ details[open] .faq-icon { transform: rotate(45deg); background: rgb(var(--primar
 .bot-typing-nod {
   animation: botNod 1.1s ease-in-out infinite;
 }
+
+/* Lenis Momentum Smooth Scroll (Figcraft / Apple style) */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Modern sleek custom scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 140, 150, 0.28);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 140, 150, 0.55);
+  background-clip: content-box;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(220, 220, 230, 0.22);
+  background-clip: content-box;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(220, 220, 230, 0.48);
+  background-clip: content-box;
+}
