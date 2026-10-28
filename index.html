@@ -43,7 +43,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/tailwind.css?v=12">
   <link rel="stylesheet" href="assets/style.css?v=11">
   <script src="https://unpkg.com/lucide@0.475.0/dist/umd/lucide.min.js"></script>
@@ -60,9 +60,11 @@
         <button id="navBackBtn" class="hidden items-center gap-1.5 rounded-[12px] border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-main transition hover:bg-surface-2 cursor-pointer" title="Kembali ke Toko">
           <i data-lucide="arrow-left" class="size-4 text-primary"></i><span>Kembali ke Toko</span>
         </button>
-        <a href="#" class="flex items-center gap-2" aria-label="PojokAI">
-          <svg viewBox="0 0 100 96.04" width="28" height="27" class="shrink-0 text-primary" aria-hidden="true"><use href="#logo"/></svg>
-          <span class="text-[16px] sm:text-[17px] font-bold tracking-tight">PojokAI</span>
+        <a href="#" class="flex items-center gap-2 group" aria-label="PojokAI">
+          <span class="grid size-8 sm:size-9 place-items-center rounded-xl bg-primary text-primary-fg font-black text-sm shadow-xs group-hover:scale-105 transition-transform">⚡</span>
+          <span class="text-[17px] sm:text-[18px] font-black tracking-tight text-main">
+            PojokAI<span class="text-xs font-bold text-primary ml-0.5">.com</span>
+          </span>
         </a>
       </div>
 
@@ -125,11 +127,14 @@
       </div>
 
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <a id="headerCekPesananBtn" href="#cek-pesanan" class="hidden md:inline-flex h-10 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-bold text-main transition hover:bg-surface-2 hover:border-primary/40 cursor-pointer" title="Cek Pesanan">
+          <i data-lucide="receipt" class="size-4 text-primary"></i><span>Cek Pesanan</span>
+        </a>
         <button id="themeToggle" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-surface text-main transition hover:bg-surface-2 cursor-pointer" aria-label="Ganti tema">
           <i data-lucide="moon" class="size-[19px] dark:hidden"></i>
           <i data-lucide="sun" class="hidden size-[19px] dark:block"></i>
         </button>
-        <button id="masukBtn" class="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-[13px] font-bold text-main transition hover:bg-surface-2 cursor-pointer" title="Masuk / Akun Saya">
+        <button id="masukBtn" class="btn-accent inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3.5 text-[13px] font-extrabold cursor-pointer shadow-xs" title="Masuk / Akun Saya">
           <i data-lucide="user-round" class="size-[18px] text-primary"></i>
           <span id="masukLabel">Masuk</span>
         </button>
@@ -141,35 +146,34 @@
     </div>
   </header>
 
-  <!-- Category nav -->
-  <nav class="store-only border-b border-line">
-    <div class="no-scrollbar mx-auto flex max-w-[1024px] overflow-x-auto px-3 text-[13px] font-medium text-muted">
-      <a href="#sec-premium" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Akun Aplikasi Premium</a>
-      <a href="#sec-ai" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Akun AI</a>
-      <a href="#sec-lainnya" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Akun Lainnya</a>
-      <a href="#sosmed" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Jasa Sosmed</a>
-      <a href="#" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Blog</a>
-      <a href="#reseller" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Reseller</a>
-      <a href="#cek-pesanan" class="flex h-10 items-center whitespace-nowrap px-2.5 transition hover:text-main">Cek Pesanan</a>
+  <!-- Category nav (Waroengkuy Style) -->
+  <nav class="store-only border-b border-line bg-surface/75 backdrop-blur-md">
+    <div class="no-scrollbar mx-auto flex max-w-[1024px] items-center gap-1 overflow-x-auto px-3 py-1.5 text-[13px] font-bold text-muted">
+      <a href="#sec-premium" class="flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 transition hover:bg-surface-2 hover:text-primary">📱 Akun Aplikasi &amp; AI</a>
+      <a href="#produk" class="flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 transition hover:bg-surface-2 hover:text-primary">👛 E-Wallet &amp; Saldo</a>
+      <a href="#produk" class="flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 transition hover:bg-surface-2 hover:text-primary">⚡ Pulsa</a>
+      <a href="#sosmed" class="flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 transition hover:bg-surface-2 hover:text-primary">📢 Jasa Sosmed</a>
+      <a href="#sec-paket-hemat" class="flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 transition hover:bg-surface-2 hover:text-primary">🔥 Paket Hemat</a>
+      <a href="#reseller" class="flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 transition hover:bg-surface-2 hover:text-primary">🤝 Reseller</a>
+      <a href="#cek-pesanan" class="flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 transition hover:bg-surface-2 hover:text-primary">🔍 Cek Pesanan</a>
     </div>
   </nav>
 
-  <!-- Top Announcement Ribbon for Under Construction -->
-  <aside id="constructionBanner" class="store-only border-b border-red-500/25 bg-red-500/10 px-3 py-2 text-[12px] text-red-900 dark:text-red-200" aria-label="Status website">
+  <!-- Top Announcement Ribbon (Waroengkuy Style) -->
+  <aside class="store-only border-b border-primary/20 bg-primary/10 px-3 py-1.5 text-[12px] text-primary dark:bg-primary/15 dark:text-blue-200" aria-label="Status website">
     <div class="mx-auto flex max-w-[1024px] items-center justify-between gap-2.5">
       <div class="flex items-center gap-2 overflow-hidden">
-        <span class="relative flex size-2 shrink-0">
-          <span class="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-          <span class="relative inline-flex size-2 rounded-full bg-red-500"></span>
+        <span class="inline-flex items-center gap-1 font-extrabold text-amber-500 dark:text-amber-400">
+          <i data-lucide="zap" class="size-3.5 fill-current"></i> Flash Sale:
         </span>
-        <p class="truncate font-medium">
-          <strong class="font-semibold text-red-950 dark:text-red-100">Tahap Pengembangan:</strong> Website PojokAI sedang dalam proses pemeliharaan &amp; perapian sistem.
+        <p class="truncate font-medium text-main">
+          Beli akun premium legal &amp; top up murah via QRIS otomatis ke WhatsApp tanpa ribet login!
         </p>
       </div>
-      <button type="button" id="constructionBannerBtn" class="shrink-0 inline-flex items-center gap-1 font-bold underline hover:opacity-80 transition cursor-pointer text-red-900 dark:text-red-200">
-        <span>Lihat Detail</span>
-        <i data-lucide="chevron-right" class="size-3.5"></i>
-      </button>
+      <a href="#sec-paket-hemat" class="shrink-0 inline-flex items-center gap-1 font-bold text-primary hover:underline">
+        <span>Lihat Promo</span>
+        <i data-lucide="arrow-right" class="size-3.5"></i>
+      </a>
     </div>
   </aside>
 
@@ -509,23 +513,56 @@
     <div id="ticker" class="ticker flex w-max items-center"></div>
   </section>
 
-  <!-- Footer -->
-  <footer class="store-only mt-12 border-t border-line">
-    <div class="mx-auto flex w-full max-w-[1024px] flex-col items-center gap-4 px-4 py-10 text-center text-sm text-muted">
-      <a href="#" class="flex items-center gap-2.5 text-[17px] font-bold tracking-tight text-main">
-        <svg viewBox="0 0 100 96.04" width="26" height="25" class="text-primary" aria-hidden="true"><use href="#logo"/></svg> PojokAI
-      </a>
-      <p class="max-w-[46ch] text-pretty">Akun digital instan · bayar QRIS · dikirim otomatis ke WhatsApp, tanpa perlu daftar. Butuh bantuan? Hubungi penjual lewat WhatsApp setelah membeli.</p>
-      <nav class="flex flex-wrap justify-center gap-x-6 gap-y-2">
-        <a href="#cek-pesanan" class="transition-colors hover:text-main">Cek pesanan</a>
-        <a href="#sosmed" class="transition-colors hover:text-main">Jasa Sosmed</a>
-        <a href="#reseller" class="transition-colors hover:text-main">Jadi reseller</a>
-        <a href="#faq" class="transition-colors hover:text-main">Panduan &amp; FAQ</a>
-        <button type="button" data-open-policy="privacy" class="transition-colors hover:text-main cursor-pointer bg-transparent border-0 p-0 text-inherit text-sm">Kebijakan Privasi</button>
-        <button type="button" data-open-policy="terms" class="transition-colors hover:text-main cursor-pointer bg-transparent border-0 p-0 text-inherit text-sm">Syarat &amp; Ketentuan</button>
-        <button type="button" data-open-policy="warranty" class="transition-colors hover:text-main cursor-pointer bg-transparent border-0 p-0 text-inherit text-sm">Garansi &amp; Klaim</button>
-      </nav>
-      <p class="text-xs text-subtle">© 2026 PojokAI. Seluruh hak cipta dilindungi.</p>
+  <!-- Footer Waroengkuy Style -->
+  <footer class="store-only mt-14 border-t border-line bg-surface">
+    <div class="mx-auto w-full max-w-[1024px] px-4 py-12">
+      <div class="grid grid-cols-1 gap-8 md:grid-cols-4">
+        <!-- Col 1: Brand Info -->
+        <div class="md:col-span-2 space-y-3">
+          <a href="#" class="inline-flex items-center gap-2 text-xl font-black tracking-tight text-main">
+            <span class="grid size-8 place-items-center rounded-lg bg-primary text-primary-fg font-black text-sm">⚡</span>
+            <span>PojokAI<span class="text-xs text-primary font-bold ml-0.5">.com</span></span>
+          </a>
+          <p class="max-w-md text-xs sm:text-sm leading-relaxed text-muted">
+            Pusat akun digital premium murah, pulsa, e-wallet, dan jasa sosial media instan via QRIS. Dikirim otomatis ke WhatsApp dalam hitungan detik tanpa perlu login ribet.
+          </p>
+          <div class="inline-flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-1.5 text-xs text-muted">
+            <i data-lucide="shield-check" class="size-4 text-emerald-500"></i>
+            <span>Pembayaran terverifikasi otomatis QRIS semua bank &amp; e-wallet</span>
+          </div>
+        </div>
+
+        <!-- Col 2: Kategori & Layanan -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-main">Kategori Produk</h4>
+          <ul class="space-y-1.5 text-xs text-muted">
+            <li><a href="#sec-premium" class="hover:text-primary transition">Akun Aplikasi &amp; AI</a></li>
+            <li><a href="#produk" class="hover:text-primary transition">E-Wallet &amp; Pulsa</a></li>
+            <li><a href="#sosmed" class="hover:text-primary transition">Jasa Sosial Media</a></li>
+            <li><a href="#reseller" class="hover:text-primary transition">Program Reseller</a></li>
+            <li><a href="#sec-paket-hemat" class="hover:text-primary transition">Paket Hemat Spesial</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Bantuan & Legal -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-main">Bantuan &amp; Info</h4>
+          <ul class="space-y-1.5 text-xs text-muted">
+            <li><a href="#cek-pesanan" class="hover:text-primary transition">Cek Status Pesanan</a></li>
+            <li><a href="#faq" class="hover:text-primary transition">Panduan &amp; FAQ</a></li>
+            <li><button type="button" data-open-policy="privacy" class="hover:text-primary transition text-left cursor-pointer">Kebijakan Privasi</button></li>
+            <li><button type="button" data-open-policy="terms" class="hover:text-primary transition text-left cursor-pointer">Syarat &amp; Ketentuan</button></li>
+            <li><button type="button" data-open-policy="warranty" class="hover:text-primary transition text-left cursor-pointer">Garansi &amp; Klaim</button></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-line-soft pt-6 text-xs text-subtle">
+        <p>© 2026 PojokAI. Seluruh hak cipta dilindungi. Layanan Akun Digital Instan Indonesia.</p>
+        <p class="flex items-center gap-1.5">
+          <i data-lucide="check" class="size-3.5 text-emerald-500"></i> Sistem Otomasi Aktif 24/7
+        </p>
+      </div>
     </div>
   </footer>
 

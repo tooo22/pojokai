@@ -39,38 +39,38 @@
   ],
   "hero": [
     {
-      "eyebrow": "PojokAI · Toko akun digital",
-      "title": "Belanja aman & terpercaya",
-      "line2": "Akun langsung dikirim ke WhatsApp.",
-      "sub": "Bayar QRIS · bergaransi · admin ramah 24 jam",
+      "eyebrow": "PojokAI · Dikirim otomatis",
+      "title": "Akun premium murah,",
+      "line2": "langsung dikirim.",
+      "sub": "Bayar QRIS, akun masuk WhatsApp dalam hitungan detik tanpa perlu login.",
       "cta": "Belanja sekarang",
       "href": "#produk",
       "items": [
         [
-          "🛡️",
-          "Akun bergaransi"
-        ],
-        [
           "⚡",
-          "Dikirim otomatis ke WA"
+          "Masuk WhatsApp otomatis"
         ],
         [
           "⭐",
-          "Ribuan pembeli puas"
+          "5,0 (36 ulasan pelanggan)"
+        ],
+        [
+          "🛡️",
+          "Garansi ganti baru 30 hari"
         ]
       ]
     },
     {
-      "eyebrow": "Baru · Jasa sosmed",
-      "title": "Naikkan followers & views",
-      "line2": "Otomatis, tanpa password.",
-      "sub": "Pilih akun Indonesia atau global · bayar QRIS",
+      "eyebrow": "Layanan Kilat · Jasa Sosmed",
+      "title": "Followers, likes & views,",
+      "line2": "otomatis tanpa password.",
+      "sub": "Cukup link profil atau postingan — proses instan via QRIS semua bank.",
       "cta": "Lihat jasa sosmed",
       "href": "#sosmed",
       "items": [
         [
           "📸",
-          "+1.000 followers Instagram"
+          "+1.000 followers aktif"
         ],
         [
           "🎵",
@@ -83,46 +83,46 @@
       ]
     },
     {
-      "eyebrow": "Akun premium hemat",
-      "title": "ChatGPT, Netflix, Canva & lainnya",
-      "line2": "Aktif instan, harga bersahabat.",
-      "sub": "Cek stok & pilih paket sesuai kebutuhanmu",
-      "cta": "Lihat akun premium",
-      "href": "#sec-premium",
+      "eyebrow": "PojokAI · Paket Hemat",
+      "title": "CapCut, Netflix, Gemini & Spotify,",
+      "line2": "harga spesial diskon 67%.",
+      "sub": "Akun toko resmi siap pakai dengan garansi replace penuh selama aktif.",
+      "cta": "Lihat paket hemat",
+      "href": "#sec-paket-hemat",
       "items": [
         [
-          "🤖",
-          "ChatGPT Plus · aktif"
-        ],
-        [
           "🎬",
-          "Netflix Premium · aktif"
+          "CapCut Pro 1 Bulan"
         ],
         [
-          "🎨",
-          "Canva Pro · aktif"
+          "🍿",
+          "Netflix UHD Sharing"
+        ],
+        [
+          "🤖",
+          "Gemini 2.5 Pro & ChatGPT"
         ]
       ]
     },
     {
-      "eyebrow": "Program reseller",
-      "title": "Jualan akun digital tanpa modal",
-      "line2": "Punya web toko sendiri.",
-      "sub": "Harga modal khusus · pesanan otomatis · untung tiap penjualan",
+      "eyebrow": "Program Kemitraan",
+      "title": "Jadi reseller toko digital,",
+      "line2": "untung tiap jualan.",
+      "sub": "Punya web toko sendiri dengan harga modal reseller dan sistem bot otomatis.",
       "cta": "Daftar reseller",
       "href": "#reseller",
       "items": [
         [
           "🏪",
-          "Web toko atas namamu"
+          "Web toko digital sendiri"
         ],
         [
           "💸",
-          "Untung tiap penjualan"
+          "Untung selisih harga modal"
         ],
         [
           "📦",
-          "Tanpa stok & tanpa ribet"
+          "Kirim otomatis tanpa stok"
         ]
       ]
     }
@@ -1059,50 +1059,6 @@
     }
   ],
   "orders": [
-    {
-      "code": "POJOK-276QS4",
-      "createdAt": "2026-10-16T17:30:37.718Z",
-      "buyer": {
-        "name": "Pembeli",
-        "email": "testbuyer@gmail.com",
-        "wa": "081234567890"
-      },
-      "product": {
-        "name": "Google Gemini",
-        "variant": "18 Bulan Link",
-        "qty": 1,
-        "price": 25000
-      },
-      "total": 25000,
-      "note": "Email: testbuyer@gmail.com | WA: 081234567890",
-      "status": "Menunggu Pengiriman"
-    },
-    {
-      "code": "POJOK-3RLE3G",
-      "createdAt": "2026-10-15T22:46:00.517Z",
-      "buyer": {
-        "name": "Pembeli",
-        "email": "customer@gmail.com",
-        "wa": "081234567890"
-      },
-      "product": {
-        "name": "Google Gemini",
-        "variant": "18 Bulan Link",
-        "qty": 1,
-        "price": 25000
-      },
-      "total": 25000,
-      "note": "Email: customer@gmail.com | WA: 081234567890",
-      "status": "Menunggu Pengiriman",
-      "wistapay": {
-        "reference": "API20261016054601DE0EC1",
-        "payment_id": "e3562671-121c-40b8-9a44-65d57cfa5f61",
-        "qris_image": "https://mutasiku.co.id/api/qris/ZTM1NjI2NzEtMTIxYy00MGI4LTlhNDQtNjVkNTdjZmE1ZjYxOjE3OTIxMDQzNjI0MTI=",
-        "payment_url": "https://mutasiku.co.id/pay/ZTM1NjI2NzEtMTIxYy00MGI4LTlhNDQtNjVkNTdjZmE1ZjYxOjE3OTIxMDQzNjI0MTI=",
-        "expires_at": "2026-10-15T22:56:02.012Z",
-        "charge_amount": 25000
-      }
-    },
     {
       "code": "POJOK-7SQFW9",
       "createdAt": "2026-10-15T08:59:15.983Z",

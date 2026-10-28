@@ -43,25 +43,57 @@ const PRODUCTS = [
 
 const HERO_SLIDES = [
   {
-    eyebrow: 'PojokAI · Toko akun digital', title: 'Belanja aman & terpercaya', line2: 'Akun langsung dikirim ke WhatsApp.',
-    sub: 'Bayar QRIS · bergaransi · admin ramah 24 jam', cta: 'Belanja sekarang', href: '#produk',
-    items: [['🛡️', 'Akun bergaransi'], ['⚡', 'Dikirim otomatis ke WA'], ['⭐', 'Ribuan pembeli puas']],
+    eyebrow: 'PojokAI · Dikirim otomatis',
+    title: 'Akun premium murah,',
+    line2: 'langsung dikirim.',
+    sub: 'Bayar QRIS, akun masuk WhatsApp dalam hitungan detik tanpa perlu login.',
+    cta: 'Belanja sekarang',
+    href: '#produk',
+    items: [
+      ['⚡', 'Masuk WhatsApp otomatis'],
+      ['⭐', '5,0 (36 ulasan pelanggan)'],
+      ['🛡️', 'Garansi ganti baru 30 hari']
+    ]
   },
   {
-    eyebrow: 'Baru · Jasa sosmed', title: 'Naikkan followers & views', line2: 'Otomatis, tanpa password.',
-    sub: 'Pilih akun Indonesia atau global · bayar QRIS', cta: 'Lihat jasa sosmed', href: '#sosmed',
-    items: [['📸', '+1.000 followers Instagram'], ['🎵', '+5.000 views TikTok'], ['▶️', '+500 subscribers YouTube']],
+    eyebrow: 'Layanan Kilat · Jasa Sosmed',
+    title: 'Followers, likes & views,',
+    line2: 'otomatis tanpa password.',
+    sub: 'Cukup link profil atau postingan — proses instan via QRIS semua bank.',
+    cta: 'Lihat jasa sosmed',
+    href: '#sosmed',
+    items: [
+      ['📸', '+1.000 followers aktif'],
+      ['🎵', '+5.000 views TikTok'],
+      ['▶️', '+500 subscribers YouTube']
+    ]
   },
   {
-    eyebrow: 'Akun premium hemat', title: 'ChatGPT, Netflix, Canva & lainnya', line2: 'Aktif instan, harga bersahabat.',
-    sub: 'Cek stok & pilih paket sesuai kebutuhanmu', cta: 'Lihat akun premium', href: '#sec-premium',
-    items: [['🤖', 'ChatGPT Plus · aktif'], ['🎬', 'Netflix Premium · aktif'], ['🎨', 'Canva Pro · aktif']],
+    eyebrow: 'PojokAI · Paket Hemat',
+    title: 'CapCut, Netflix, Gemini & Spotify,',
+    line2: 'harga spesial diskon 67%.',
+    sub: 'Akun toko resmi siap pakai dengan garansi replace penuh selama aktif.',
+    cta: 'Lihat paket hemat',
+    href: '#sec-paket-hemat',
+    items: [
+      ['🎬', 'CapCut Pro 1 Bulan'],
+      ['🍿', 'Netflix UHD Sharing'],
+      ['🤖', 'Gemini 2.5 Pro & ChatGPT']
+    ]
   },
   {
-    eyebrow: 'Program reseller', title: 'Jualan akun digital tanpa modal', line2: 'Punya web toko sendiri.',
-    sub: 'Harga modal khusus · pesanan otomatis · untung tiap penjualan', cta: 'Daftar reseller', href: '#reseller',
-    items: [['🏪', 'Web toko atas namamu'], ['💸', 'Untung tiap penjualan'], ['📦', 'Tanpa stok & tanpa ribet']],
-  },
+    eyebrow: 'Program Kemitraan',
+    title: 'Jadi reseller toko digital,',
+    line2: 'untung tiap jualan.',
+    sub: 'Punya web toko sendiri dengan harga modal reseller dan sistem bot otomatis.',
+    cta: 'Daftar reseller',
+    href: '#reseller',
+    items: [
+      ['🏪', 'Web toko digital sendiri'],
+      ['💸', 'Untung selisih harga modal'],
+      ['📦', 'Kirim otomatis tanpa stok']
+    ]
+  }
 ];
 
 const FAQS = [

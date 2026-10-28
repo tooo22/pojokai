@@ -12,11 +12,13 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Geist', 'system-ui', 'sans-serif'],
-        display: ['Geist', 'system-ui', 'sans-serif']
+        sans: ['Plus Jakarta Sans', 'Geist', 'system-ui', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'Geist', 'system-ui', 'sans-serif']
       },
       boxShadow: {
-        soft: '0 0 #0000'
+        soft: '0 0 #0000',
+        card: '0 2px 8px -2px rgba(15, 34, 87, 0.06), 0 1px 4px -1px rgba(15, 34, 87, 0.04)',
+        'card-hover': '0 12px 24px -6px rgba(15, 34, 87, 0.1), 0 4px 8px -2px rgba(15, 34, 87, 0.05)',
       },
       colors: {
         bg: c('--bg'),
@@ -31,6 +33,10 @@ module.exports = {
         primary: c('--primary'),
         'primary-fg': c('--primary-fg'),
         'primary-hover': c('--primary-hover'),
+        accent: c('--accent'),
+        'accent-fg': c('--accent-fg'),
+        price: c('--price'),
+        navy: c('--navy'),
         danger: c('--danger'),
         success: c('--success'),
         warning: c('--warning'),

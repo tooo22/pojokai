@@ -1,15 +1,45 @@
 :root {
-  --bg: 250 250 250; --fg: 24 24 27; --surface: 255 255 255; --surface-2: 244 244 245; --surface-3: 228 228 231;
-  --border: 228 228 231; --line-soft: 228 228 231; --muted: 113 113 122; --subtle: 132 132 142;
-  --primary: 24 24 27; --primary-fg: 255 255 255; --primary-hover: 39 39 42;
-  --danger: 190 47 42; --success: 21 128 61; --warning: 161 92 0;
+  --bg: 238 243 251; /* Waroengkuy #eef3fb */
+  --fg: 15 34 87; /* Waroengkuy #0f2257 */
+  --surface: 255 255 255;
+  --surface-2: 241 245 249;
+  --surface-3: 226 232 240;
+  --border: 226 232 240;
+  --line-soft: 226 232 240;
+  --muted: 100 116 139;
+  --subtle: 148 163 184;
+  --primary: 36 81 199; /* #2451c7 Royal Blue */
+  --primary-fg: 255 255 255;
+  --primary-hover: 29 68 168;
+  --accent: 255 200 61; /* #ffc83d Waroengkuy Yellow/Gold */
+  --accent-fg: 28 20 0; /* #1c1400 */
+  --price: 232 89 12; /* #e8590c Waroengkuy Orange Price */
+  --navy: 15 34 87; /* #0f2257 */
+  --danger: 239 68 68;
+  --success: 22 163 74;
+  --warning: 232 89 12;
   color-scheme: light;
 }
 .dark {
-  --bg: 10 10 11; --fg: 250 250 250; --surface: 22 22 24; --surface-2: 33 33 36; --surface-3: 44 44 48;
-  --border: 41 42 46; --line-soft: 35 35 38; --muted: 161 161 170; --subtle: 113 113 122;
-  --primary: 197 248 45; --primary-fg: 11 16 3; --primary-hover: 212 251 92;
-  --danger: 248 113 113; --success: 74 222 128; --warning: 251 191 36;
+  --bg: 10 16 30; /* Midnight Navy Dark */
+  --fg: 248 250 252;
+  --surface: 16 25 46;
+  --surface-2: 24 37 68;
+  --surface-3: 33 50 90;
+  --border: 35 52 92;
+  --line-soft: 28 42 75;
+  --muted: 148 163 184;
+  --subtle: 100 116 139;
+  --primary: 79 134 247; /* #4f86f7 */
+  --primary-fg: 10 16 30;
+  --primary-hover: 100 150 255;
+  --accent: 255 200 61;
+  --accent-fg: 28 20 0;
+  --price: 255 138 61; /* #ff8a3d */
+  --navy: 10 16 30;
+  --danger: 248 113 113;
+  --success: 74 222 128;
+  --warning: 251 191 36;
   color-scheme: dark;
 }
 
@@ -574,4 +604,53 @@ html.lenis, html.lenis body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(220, 220, 230, 0.48);
   background-clip: content-box;
+}
+
+
+/* Waroengkuy Theme Specifics */
+.price-tag {
+  color: rgb(var(--price));
+  font-weight: 700;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-accent {
+  background-color: rgb(var(--accent));
+  color: rgb(var(--accent-fg));
+  font-weight: 800;
+  transition: all .15s ease;
+}
+.btn-accent:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+}
+.btn-accent:active {
+  transform: scale(0.97);
+}
+
+.card {
+  border-radius: 14px;
+  border: 1px solid rgb(var(--border));
+  background: rgb(var(--surface));
+  transition: transform .18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .18s cubic-bezier(0.16, 1, 0.3, 1), border-color .18s ease;
+}
+.card:hover {
+  border-color: rgb(var(--primary) / 0.4);
+  box-shadow: 0 10px 25px -5px rgba(15, 34, 87, 0.07), 0 4px 10px -2px rgba(15, 34, 87, 0.04);
+}
+.dark .card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
+}
+
+.bento-card {
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  padding: 18px;
+  transition: transform .2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .2s ease;
+}
+.bento-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -6px rgba(15, 34, 87, 0.15);
 }

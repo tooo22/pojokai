@@ -201,10 +201,10 @@ function variantLine(v) {
 function tagsHTML(p) {
   const t = [];
   const v = pick(p);
-  const tag = 'inline-flex items-center gap-0.5 rounded-[12px] px-1.5 py-0.5 text-[10px] font-semibold leading-none';
-  if (v?.strike) t.push(`<span class="${tag} bg-primary/10 text-primary">Hemat ${Math.round((1 - v.price / v.strike) * 100)}%</span>`);
-  if (p.baru) t.push(`<span class="${tag} bg-success/10 text-success"><i data-lucide="sparkles" class="size-3"></i> Baru</span>`);
-  if (p.noWarranty) t.push(`<span class="inline-flex shrink-0 items-center gap-0.5 rounded-[12px] bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-muted" title="Produk ini tidak bergaransi"><i data-lucide="shield-off" class="size-3"></i> Tanpa garansi</span>`);
+  const tag = 'inline-flex items-center gap-0.5 rounded-[8px] px-1.5 py-0.5 text-[10px] font-bold leading-none';
+  if (v?.strike) t.push(`<span class="${tag} bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400">-${Math.round((1 - v.price / v.strike) * 100)}%</span>`);
+  if (p.baru) t.push(`<span class="${tag} bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"><i data-lucide="sparkles" class="size-3"></i> Baru</span>`);
+  if (p.noWarranty) t.push(`<span class="inline-flex shrink-0 items-center gap-0.5 rounded-[8px] bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-muted" title="Produk ini tidak bergaransi"><i data-lucide="shield-off" class="size-3"></i> Tanpa garansi</span>`);
   if (p.grp > 1) t.push(`<span class="${tag} bg-surface-2 text-muted">${p.grp} jenis · ${p.variants.length} pilihan</span>`);
   return t.length ? `<span class="mt-1 flex min-w-0 flex-wrap items-center gap-1">${t.join('')}</span>` : '';
 }
@@ -212,13 +212,14 @@ function tagsHTML(p) {
 function priceHTML(p) {
   const v = pick(p);
   const strike = v?.strike ? `<span class="text-[10px] tabular-nums text-subtle line-through sm:text-[11px]">${rp(v.strike)}</span>` : '';
-  return `<span class="text-[15px] font-bold tabular-nums text-primary sm:text-lg">${v ? rp(v.price) : 'Patungan'}</span>${strike}`;
+  const prefix = p.variants && p.variants.length > 1 && !p.patungan ? '<span class="text-[10px] font-semibold text-muted mr-0.5">mulai</span>' : '';
+  return `<span class="inline-flex items-baseline gap-1.5"><span class="text-[15px] font-black tabular-nums text-price sm:text-lg">${prefix}${v ? rp(v.price) : 'Patungan'}</span>${strike}</span>`;
 }
 
 function badgesHTML(p) {
-  const pill = 'absolute top-1.5 inline-flex items-center gap-0.5 rounded-full bg-surface/90 text-[10px] font-semibold leading-none ring-1 ring-line-soft backdrop-blur-sm';
-  return (p.auto ? `<span class="${pill} left-1.5 px-1.5 py-1 text-success"><i data-lucide="zap" class="size-3"></i>Otomatis</span>` : '')
-    + (p.hot ? `<span class="${pill} right-1.5 p-1 text-warning" title="Terlaris"><i data-lucide="flame" class="size-3"></i></span>` : '');
+  const pill = 'absolute top-1.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-extrabold leading-none shadow-xs backdrop-blur-sm dark:bg-zinc-900/90';
+  return (p.auto ? `<span class="${pill} left-1.5 text-emerald-600 dark:text-emerald-400"><i data-lucide="zap" class="size-3 fill-emerald-500 text-emerald-500"></i>Otomatis</span>` : '')
+    + (p.hot ? `<span class="${pill} right-1.5 text-amber-500" title="Terlaris"><i data-lucide="flame" class="size-3 fill-amber-500"></i>Terlaris</span>` : '');
 }
 
 function cardImg(p, cls) {
@@ -229,15 +230,15 @@ function cardImg(p, cls) {
 function gridCard(p) {
   const [stock, cls] = stockInfo(p);
   const habis = !p.patungan && !pick(p)?.stock;
-  return `<button data-buy="${p.slug}" aria-label="Beli ${esc(p.name)}" class="card border-line-soft group flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden p-2 text-left transition-colors duration-200 hover:border-primary/50 sm:p-2.5 ${habis ? 'opacity-55' : ''}">
-    <div class="relative aspect-square w-full overflow-hidden rounded-[10px] bg-surface-2">
-      ${cardImg(p, 'absolute inset-0 size-full object-cover')}
+  return `<button data-buy="${p.slug}" aria-label="Beli ${esc(p.name)}" class="card group flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden p-2 text-left transition-all duration-200 hover:border-primary/50 hover:-translate-y-1 sm:p-2.5 ${habis ? 'opacity-55' : ''}">
+    <div class="relative aspect-square w-full overflow-hidden rounded-[10px] bg-surface-2 border border-line-soft/60">
+      ${cardImg(p, 'absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105')}
       ${badgesHTML(p)}
     </div>
     <div class="flex flex-1 flex-col px-0.5">
-      <p class="line-clamp-2 text-sm font-medium leading-snug">${esc(p.name)}</p>
+      <p class="line-clamp-2 text-sm font-bold text-main leading-snug group-hover:text-primary transition-colors">${esc(p.name)}</p>
       ${tagsHTML(p)}
-      <div class="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">${priceHTML(p)}</div>
+      <div class="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1.5">${priceHTML(p)}</div>
       <div class="mt-auto flex min-w-0 items-center justify-between gap-2 border-t border-line-soft pt-1.5 text-[11px]">
         <span class="truncate ${cls}">${stock}</span>${ratingHTML(p.rating)}
       </div>
