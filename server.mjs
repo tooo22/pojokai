@@ -2201,21 +2201,34 @@ async function api(req, res, url) {
     });
   }
 
-  if (method === 'POST' && p === '/api/oauth/verify') {
+    if (method === 'POST' && p === '/api/oauth/verify') {
     const body = await readBody(req);
     const idToken = String(body.idToken || body.credential || '').trim();
-    if (!idToken) {
+    const accessToken = String(body.accessToken || body.access_token || '').trim();
+    if (!idToken && !accessToken) {
       return send(res, 400, { error: 'Token Google OAuth wajib disertakan' });
     }
 
     let verifiedEmail = null;
     try {
-      const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-      if (gRes.ok) {
-        const gData = await gRes.json();
-        const expectedClientId = process.env.GOOGLE_CLIENT_ID || '882960778924-qnagvcduvc341a89bh7v8af2h3dbhhtg.apps.googleusercontent.com';
-        if ((!expectedClientId || gData.aud === expectedClientId) && (gData.email_verified === 'true' || gData.email_verified === true)) {
-          verifiedEmail = String(gData.email || '').trim().toLowerCase();
+      if (idToken) {
+        const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          const expectedClientId = process.env.GOOGLE_CLIENT_ID || '882960778924-qnagvcduvc341a89bh7v8af2h3dbhhtg.apps.googleusercontent.com';
+          if ((!expectedClientId || gData.aud === expectedClientId) && (gData.email_verified === 'true' || gData.email_verified === true)) {
+            verifiedEmail = String(gData.email || '').trim().toLowerCase();
+          }
+        }
+      } else if (accessToken) {
+        const gRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          if (gData.email_verified === true || gData.email_verified === 'true') {
+            verifiedEmail = String(gData.email || '').trim().toLowerCase();
+          }
         }
       }
     } catch (e) {
@@ -2529,7 +2542,7 @@ async function api(req, res, url) {
       const order = (db.orders || []).find((o) => o.code === code || (cleanCode && o.code.replace(/[^A-Z0-9]/g, '') === cleanCode));
       if (order && !order.status.includes('Lunas') && !order.status.includes('Diproses') && !order.status.includes('Selesai')) {
         const orderAge = Date.now() - new Date(order.createdAt).getTime();
-        if (orderAge >= 5 * 60 * 1000) {
+        if (orderAge >= (5 * 60 - 15) * 1000) {
           order.status = 'Dibatalkan (Waktu Habis)';
           order.cancelledAt = new Date().toISOString();
           await save();

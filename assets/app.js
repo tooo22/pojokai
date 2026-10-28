@@ -1190,6 +1190,7 @@ function checkout() {
     `WA: ${wa}`
   ].filter(Boolean);
 
+  const isPatungan = !!p.patungan || !v || (v && v.price === 0) || total === 0 || total < 1000;
   const order = {
     code: orderCode,
     createdAt: new Date().toISOString(),
@@ -1206,7 +1207,7 @@ function checkout() {
       price: v ? v.price : 0,
     },
     note: noteItems.join(' | '),
-    status: 'Menunggu Pengiriman',
+    status: isPatungan ? 'Menunggu Konfirmasi Patungan' : 'Menunggu Pengiriman',
   };
 
   saveOrderLocal(order);
@@ -1216,7 +1217,11 @@ function checkout() {
     body: JSON.stringify(order),
   }).catch(() => {});
 
-  openPaymentModal(order);
+  if (isPatungan) {
+    openPatunganModal(order);
+  } else {
+    openPaymentModal(order);
+  }
 }
 
 
@@ -1833,6 +1838,17 @@ async function requestDynamicQris(order) {
   const qErr = $('#qrisError');
   const qErrMsg = $('#qrisErrorMsg');
 
+  if (!order || order.total < 1000) {
+    if (qLoad) { qLoad.classList.remove('flex'); qLoad.classList.add('hidden'); }
+    if (qErr) {
+      qErr.classList.remove('hidden');
+      qErr.classList.add('flex');
+      if (qErrMsg) qErrMsg.textContent = 'Nominal pembayaran minimal Rp 1.000 untuk QRIS dinamis.';
+      icons();
+    }
+    return;
+  }
+
   // Reset to loading state
   if (qLoad) { qLoad.classList.remove('hidden'); qLoad.classList.add('flex'); }
   if (qImg) { qImg.classList.add('hidden'); }
@@ -2126,6 +2142,95 @@ function openPaymentSuccessModal(order) {
 }
 
 
+
+
+function patunganDialogHTML(order) {
+  const pName = esc(order.product?.name || 'Produk');
+  const buyerWa = esc(order.buyer?.wa || '');
+  const buyerEmail = esc(order.buyer?.email || '');
+  const waText = encodeURIComponent('Halo admin PojokAI, saya mau pesan/ikut patungan untuk ' + (order.product?.name || 'Produk') + ' (Kode: ' + order.code + '). Tolong info slot & detailnya ya!');
+  const waUrl = 'https://wa.me/6283171982973?text=' + waText;
+
+  return `
+  <div class="shrink-0 border-b border-line-soft px-4 py-3 sm:px-5">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-line-soft">
+      <button type="button" data-close aria-label="Kembali" class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-main py-1 px-2.5 -ml-2 rounded-lg transition hover:bg-surface-2 cursor-pointer">
+        <i data-lucide="arrow-left" class="size-4"></i><span>Kembali</span>
+      </button>
+      <button type="button" data-close class="grid size-8 place-items-center rounded-[10px] text-subtle hover:bg-surface-2 hover:text-main cursor-pointer" aria-label="Tutup"><i data-lucide="x" class="size-4"></i></button>
+    </div>
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="font-display text-base font-bold sm:text-lg">Konfirmasi Slot Patungan</h2>
+        <p class="text-xs text-muted">Pesanan patungan dikonfirmasi langsung oleh admin</p>
+      </div>
+      <span class="rounded-full bg-primary/10 border border-primary/30 px-2.5 py-1 text-[11px] font-bold text-primary flex items-center gap-1">
+        <i data-lucide="users" class="size-3.5"></i>Slot Patungan
+      </span>
+    </div>
+  </div>
+
+  <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 space-y-4">
+    <div class="rounded-xl border border-line bg-surface-2/60 p-3.5 flex items-center justify-between">
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-wider text-muted">Kode Pesanan</p>
+        <p class="font-mono text-base font-bold text-primary tracking-wide">${esc(order.code)}</p>
+      </div>
+      <button type="button" data-copy="${esc(order.code)}" class="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs font-semibold text-main hover:bg-surface-2 transition cursor-pointer">
+        <i data-lucide="copy" class="size-3.5"></i><span>Salin</span>
+      </button>
+    </div>
+
+    <div class="rounded-2xl border border-blue-500/25 bg-blue-500/10 p-4 space-y-2 text-xs leading-relaxed text-blue-900 dark:text-blue-200">
+      <div class="flex items-center gap-2 font-bold text-sm text-blue-700 dark:text-blue-300">
+        <i data-lucide="info" class="size-4 shrink-0"></i>
+        <span>Alur Pembelian Akun Patungan</span>
+      </div>
+      <p>Untuk produk patungan, admin akan memverifikasi ketersediaan slot akun bersama anggota grup lainnya dan memberikan instruksi pembayaran langsung via WhatsApp.</p>
+    </div>
+
+    <div class="rounded-xl border border-line p-3 text-xs space-y-2 bg-surface">
+      <div class="flex justify-between py-1 border-b border-line-soft">
+        <span class="text-muted">Produk:</span>
+        <span class="font-semibold text-main text-right">${pName}</span>
+      </div>
+      <div class="flex justify-between py-1 border-b border-line-soft">
+        <span class="text-muted">Nomor WhatsApp:</span>
+        <span class="font-mono text-main">${buyerWa || '-'}</span>
+      </div>
+      <div class="flex justify-between py-1">
+        <span class="text-muted">Email Pembeli:</span>
+        <span class="font-mono text-main">${buyerEmail || '-'}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="shrink-0 border-t border-line-soft p-4 sm:p-5 space-y-2 bg-surface">
+    <a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition cursor-pointer">
+      <i data-lucide="message-circle" class="size-5"></i>
+      <span>Hubungi Admin via WhatsApp</span>
+    </a>
+    <button type="button" data-close class="inline-flex h-10 w-full items-center justify-center rounded-xl border border-line bg-surface text-xs font-semibold text-muted hover:text-main hover:bg-surface-2 transition cursor-pointer">
+      Tutup
+    </button>
+  </div>
+  `;
+}
+
+function openPatunganModal(order) {
+  currentModalView = 'patungan';
+  activePaymentOrder = order;
+  const box = $('#dialog');
+  if (!box) return;
+  box.style.transition = '';
+  box.style.transform = '';
+  box.style.opacity = '';
+  box.innerHTML = patunganDialogHTML(order);
+  icons();
+  $('#modal').classList.replace('hidden', 'flex');
+  document.documentElement.style.overflow = 'hidden';
+  setTimeout(() => $('#dialog')?.focus({ preventScroll: true }), 60);
+}
 
 function openPaymentModal(order) {
   paymentSuccessHandled = false;
@@ -2927,10 +3032,10 @@ function updateClock() {
 }
 
 function initSiteClock() {
+  const clock = $('#siteClock');
+  if (!clock) return;
   updateClock();
   setInterval(updateClock, 1000);
-
-  const clock = $('#siteClock');
   const menu = $('#clockMenu');
   if (!clock || !menu) return;
 
@@ -2975,12 +3080,15 @@ const handleSearchInput = (val, sourceInput) => {
   state.q = val;
   const pInput = $('#searchInput');
   const hInput = $('#headerSearchInput');
+  const sInput = $('#headerScrolledSearchInput');
   if (pInput && pInput !== sourceInput) pInput.value = val;
   if (hInput && hInput !== sourceInput) hInput.value = val;
+  if (sInput && sInput !== sourceInput) sInput.value = val;
   renderCatalog();
 };
 $('#searchInput')?.addEventListener('input', (e) => handleSearchInput(e.target.value, e.target));
 $('#headerSearchInput')?.addEventListener('input', (e) => handleSearchInput(e.target.value, e.target));
+$('#headerScrolledSearchInput')?.addEventListener('input', (e) => handleSearchInput(e.target.value, e.target));
 
 $('#sortSelect')?.addEventListener('change', (e) => {
   state.sort = e.target.value;
@@ -3860,6 +3968,7 @@ function initSmoothScroll() {
   });
 
   initRulerScrollbar(lenis);
+  lenis.on('scroll', updateHeaderScroll);
 }
 
 /* ---------- FigCraft Interactive Ruler Scrollbar & Momentum Sync ---------- */

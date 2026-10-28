@@ -212,9 +212,10 @@ nav[aria-label="Belanja cepat"] a:hover .squircle-icon {
 }
 
 /* Radius default 12px untuk elemen standar toko, dengan fleksibilitas kelas rounded kustom */
-:is([class*="bg-"], [class*="border"], [class*="ring-"], [class*="shadow"], button, input, textarea, select) {
+:is([class*="bg-"], [class*="border"], [class*="ring-"], [class*="shadow"], button, input, textarea, select):not(header):not(nav):not(hr):not([class*="rounded-none"]) {
   border-radius: 12px;
 }
+[class*="rounded-none"] { border-radius: 0 !important; }
 .hero-blob, .drag-handle, .pill, [class*="rounded-full"] { border-radius: 9999px !important; }
 [class*="rounded-2xl"] { border-radius: 1rem !important; }
 [class*="rounded-3xl"] { border-radius: 1.5rem !important; }
