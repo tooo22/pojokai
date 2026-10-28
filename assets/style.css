@@ -13,7 +13,7 @@
   --primary-hover: 29 68 168;
   --accent: 255 200 61; /* #ffc83d Waroengkuy Yellow/Gold */
   --accent-fg: 28 20 0; /* #1c1400 */
-  --price: 232 89 12; /* #e8590c Waroengkuy Orange Price */
+  --price: 29 78 216; /* #1d4ed8 Waroengkuy Blue Price */
   --navy: 15 34 87; /* #0f2257 */
   --danger: 239 68 68;
   --success: 22 163 74;
@@ -21,33 +21,73 @@
   color-scheme: light;
 }
 .dark {
-  --bg: 10 16 30; /* Midnight Navy Dark */
-  --fg: 248 250 252;
-  --surface: 16 25 46;
-  --surface-2: 24 37 68;
-  --surface-3: 33 50 90;
-  --border: 35 52 92;
-  --line-soft: 28 42 75;
-  --muted: 148 163 184;
-  --subtle: 100 116 139;
-  --primary: 79 134 247; /* #4f86f7 */
-  --primary-fg: 10 16 30;
-  --primary-hover: 100 150 255;
+  --bg: 20 20 20; /* Waroengkuy Charcoal Dark #141414 */
+  --fg: 242 242 242; /* #f2f2f2 */
+  --surface: 32 32 32; /* #202020 */
+  --surface-2: 42 42 42; /* #2a2a2a */
+  --surface-3: 52 52 52; /* #343434 */
+  --border: 51 51 51; /* #333333 */
+  --border-subtle: 42 42 42;
+  --line-soft: 45 45 45;
+  --muted: 156 163 175;
+  --subtle: 115 115 115;
+  --primary: 36 81 199;
+  --primary-fg: 255 255 255;
+  --primary-hover: 45 95 220;
   --accent: 255 200 61;
   --accent-fg: 28 20 0;
-  --price: 255 138 61; /* #ff8a3d */
-  --navy: 10 16 30;
+  --price: 255 255 255; /* #ffffff crisp white price in dark mode, exactly like Waroengkuy! */
+  --navy: 20 20 20;
   --danger: 248 113 113;
   --success: 74 222 128;
   --warning: 251 191 36;
+
+  --wk-hero: #262626;
+  --wk-navy: #141414;
+  --wk-price: #ffffff;
+  --wk-accent: #ffc83d;
+  --wk-bento-1: #2a2a2a;
+  --wk-bento-2: #202020;
+  --wk-bento-3: #202020;
+  --wk-bento-4: #222222;
+  --wk-bento-4-fg: #f2f2f2;
   color-scheme: dark;
 }
 
+.dark header {
+  background-color: #1e1e1e !important;
+  border-bottom: 1px solid #333333 !important;
+}
+
+.dark nav[aria-label="Navigasi toko"] {
+  background-color: #1e1e1e !important;
+  border-top: 1px solid #2e2e2e !important;
+}
+
+.dark [data-tex="hero"] {
+  background-color: #262626 !important;
+}
+
+.dark #sec-paket-hemat {
+  background-color: #262626 !important;
+}
+
+.dark [data-tex="halftone"] {
+  background-color: #262626 !important;
+}
+
 html { scroll-behavior: smooth; }
+body {
+  background-color: rgb(var(--bg));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='2' cy='2' r='1.3' fill='%232451c7' fill-opacity='.13'/%3E%3C/svg%3E");
+}
+.dark body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='2' cy='2' r='1.3' fill='%23ffffff' fill-opacity='.06'/%3E%3C/svg%3E");
+}
 h1, h2, h3 { letter-spacing: -0.025em; }
 ::selection { background: rgb(var(--primary)); color: rgb(var(--primary-fg)); }
 
-/* View Transitions API — Animasi tema melingkar (circular reveal) persis waroengkuy.com */
+/* View Transitions API — Animasi tema cair organik persis waroengkuy.com */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   mix-blend-mode: normal;
@@ -57,7 +97,118 @@ h1, h2, h3 { letter-spacing: -0.025em; }
   z-index: 1;
 }
 ::view-transition-new(root) {
-  z-index: 9999;
+  z-index: 2;
+}
+::view-transition-group(root) {
+  animation-duration: 0.82s;
+}
+/* Squircle Category Icons — Organic Non-Boxy Curve */
+.squircle-icon,
+nav[aria-label="Belanja cepat"] span[data-box="true"],
+nav[aria-label="Belanja cepat"] .squircle-icon {
+  border-radius: 20px !important;
+  box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+nav[aria-label="Belanja cepat"] a:hover span[data-box="true"],
+nav[aria-label="Belanja cepat"] a:hover .squircle-icon {
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* FigCraft Interactive Ruler Scrollbar & Floating Labels */
+#rulerScrollbarWrap {
+  font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#rulerScrollbarWrap #rulerTicks {
+  transition: opacity 0.2s ease;
+}
+
+#rulerScrollbarWrap #rulerThumb {
+  transition: opacity 0.2s ease;
+}
+
+#rulerScrollbarWrap.is-hovered #rulerTicks {
+  opacity: 0.85 !important;
+}
+
+#rulerScrollbarWrap.is-hovered #rulerThumb {
+  opacity: 1 !important;
+}
+
+.ruler-nav-item {
+  position: absolute;
+  right: 0;
+  top: 0;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--fg) / 0.5);
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease, color 0.12s ease;
+  will-change: transform, opacity;
+  cursor: pointer;
+}
+
+#rulerScrollbarWrap.is-hovered .ruler-nav-item {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, color 0.12s ease;
+}
+
+.dark .ruler-nav-item {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ruler-nav-item:hover,
+.ruler-nav-item.is-active {
+  color: rgb(var(--primary)) !important;
+  opacity: 1 !important;
+}
+
+.ruler-nav-item span {
+  display: inline-block;
+  transition: transform 0.18s ease;
+}
+
+.ruler-nav-item:hover span {
+  transform: translateX(-4px);
+}
+/* Admin Panel Waroengkuy Design Consistency */
+#admin .card {
+  border-radius: 16px;
+  border: 1px solid rgb(var(--border));
+  background: rgb(var(--surface));
+}
+.dark #admin .card {
+  background: #202020;
+  border-color: #333333;
+}
+#admin .kpi-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#admin .kpi-card:hover {
+  transform: translateY(-2px);
+}
+#admin .input {
+  border-radius: 10px;
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--border));
+}
+.dark #admin .input {
+  background: #282828;
+  border-color: #3a3a3a;
+  color: #f2f2f2;
+}
+#admin .a-row {
+  border-radius: 12px;
+  border: 1px solid rgb(var(--border));
+}
+.dark #admin .a-row {
+  background: #242424;
+  border-color: #333333;
 }
 
 /* Radius default 12px untuk elemen standar toko, dengan fleksibilitas kelas rounded kustom */
@@ -653,4 +804,60 @@ html.lenis, html.lenis body {
 .bento-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 12px 28px -6px rgba(15, 34, 87, 0.15);
+}
+
+/* Waroengkuy Mascot & Shape System */
+@keyframes wk-blink { 0%, 88%, to { transform: scaleY(1); } 90.5% { transform: scaleY(0.08); } 93% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } 97.5% { transform: scaleY(1); } }
+@keyframes wk-look { 0%, 30%, to { transform: translate(0); } 36%, 50% { transform: translate(-2px, 0.3px); } 56%, 72% { transform: translate(1.8px, -0.4px); } 78% { transform: translate(0); } }
+@keyframes wk-bob { 0%, to { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes wk-hop { 0%, to { transform: translateY(0) scale(1); } 12% { transform: translateY(0) scale(1.06, 0.92); } 45% { transform: translateY(-7px) scale(0.97, 1.04); } 75% { transform: translateY(0) scale(1.04, 0.95); } }
+@keyframes wk-tip { 0% { transform: rotate(-3.5deg) scale(0.97); } 50% { transform: rotate(1deg) scale(1.05); } to { transform: rotate(3.5deg) scale(1); } }
+@keyframes wk-ember { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 0.8; } 100% { opacity: 0; transform: translateY(-16px) scale(0.7); } }
+@keyframes wk-twinkle { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+
+.wk-mascot-look { animation: wk-look 7s infinite ease-in-out; }
+.wk-mascot-look[data-follow] {
+  animation: none !important;
+  transition: transform .25s cubic-bezier(.2, .8, .2, 1);
+}
+.wk-mascot-blink { transform-origin: 50% 65%; animation: wk-blink 4.5s infinite; }
+.wk-mascot-bob { animation: wk-bob 3s infinite ease-in-out; }
+.wk-mascot-hop { animation: wk-hop 4s infinite ease-in-out; }
+.wk-mascot-tip { animation: wk-tip 3s infinite ease-in-out; }
+.wk-mascot-ember { animation: wk-ember 2.5s infinite linear; fill: var(--wk-accent, #ffc83d); }
+.wk-twinkle { animation: wk-twinkle 2s infinite ease-in-out; }
+
+[data-shape="ticket"] {
+  --n: 13px;
+  --notch-y: calc(100% - 56px);
+  border-radius: 16px;
+  position: relative;
+  -webkit-mask: radial-gradient(circle var(--n) at 0 var(--notch-y), #0000 calc(var(--n) - 0.5px), #000 var(--n)) left / 51% 100% no-repeat,
+                radial-gradient(circle var(--n) at 100% var(--notch-y), #0000 calc(var(--n) - 0.5px), #000 var(--n)) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle var(--n) at 0 var(--notch-y), #0000 calc(var(--n) - 0.5px), #000 var(--n)) left / 51% 100% no-repeat,
+        radial-gradient(circle var(--n) at 100% var(--notch-y), #0000 calc(var(--n) - 0.5px), #000 var(--n)) right / 51% 100% no-repeat;
+}
+[data-shape="bubble-br"] { border-radius: 20px 20px 4px 20px !important; }
+[data-shape="bubble-bl"] { border-radius: 20px 20px 20px 4px !important; }
+[data-shape="bubble-tl"] { border-radius: 4px 20px 20px 20px !important; }
+[data-shape="bubble-tr"] { border-radius: 20px 4px 20px 20px !important; }
+
+[data-tex="hero"] {
+  background-color: var(--wk-hero, #2451c7);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cg fill='%23ffffff' fill-opacity='.11'%3E%3Cpath d='M22 8 13 26h8l-4 14 13-19h-8l4-13z'/%3E%3Cpath d='M86 18h4v8h8v4h-8v8h-4v-8h-8v-4h8z'/%3E%3Cpath d='M58 92 64 80l6 12-6 4z'/%3E%3Ccircle cx='122' cy='60' r='3'/%3E%3Cpath d='M104 104 95 122h8l-4 14 13-19h-8l4-13z'/%3E%3C/g%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.12' stroke-width='3'%3E%3Ccircle cx='40' cy='118' r='9'/%3E%3Ccircle cx='132' cy='14' r='6'/%3E%3Crect x='118' y='86' width='12' height='12' transform='rotate%2845 124 92%29'/%3E%3C/g%3E%3C/svg%3E");
+}
+[data-tex="halftone"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cg fill='%23fff' fill-opacity='.14'%3E%3Ccircle cx='4' cy='4' r='1.6'/%3E%3Ccircle cx='12' cy='12' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+}
+[data-tex="grid"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M28 0H0v28' fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='1.5'/%3E%3C/svg%3E");
+}
+.badge-clip {
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 100%, 0 100%);
+}
+.game-polygon {
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+}
+.game-polygon-inner {
+  clip-path: polygon(17px 0, 100% 0, 100% calc(100% - 17px), calc(100% - 17px) 100%, 0 100%, 0 17px);
 }

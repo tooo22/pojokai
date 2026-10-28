@@ -1,9 +1,21 @@
-const WA_ADMIN = '6281234567890';
+const WA_ADMIN = '6283171982973';
 
 const CATEGORIES = [
-  { id: 'premium', anchor: 'sec-premium', title: 'Aplikasi Premium' },
-  { id: 'ai', anchor: 'sec-ai', title: 'AI' },
-  { id: 'lainnya', anchor: 'sec-lainnya', title: 'Lainnya' },
+  {
+    "id": "premium",
+    "anchor": "sec-premium",
+    "title": "Aplikasi Premium"
+  },
+  {
+    "id": "ai",
+    "anchor": "sec-ai",
+    "title": "AI"
+  },
+  {
+    "id": "lainnya",
+    "anchor": "sec-lainnya",
+    "title": "Lainnya"
+  }
 ];
 
 // grp = jumlah kelompok varian ("2 jenis"), mf = field yang diisi manual saat order

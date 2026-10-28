@@ -1,3 +1,4 @@
+window.addEventListener('error', (e) => { window.__lastError = { msg: e.message, file: e.filename, line: e.lineno }; });
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const rp = (n) => 'Rp' + n.toLocaleString('id-ID');
@@ -164,12 +165,23 @@ const pick = (p) => {
   return ok.length ? ok.reduce((a, b) => (b.price < a.price ? b : a)) : p.variants[0];
 };
 
-const CHIPS = [
-  { id: 'hot', label: 'Terlaris', icon: 'flame', test: (p) => p.hot },
-  { id: 'baru', label: 'Baru', icon: 'sparkles', test: (p) => p.baru },
-  { id: 'hemat', label: 'Hemat', icon: 'ticket-percent', test: (p) => !!pick(p)?.strike },
-  { id: 'rating', label: 'Rating ≥4,5', icon: 'star', test: (p) => p.rating?.real },
-];
+function getActiveChips() {
+  const list = [
+    { id: 'all', label: 'Semua Produk', icon: 'sparkles', test: () => true },
+    ...(CATEGORIES || []).map((cat) => ({
+      id: cat.id,
+      label: cat.title,
+      icon: cat.id === 'premium' ? 'smartphone' : (cat.id === 'ai' ? 'bot' : 'package'),
+      test: (p) => p.cat === cat.id,
+    })),
+    { id: 'diskon', label: 'Lagi diskon', icon: 'ticket-percent', test: (p) => !!pick(p)?.strike },
+    { id: 'hot', label: 'Terlaris', icon: 'flame', test: (p) => p.hot || (p.sold && p.sold > 50) },
+  ];
+  return list.filter((c) => {
+    if (c.id === 'all') return true;
+    return (PRODUCTS || []).some((p) => !p.hidden && c.test(p));
+  });
+}
 
 /* ---------- Produk ---------- */
 function stockInfo(p) {
@@ -217,9 +229,14 @@ function priceHTML(p) {
 }
 
 function badgesHTML(p) {
-  const pill = 'absolute top-1.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-extrabold leading-none shadow-xs backdrop-blur-sm dark:bg-zinc-900/90';
-  return (p.auto ? `<span class="${pill} left-1.5 text-emerald-600 dark:text-emerald-400"><i data-lucide="zap" class="size-3 fill-emerald-500 text-emerald-500"></i>Otomatis</span>` : '')
-    + (p.hot ? `<span class="${pill} right-1.5 text-amber-500" title="Terlaris"><i data-lucide="flame" class="size-3 fill-amber-500"></i>Terlaris</span>` : '');
+  const isHabis = !p.patungan && !pick(p)?.stock;
+  if (isHabis) {
+    return `<span aria-hidden="true" class="badge-clip absolute bottom-0 left-0 inline-flex items-center gap-1 py-1 pl-2 pr-3.5 text-[11px] font-bold leading-none text-white bg-slate-600"><i data-lucide="clock" class="size-3 shrink-0"></i>Stok habis</span>`;
+  }
+  if (p.patungan) {
+    return `<span aria-hidden="true" class="badge-clip absolute bottom-0 left-0 inline-flex items-center gap-1 py-1 pl-2 pr-3.5 text-[11px] font-bold leading-none text-white bg-[#0284c7]"><i data-lucide="users" class="size-3 shrink-0"></i>Patungan</span>`;
+  }
+  return `<span aria-hidden="true" class="badge-clip absolute bottom-0 left-0 inline-flex items-center gap-1 py-1 pl-2 pr-3.5 text-[11px] font-bold leading-none text-white bg-[#00c4cc]"><i data-lucide="zap" class="size-3 shrink-0"></i>Instan</span>`;
 }
 
 function cardImg(p, cls) {
@@ -230,17 +247,20 @@ function cardImg(p, cls) {
 function gridCard(p) {
   const [stock, cls] = stockInfo(p);
   const habis = !p.patungan && !pick(p)?.stock;
-  return `<button data-buy="${p.slug}" aria-label="Beli ${esc(p.name)}" class="card group flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden p-2 text-left transition-all duration-200 hover:border-primary/50 hover:-translate-y-1 sm:p-2.5 ${habis ? 'opacity-55' : ''}">
-    <div class="relative aspect-square w-full overflow-hidden rounded-[10px] bg-surface-2 border border-line-soft/60">
+  const ratingVal = p.rating?.v || '5,0';
+  const soldCount = (p.sold || (p.ar ? p.ar + 10 : 25)) + ' terjual';
+  return `<button data-buy="${p.slug}" aria-label="Beli ${esc(p.name)}" class="rounded-[14px] border border-line-soft bg-surface shadow-soft group relative flex h-full w-full min-w-0 flex-col overflow-hidden p-0 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${habis ? 'opacity-55' : ''}" data-shape="bubble-bl">
+    <div class="relative m-1.5 mb-0 aspect-square overflow-hidden bg-surface-2 rounded-[10px]">
       ${cardImg(p, 'absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105')}
       ${badgesHTML(p)}
     </div>
-    <div class="flex flex-1 flex-col px-0.5">
-      <p class="line-clamp-2 text-sm font-bold text-main leading-snug group-hover:text-primary transition-colors">${esc(p.name)}</p>
+    <div class="flex flex-1 flex-col p-2.5">
+      <p class="line-clamp-2 text-[14px] sm:text-[15px] font-bold leading-snug text-main group-hover:text-primary transition-colors">${esc(p.name)}</p>
       ${tagsHTML(p)}
-      <div class="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1.5">${priceHTML(p)}</div>
-      <div class="mt-auto flex min-w-0 items-center justify-between gap-2 border-t border-line-soft pt-1.5 text-[11px]">
-        <span class="truncate ${cls}">${stock}</span>${ratingHTML(p.rating)}
+      <div class="mt-1 font-display text-base sm:text-lg font-extrabold leading-tight tabular-nums text-primary">${priceHTML(p)}</div>
+      <div class="mt-auto flex min-w-0 items-center justify-between gap-1 pt-2 border-t border-line-soft/60 text-[11px] text-muted">
+        <span class="truncate">${soldCount}</span>
+        <span class="inline-flex shrink-0 items-center gap-0.5 font-bold text-amber-500">★ ${ratingVal}</span>
       </div>
     </div>
   </button>`;
@@ -262,7 +282,8 @@ function listRow(p) {
 
 function filtered() {
   const q = state.q.trim().toLowerCase();
-  const chip = CHIPS.find((c) => c.id === state.chip);
+  const chips = getActiveChips();
+  const chip = chips.find((c) => c.id === state.chip);
   let list = PRODUCTS.filter((p) => !p.hidden && (!q || p.name.toLowerCase().includes(q)) && (!chip || chip.test(p)));
   const lo = (p) => (p.variants ? Math.min(...p.variants.map((v) => v.price)) : Infinity);
   const hi = (p) => (p.variants ? Math.max(...p.variants.map((v) => v.price)) : -1);
@@ -292,14 +313,28 @@ function renderCatalog() {
 }
 
 function renderChips() {
-  $('#chips').innerHTML = CHIPS.map((c) => `<button data-chip="${c.id}" aria-pressed="${state.chip === c.id}" class="chip">
-    <i data-lucide="${c.icon}" class="size-3.5"></i>${c.label}<span class="chip-count tabular-nums text-muted">${PRODUCTS.filter((p) => !p.hidden && c.test(p)).length}</span></button>`).join('');
+  const container = $('#chips');
+  if (!container || !PRODUCTS) return;
+  const chips = getActiveChips();
+  const activeId = state.chip || 'all';
+  container.innerHTML = chips.map((c) => {
+    const isAct = activeId === c.id;
+    const count = PRODUCTS.filter((p) => !p.hidden && c.test(p)).length;
+    return `<button data-chip="${c.id}" aria-pressed="${isAct}" class="chip ${isAct ? 'active font-bold' : 'font-semibold'}">
+      <i data-lucide="${c.icon}" class="size-3.5"></i>
+      <span>${c.label}</span>
+      <span class="chip-count tabular-nums ${isAct ? 'text-white' : 'text-muted'}">${count}</span>
+    </button>`;
+  }).join('');
+  icons();
 }
 
 /* ---------- Hero ---------- */
 let heroTimer;
 
 function renderHero() {
+  const track = $('#heroTrack');
+  if (!track || !HERO_SLIDES) return;
   const note = ([emoji, label], j) => `<span class="hero-note" style="animation-delay:${j * 2}s">
       <span class="flex items-center gap-2">
         <span class="grid size-6 shrink-0 place-items-center rounded-[12px] bg-white/10 text-xs sm:size-8 sm:text-base">${emoji}</span>
@@ -311,7 +346,7 @@ function renderHero() {
       </span>
     </span>`;
 
-  $('#heroTrack').innerHTML = HERO_SLIDES.map((s, i) => `<div class="block w-full shrink-0 snap-center" role="group" aria-roledescription="slide" aria-label="${i + 1} dari ${HERO_SLIDES.length}">
+  track.innerHTML = HERO_SLIDES.map((s, i) => `<div class="block w-full shrink-0 snap-center" role="group" aria-roledescription="slide" aria-label="${i + 1} dari ${HERO_SLIDES.length}">
     <span class="relative flex aspect-[1200/375] w-full select-none items-center overflow-hidden bg-zinc-950 text-white">
       <span class="hero-blob b1"></span><span class="hero-blob b2"></span><span class="hero-blob b3"></span>
       <span class="pointer-events-none absolute inset-0 bg-[radial-gradient(rgb(255_255_255/0.06)_1px,transparent_1px)] [background-size:16px_16px]"></span>
@@ -336,6 +371,7 @@ function renderHero() {
 
 function showHero(i) {
   const track = $('#heroTrack');
+  if (!track) return;
   track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
   syncDots(i);
 }
@@ -346,6 +382,7 @@ function syncDots(i) {
 
 function heroSnap() {
   const track = $('#heroTrack');
+  if (!track) return;
   const i = Math.round(track.scrollLeft / track.clientWidth);
   if (Math.abs(track.scrollLeft - i * track.clientWidth) > 2) {
     track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
@@ -355,9 +392,9 @@ function heroSnap() {
 
 function startHero() {
   clearInterval(heroTimer);
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const track = $('#heroTrack');
+  if (!track || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   heroTimer = setInterval(() => {
-    const track = $('#heroTrack');
     showHero((Math.round(track.scrollLeft / track.clientWidth) + 1) % HERO_SLIDES.length);
   }, 6000);
 }
@@ -412,6 +449,89 @@ function renderBundle() {
       </div>
     </article>
   `;
+  icons();
+  icons();
+}
+
+function renderFlashSale() {
+  const container = $('#flashSaleList');
+  if (!container || !PRODUCTS) return;
+
+  let deals = PRODUCTS.filter((p) => {
+    const v = pick(p);
+    return v && v.strike && v.strike > v.price;
+  });
+
+  if (!deals.length) {
+    deals = PRODUCTS.slice(0, 6);
+  }
+
+  container.innerHTML = deals.map((p) => {
+    const v = pick(p);
+    const price = v ? v.price : 0;
+    const strike = v?.strike || 0;
+    const disc = strike > price ? Math.round((1 - price / strike) * 100) : null;
+    const isAuto = p.auto || v?.ful === 'auto';
+    return `<div onclick="window.wk?.open('${p.slug}')" class="flex w-[140px] sm:w-[155px] shrink-0 snap-start flex-col overflow-hidden rounded-[14px] bg-white dark:bg-[#202020] text-[#0f2257] dark:text-[#f2f2f2] border border-transparent dark:border-[#333] shadow transition hover:scale-102 cursor-pointer">
+      <div class="relative aspect-square bg-slate-100 dark:bg-slate-800 flex items-center justify-center p-3">
+        ${disc ? `<span class="absolute top-1.5 right-1.5 rounded-md bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white">-${disc}%</span>` : ''}
+        <img src="assets/products/${esc(p.slug)}.webp" data-fb="${esc(p.name.slice(0, 2))}" alt="${esc(p.name)}" class="size-16 object-contain">
+      </div>
+      <div class="p-2.5 flex flex-col flex-1">
+        <p class="text-xs font-bold line-clamp-1">${esc(p.name)}</p>
+        <p class="text-sm font-black text-primary dark:text-white mt-1">${rp(price)}</p>
+        ${strike > price ? `<p class="text-[10px] line-through text-slate-400">${rp(strike)}</p>` : ''}
+        <div class="mt-auto pt-2 flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+          <i data-lucide="zap" class="size-3"></i><span>${isAuto ? 'Otomatis' : 'Proses Cepat'}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  icons();
+}
+
+function renderTrending() {
+  const container = $('#trendingList');
+  if (!container || !PRODUCTS) return;
+
+  const trending = [...PRODUCTS]
+    .filter((p) => !p.hidden)
+    .sort((a, b) => (b.sold || 0) - (a.sold || 0))
+    .slice(0, 8);
+
+  container.innerHTML = trending.map((p) => {
+    const v = pick(p);
+    const price = v ? v.price : 0;
+    const ratingVal = p.rating?.v || '5,0';
+    const soldCount = (p.sold || 10) + ' terjual';
+
+    let badgeText = 'Instan';
+    let badgeBg = 'bg-[#00c4cc]';
+    if (!p.patungan && !v?.stock) {
+      badgeText = 'Stok habis';
+      badgeBg = 'bg-slate-600';
+    } else if (p.patungan) {
+      badgeText = 'Patungan';
+      badgeBg = 'bg-[#0284c7]';
+    }
+
+    return `<div onclick="window.wk?.open('${p.slug}')" class="card w-[130px] sm:w-[145px] shrink-0 p-2 flex flex-col gap-2 rounded-[14px] hover:border-primary/50 transition cursor-pointer">
+      <div class="relative aspect-square rounded-[10px] overflow-hidden bg-surface-2 flex items-center justify-center">
+        <img src="assets/products/${esc(p.slug)}.webp" data-fb="${esc(p.name.slice(0, 2))}" alt="${esc(p.name)}" class="size-full object-cover">
+        <span class="badge-clip absolute bottom-0 left-0 ${badgeBg} text-white text-[10px] font-bold px-2 py-0.5 flex items-center gap-0.5">
+          <i data-lucide="zap" class="size-2.5"></i>${badgeText}
+        </span>
+      </div>
+      <div>
+        <p class="text-xs font-bold text-main line-clamp-1">${esc(p.name)}</p>
+        <p class="text-xs font-black text-primary dark:text-white mt-0.5">mulai ${rp(price)}</p>
+        <p class="text-[10px] text-muted flex items-center justify-between mt-1">
+          <span>${soldCount}</span>
+          <span class="font-bold text-amber-500">★ ${ratingVal}</span>
+        </p>
+      </div>
+    </div>`;
+  }).join('');
   icons();
 }
 
@@ -2436,7 +2556,8 @@ document.addEventListener('click', (e) => {
 
   const chip = e.target.closest('[data-chip]');
   if (chip) {
-    state.chip = state.chip === chip.dataset.chip ? null : chip.dataset.chip;
+    const cid = chip.dataset.chip;
+    state.chip = (cid === 'all' || state.chip === cid) ? null : cid;
     renderChips(); return renderCatalog();
   }
 
@@ -2719,24 +2840,32 @@ function toggleThemeWithAnimation(e) {
   }
 
   const rect = btn.getBoundingClientRect();
-  const x = rect.left + rect.width / 2;
-  const y = rect.top + rect.height / 2;
-  const endRadius = Math.hypot(
-    Math.max(x, window.innerWidth - x),
-    Math.max(y, window.innerHeight - y)
+  const s = rect.left + rect.width / 2;
+  const l = rect.top + rect.height / 2;
+  const o = Math.hypot(
+    Math.max(s, window.innerWidth - s),
+    Math.max(l, window.innerHeight - l)
   );
 
   document.startViewTransition(apply).ready.then(() => {
+    const keyframes = Array.from({ length: 21 }, (_, t) => {
+      const a = t / 20;
+      const r = 0.24 * Math.sin(Math.PI * a) * Math.exp(-1.6 * a);
+      const n = 1.3 * o * (a < 0.5 ? 4 * a * a * a : 1 - Math.pow(-2 * a + 2, 3) / 2);
+      const i = a * Math.PI * 2.4;
+      const points = Array.from({ length: 48 }, (_, k) => {
+        const angle = (k / 48) * Math.PI * 2;
+        const w = 1 + r * (0.6 * Math.sin(3 * angle + i) + 0.4 * Math.sin(5 * angle - 1.4 * i));
+        return `${(s + n * w * Math.cos(angle)).toFixed(1)}px ${(l + n * w * Math.sin(angle)).toFixed(1)}px`;
+      });
+      return `polygon(${points.join(',')})`;
+    });
+
     document.documentElement.animate(
+      { clipPath: keyframes },
       {
-        clipPath: [
-          `circle(0px at ${x}px ${y}px)`,
-          `circle(${endRadius}px at ${x}px ${y}px)`
-        ]
-      },
-      {
-        duration: 520,
-        easing: 'cubic-bezier(.4, 0, .2, 1)',
+        duration: 820,
+        easing: 'linear',
         pseudoElement: '::view-transition-new(root)'
       }
     );
@@ -2842,11 +2971,20 @@ function initSiteClock() {
   });
 }
 
-$('#searchInput').addEventListener('input', (e) => { state.q = e.target.value; renderCatalog(); });
+const handleSearchInput = (val, sourceInput) => {
+  state.q = val;
+  const pInput = $('#searchInput');
+  const hInput = $('#headerSearchInput');
+  if (pInput && pInput !== sourceInput) pInput.value = val;
+  if (hInput && hInput !== sourceInput) hInput.value = val;
+  renderCatalog();
+};
+$('#searchInput')?.addEventListener('input', (e) => handleSearchInput(e.target.value, e.target));
+$('#headerSearchInput')?.addEventListener('input', (e) => handleSearchInput(e.target.value, e.target));
 
-$('#sortSelect').addEventListener('change', (e) => {
+$('#sortSelect')?.addEventListener('change', (e) => {
   state.sort = e.target.value;
-  $('#sortLabel').textContent = e.target.selectedOptions[0].text;
+  if ($('#sortLabel')) $('#sortLabel').textContent = e.target.selectedOptions[0].text;
   renderCatalog();
 });
 
@@ -2962,12 +3100,13 @@ document.addEventListener('submit', async (e) => {
 updateBuyerNav();
 renderHero();
 renderBundle();
+renderFlashSale();
+renderTrending();
 renderChips();
 renderCatalog();
 renderFaq();
-renderTicker();
 syncDots(0);
-$('#heroTrack').addEventListener('scroll', () => {
+$('#heroTrack')?.addEventListener('scroll', () => {
   clearTimeout(heroSnap.t);
   heroSnap.t = setTimeout(heroSnap, 120);
 });
@@ -2977,6 +3116,11 @@ icons();
 
 /* Jembatan panel owner: perubahan harga/produk tampil langsung tanpa muat ulang. */
 window.wk = {
+  open: (slug, vi) => {
+    const p = PRODUCTS.find((x) => x.slug === slug);
+    if (p) openModal(p, vi);
+  },
+  openBundle: () => openBundleModal(),
   refresh: async () => {
     await loadCatalog();
     if (m) {
@@ -3001,9 +3145,57 @@ window.wk = {
     renderChips();
     renderCatalog();
     renderBundle();
+    renderFlashSale();
+    renderTrending();
   }
 };
 initSiteClock();
+
+/* ---------- Mascot Eye Tracking (Follows Cursor ala Waroengkuy) ---------- */
+function initMascotEyeTracker() {
+  const mascot = document.querySelector('.wk-mascot');
+  if (!mascot) return;
+  const look = mascot.querySelector('.wk-mascot-look');
+  if (!look) return;
+
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  let animFrame = 0, resetTimer = 0, followTimer = 0;
+  let mouseX = 0, mouseY = 0;
+
+  const updateEyePosition = () => {
+    animFrame = 0;
+    const rect = mascot.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+
+    // Center of mascot face (40% width, 62% height)
+    const dx = mouseX - (rect.left + 0.4 * rect.width);
+    const dy = mouseY - (rect.top + 0.62 * rect.height);
+    const dist = Math.hypot(dx, dy) || 1;
+    const clamp = Math.min(1, dist / 260);
+
+    clearTimeout(followTimer);
+    look.dataset.follow = '';
+    // Translate eyes based on angle towards cursor
+    look.style.transform = `translate(${(dx / dist * 3.4 * clamp).toFixed(2)}px, ${(dy / dist * 2.4 * clamp).toFixed(2)}px)`;
+  };
+
+  window.addEventListener('pointermove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    if (!animFrame) animFrame = requestAnimationFrame(updateEyePosition);
+
+    clearTimeout(resetTimer);
+    resetTimer = window.setTimeout(() => {
+      look.style.transform = 'translate(0px, 0px)';
+      followTimer = window.setTimeout(() => {
+        delete look.dataset.follow;
+        look.style.transform = '';
+      }, 480);
+    }, 2500);
+  }, { passive: true });
+}
+initMascotEyeTracker();
 
 function checkUrlDeepLink() {
   const hash = location.hash;
@@ -3607,12 +3799,9 @@ function initConstructionNotice() {
     }
   });
 
-  // Tampilkan otomatis untuk pengunjung yang baru masuk
-  if (shouldShowConstructionModal()) {
-    setTimeout(() => {
-      openConstructionModal();
-    }, 400);
-  }
+  // Tidak auto-popup agar toko langsung tampil bersih ala Waroengkuy
+  // Pengunjung tetap bisa klik link maintenance jika diinginkan
+  // (openConstructionModal siap dipanggil lewat event jika perlu)
 }
 
 window.openConstructionModal = openConstructionModal;
@@ -3669,6 +3858,198 @@ function initSmoothScroll() {
       }
     } catch {}
   });
+
+  initRulerScrollbar(lenis);
+}
+
+/* ---------- FigCraft Interactive Ruler Scrollbar & Momentum Sync ---------- */
+function initRulerScrollbar(lenis) {
+  const wrap = $('#rulerScrollbarWrap');
+  const track = $('#rulerScrollbar');
+  const ticksContainer = $('#rulerTicks');
+  const thumb = $('#rulerThumb');
+  const percentLabel = $('#rulerPercentLabel');
+  const nav = $('#rulerSectionLabels');
+  if (!wrap || !track || !ticksContainer || !thumb || !nav) return;
+
+  const SECTIONS = [
+    { id: 'hero', label: 'POJOKAI', defaultRatio: 0.0 },
+    { id: 'sec-kategori', label: 'KATEGORI', defaultRatio: 0.16 },
+    { id: 'sec-bento', label: 'LAYANAN', defaultRatio: 0.30 },
+    { id: 'sec-paket-hemat', label: 'PAKET HEMAT', defaultRatio: 0.44 },
+    { id: 'sec-trending', label: 'TERLARIS', defaultRatio: 0.58 },
+    { id: 'produk', label: 'KATALOG', defaultRatio: 0.72 },
+    { id: 'cek-pesanan', label: 'CEK PESANAN', defaultRatio: 0.86 },
+    { id: 'faq', label: 'FAQ', defaultRatio: 0.95 },
+  ];
+
+  // Build section items in DOM
+  nav.innerHTML = SECTIONS.map((s, idx) => `
+    <a href="#${s.id}" data-ruler-target="${s.id}" data-idx="${idx}" class="ruler-nav-item">
+      <span>${s.label}</span>
+    </a>
+  `).join('');
+
+  const items = Array.from(nav.querySelectorAll('.ruler-nav-item'));
+
+  // Build 101 ticks (0 to 100)
+  let ticksHTML = '';
+  for (let i = 0; i <= 100; i++) {
+    const isMajor = i % 5 === 0;
+    if (isMajor) {
+      ticksHTML += `<div class="absolute inset-x-0" style="top:${i}%;height:0;">
+        <span class="absolute right-0 top-0 block bg-main/60" style="width:16px;height:1px;"></span>
+        <span class="absolute -translate-y-1/2 font-mono text-main/50 text-[8px] tabular-nums select-none" style="right:20px;top:0;">${i}</span>
+      </div>`;
+    } else {
+      ticksHTML += `<div class="absolute inset-x-0" style="top:${i}%;height:0;">
+        <span class="absolute right-0 top-0 block bg-main/25" style="width:8px;height:1px;"></span>
+      </div>`;
+    }
+  }
+  ticksContainer.innerHTML = ticksHTML;
+
+  let isHovered = false;
+  let leaveTimer = 0;
+
+  const updateItemPositions = () => {
+    const H = window.innerHeight;
+    const trackH = Math.max(200, H - 120);
+
+    items.forEach((item, idx) => {
+      const s = SECTIONS[idx];
+      const targetEl = document.getElementById(s.id);
+      let ratio = s.defaultRatio;
+      if (targetEl) {
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        if (maxScroll > 0) {
+          ratio = Math.max(0, Math.min(1, targetEl.offsetTop / maxScroll));
+        }
+      }
+
+      if (isHovered) {
+        // Expanded state: spread smoothly along the ruler track (Figcraft hover)
+        const expandedY = 60 + ratio * trackH;
+        item.style.transform = `translate3d(0, ${expandedY.toFixed(1)}px, 0)`;
+        item.style.opacity = '0.75';
+      } else {
+        // Collapsed state: POJOKAI at top, rest stacked tightly at bottom right (Figcraft idle)
+        if (idx === 0) {
+          item.style.transform = 'translate3d(0, 60px, 0)';
+          item.style.opacity = '0.45';
+        } else {
+          const collapsedY = H - 36 - (SECTIONS.length - 1 - idx) * 20;
+          item.style.transform = `translate3d(0, ${collapsedY.toFixed(1)}px, 0)`;
+          item.style.opacity = '0.35';
+        }
+      }
+    });
+  };
+
+  const setHoverState = (hover) => {
+    if (isHovered === hover) return;
+    isHovered = hover;
+    wrap.classList.toggle('is-hovered', isHovered);
+    updateItemPositions();
+  };
+
+  // Cursor proximity detection: instant expand when near ruler, instant collapse (0ms delay) when moving away
+  window.addEventListener('mousemove', (e) => {
+    const threshold = isHovered ? 180 : 90;
+    const inZone = e.clientX >= window.innerWidth - threshold;
+    if (inZone) {
+      setHoverState(true);
+    } else if (isHovered) {
+      setHoverState(false); // Instant close with ZERO delay!
+    }
+  }, { passive: true });
+
+  window.addEventListener('mouseleave', () => {
+    setHoverState(false);
+  });
+
+  const updateRuler = (progress) => {
+    const p = Math.max(0, Math.min(1, progress || 0));
+    const trackH = track.clientHeight - thumb.clientHeight;
+    const y = p * trackH;
+    thumb.style.transform = `translate3d(0, ${y}px, 0)`;
+    if (percentLabel) percentLabel.textContent = `${Math.round(p * 100)}%`;
+
+    // Highlight active section label based on viewport scroll position
+    const scrollY = window.scrollY || document.documentElement.scrollTop;
+    items.forEach((item, idx) => {
+      const s = SECTIONS[idx];
+      const targetEl = document.getElementById(s.id);
+      if (targetEl) {
+        const top = targetEl.offsetTop - 180;
+        const bottom = top + targetEl.offsetHeight + 100;
+        const isActive = scrollY >= top && scrollY < bottom;
+        item.classList.toggle('is-active', isActive);
+      }
+    });
+  };
+
+  if (lenis) {
+    lenis.on('scroll', (e) => {
+      updateRuler(e.progress);
+    });
+  } else {
+    window.addEventListener('scroll', () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = maxScroll > 0 ? (window.scrollY / maxScroll) : 0;
+      updateRuler(progress);
+    }, { passive: true });
+  }
+
+  // Scrubbing on click & drag on ruler track
+  let isDragging = false;
+  const scrubTo = (clientY) => {
+    const rect = track.getBoundingClientRect();
+    const relativeY = clientY - rect.top;
+    const progress = Math.max(0, Math.min(1, relativeY / rect.height));
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const targetY = progress * maxScroll;
+    if (lenis) {
+      lenis.scrollTo(targetY, { duration: 0.8 });
+    } else {
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
+    }
+  };
+
+  track.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    scrubTo(e.clientY);
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (isDragging) scrubTo(e.clientY);
+  });
+  window.addEventListener('mouseup', () => { isDragging = false; });
+
+  // Section label click smoothly scrolls via Lenis
+  items.forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = item.dataset.rulerTarget;
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        if (lenis) {
+          lenis.scrollTo(targetEl, { offset: -90, duration: 1.2 });
+        } else {
+          targetEl.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    updateItemPositions();
+    updateRuler(0);
+  }, { passive: true });
+
+  // Initial collapsed state (Figcraft style)
+  setHoverState(false);
+  updateItemPositions();
+  updateRuler(0);
 }
 
 initSmoothScroll();
