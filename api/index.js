@@ -111,10 +111,40 @@ async function getDb(forceRefresh = false) {
     return dbCache;
   }
 
+  // Baca catalog seed/bundle lokal
+  let localDb = null;
+  try {
+    const localDbPath = path.resolve(process.cwd(), 'data', 'db.json');
+    if (fs.existsSync(localDbPath)) {
+      localDb = JSON.parse(fs.readFileSync(localDbPath, 'utf8'));
+    }
+  } catch (err) {
+    console.warn('[db] load localDb error:', err.message);
+  }
+
+  const syncMissingProducts = async (targetDb) => {
+    if (!localDb || !Array.isArray(localDb.products)) return false;
+    let modified = false;
+    if (!Array.isArray(targetDb.products)) targetDb.products = [];
+    const slugMap = new Map(targetDb.products.map(p => [p.slug, p]));
+    for (const lp of localDb.products) {
+      const existing = slugMap.get(lp.slug);
+      if (!existing) {
+        targetDb.products.push(JSON.parse(JSON.stringify(lp)));
+        modified = true;
+      }
+    }
+    if (modified) {
+      await saveDb(targetDb);
+    }
+    return modified;
+  };
+
   // 1. Coba baca dari Vercel Blob jika tersedia
   const blobDb = await getDbFromBlob();
   if (blobDb) {
     dbCache = blobDb;
+    await syncMissingProducts(dbCache);
     dbCacheTime = Date.now();
     return dbCache;
   }
@@ -123,23 +153,19 @@ async function getDb(forceRefresh = false) {
   const cloudDb = await getDbFromCloud();
   if (cloudDb) {
     dbCache = cloudDb;
+    await syncMissingProducts(dbCache);
     dbCacheTime = Date.now();
     return dbCache;
   }
 
   // 3. Coba baca dari file lokal atau /tmp
-  try {
-    const dbPath = getDbFilePath();
-    if (fs.existsSync(dbPath)) {
-      dbCache = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-      if (process.env.BLOB_READ_WRITE_TOKEN && !blobDb) {
-        saveDbToBlob(dbCache).catch(() => {});
-      }
-      dbCacheTime = Date.now();
-      return dbCache;
+  if (localDb) {
+    dbCache = localDb;
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      saveDbToBlob(dbCache).catch(() => {});
     }
-  } catch (err) {
-    console.error('[db] load error:', err.message);
+    dbCacheTime = Date.now();
+    return dbCache;
   }
 
   dbCache = {
