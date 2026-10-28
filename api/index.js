@@ -2,6 +2,15 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+let seedDb = null;
+try {
+  seedDb = require('../data/db.json');
+} catch (e) {
+  console.warn('[db] require seedDb error:', e.message);
+}
 
 // Muat file .env jika tersedia
 try {
@@ -123,14 +132,18 @@ async function getDb(forceRefresh = false) {
   }
 
   const syncMissingProducts = async (targetDb) => {
-    if (!localDb || !Array.isArray(localDb.products)) return false;
+    const sourceProducts = (seedDb && Array.isArray(seedDb.products) && seedDb.products.length) ? seedDb.products : (localDb?.products || []);
+    if (!sourceProducts.length) return false;
     let modified = false;
     if (!Array.isArray(targetDb.products)) targetDb.products = [];
     const slugMap = new Map(targetDb.products.map(p => [p.slug, p]));
-    for (const lp of localDb.products) {
+    for (const lp of sourceProducts) {
       const existing = slugMap.get(lp.slug);
       if (!existing) {
         targetDb.products.push(JSON.parse(JSON.stringify(lp)));
+        modified = true;
+      } else if (existing.hidden && !lp.hidden) {
+        existing.hidden = false;
         modified = true;
       }
     }
