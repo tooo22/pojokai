@@ -136,14 +136,19 @@ async function getDb(forceRefresh = false) {
     if (!sourceProducts.length) return false;
     let modified = false;
     if (!Array.isArray(targetDb.products)) targetDb.products = [];
-    const slugMap = new Map(targetDb.products.map(p => [p.slug, p]));
-    for (const lp of sourceProducts) {
-      const existing = slugMap.get(lp.slug);
-      if (!existing) {
-        targetDb.products.push(JSON.parse(JSON.stringify(lp)));
+    const sourceMap = new Map(sourceProducts.map(p => [p.slug, p]));
+    for (const p of targetDb.products) {
+      const sp = sourceMap.get(p.slug);
+      if (sp && !sp.hidden && p.hidden) {
+        p.hidden = false;
         modified = true;
-      } else if (existing.hidden && !lp.hidden) {
-        existing.hidden = false;
+      }
+    }
+    const existingSlugs = new Set(targetDb.products.map(p => p.slug));
+    for (const sp of sourceProducts) {
+      if (!existingSlugs.has(sp.slug)) {
+        targetDb.products.push(JSON.parse(JSON.stringify(sp)));
+        existingSlugs.add(sp.slug);
         modified = true;
       }
     }

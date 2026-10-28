@@ -220,11 +220,45 @@ function save() {
 }
 
 async function load() {
+  let localDb = null;
+  if (existsSync(DB_FILE)) {
+    try {
+      localDb = JSON.parse(await readFile(DB_FILE, 'utf8'));
+    } catch {}
+  }
+
+  const syncProductsFromLocal = (targetDb) => {
+    if (!localDb || !Array.isArray(localDb.products)) return false;
+    let modified = false;
+    if (!Array.isArray(targetDb.products)) targetDb.products = [];
+    const localMap = new Map(localDb.products.map(p => [p.slug, p]));
+    for (const p of targetDb.products) {
+      const lp = localMap.get(p.slug);
+      if (lp && !lp.hidden && p.hidden) {
+        p.hidden = false;
+        modified = true;
+      }
+    }
+    const existingSlugs = new Set(targetDb.products.map(p => p.slug));
+    for (const lp of localDb.products) {
+      if (!existingSlugs.has(lp.slug)) {
+        targetDb.products.push(JSON.parse(JSON.stringify(lp)));
+        existingSlugs.add(lp.slug);
+        modified = true;
+      }
+    }
+    return modified;
+  };
+
   // 1. Coba baca dari Vercel Blob jika tersedia
   const blobDb = await getDbFromBlob();
   if (blobDb) {
     db = blobDb;
-    console.log(`[db] dimuat dari Vercel Blob: ${db.products.length} produk`);
+    const modified = syncProductsFromLocal(db);
+    console.log(`[db] dimuat dari Vercel Blob: ${db.products.length} produk (aktif: ${db.products.filter(p => !p.hidden).length})`);
+    if (modified) {
+      await save();
+    }
     return;
   }
 
@@ -232,12 +266,16 @@ async function load() {
   const cloudDb = await getDbFromCloud();
   if (cloudDb) {
     db = cloudDb;
+    const modified = syncProductsFromLocal(db);
+    if (modified) {
+      await save();
+    }
     return;
   }
 
   // 3. Baca dari file lokal
-  if (existsSync(DB_FILE)) {
-    db = JSON.parse(await readFile(DB_FILE, 'utf8'));
+  if (localDb) {
+    db = localDb;
     if (process.env.BLOB_READ_WRITE_TOKEN && !blobDb) {
       saveDbToBlob(db).catch(() => {});
     }
