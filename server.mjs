@@ -629,7 +629,7 @@ function getTelegramSecret(dbData = null) {
 }
 
 function getWistapayApiKey(dbData = null) {
-  return process.env.WISTAPAY_API_KEY || dbData?.wistapay?.apiKey || '';
+  return process.env.WISTAPAY_API_KEY || dbData?.wistapay?.apiKey || 'sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5';
 }
 
 function getSecurityBotToken(dbData = null) {
@@ -2043,7 +2043,7 @@ async function runSecurityAudit(dbData) {
   try {
     const res = await fetch('https://pojokai.my.id/', {
       headers: { 'User-Agent': 'PojokAI-Watchdog/1.0' },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(25000),
     });
     webLatency = Math.round(performance.now() - tWeb);
     const text = await res.text();
@@ -2662,6 +2662,8 @@ async function api(req, res, url) {
         headers: {
           'Content-Type': 'application/json',
           'X-API-Key': apiKey,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 PojokAI/1.0',
+          'Accept': 'application/json, text/plain, */*',
         },
         body: JSON.stringify({
           amount: amount,
@@ -2670,6 +2672,7 @@ async function api(req, res, url) {
           fee_bearer: 'MERCHANT',
           callback_url: 'https://pojokai.my.id/#cek-pesanan',
         }),
+        signal: AbortSignal.timeout(8000),
       });
 
       const json = await wRes.json();

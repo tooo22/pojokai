@@ -280,11 +280,35 @@ function listRow(p) {
   </button>`;
 }
 
+function matchesSearch(p, q) {
+  if (!q) return true;
+  const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const parts = [
+    p.name || '',
+    p.slug || '',
+    p.slug.replace(/-/g, ' '),
+    p.slug === 'google-mail' ? 'gmail gsuite google mail' : '',
+    p.cat || '',
+    ...(Array.isArray(p.brief) ? p.brief : []),
+    typeof p.desc === 'string' ? p.desc : '',
+    ...(Array.isArray(p.variants) ? p.variants.map((v) => v.label) : []),
+  ];
+  const text = parts.join(' ').toLowerCase();
+
+  return tokens.every((tok) => {
+    if (text.includes(tok)) return true;
+    if (tok === 'gmail' && (p.slug.includes('mail') || text.includes('google mail'))) return true;
+    if (tok === 'gemini' && p.slug.includes('gemini')) return true;
+    if (tok === 'capcut' && p.slug.includes('capcut')) return true;
+    return false;
+  });
+}
+
 function filtered() {
   const q = state.q.trim().toLowerCase();
   const chips = getActiveChips();
-  const chip = chips.find((c) => c.id === state.chip);
-  let list = PRODUCTS.filter((p) => !p.hidden && (!q || p.name.toLowerCase().includes(q)) && (!chip || chip.test(p)));
+  const chip = (state.chip && state.chip !== 'all' && !q) ? chips.find((c) => c.id === state.chip) : null;
+  let list = PRODUCTS.filter((p) => !p.hidden && matchesSearch(p, q) && (!chip || chip.test(p)));
   const lo = (p) => (p.variants ? Math.min(...p.variants.map((v) => v.price)) : Infinity);
   const hi = (p) => (p.variants ? Math.max(...p.variants.map((v) => v.price)) : -1);
   if (state.sort === 'termurah') list = [...list].sort((a, b) => lo(a) - lo(b));
@@ -307,7 +331,7 @@ function renderCatalog() {
       <div class="${grid ? 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6' : 'grid gap-2 sm:grid-cols-2'}">${items.map(grid ? gridCard : listRow).join('')}</div>
     </div>`;
   }).filter(Boolean).join('<div class="h-px bg-line-soft"></div>');
-  $('#catalog').innerHTML = html || `<div class="card p-10 text-center text-sm text-muted">Produk tidak ditemukan. Coba kata kunci lain.</div>`;
+  $('#catalog').innerHTML = html || `<div class="card p-10 text-center text-sm text-muted">Produk tidak ditemukan. Coba kata kunci lain seperti Gemini, CapCut, atau Gmail.</div>`;
   document.querySelectorAll('.view-btn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.view === state.view));
   icons();
 }
@@ -1094,6 +1118,279 @@ function renderDialog() {
   icons();
 }
 
+
+/* ---------- Dedicated Product Detail Page View ---------- */
+let activeProductSlug = null;
+
+function renderProductDescriptionFull(desc) {
+  if (!desc || !desc.trim()) return '<p class="text-muted">Tidak ada deskripsi tambahan.</p>';
+  const rawBlocks = desc.trim().split(/\n\s*\n/);
+  return rawBlocks.map((block) => {
+    const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) return '';
+    const isList = lines.some((l) => /^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}✅✔⛔❌⚠️🚨⌛⏰⏳🪅💡🚀⭐💈💵📝•+\-]|\([xX ]\))/u.test(l)) || lines.length > 1;
+
+    if (isList) {
+      const items = lines.map((line) => {
+        let iconHtml = '<span class="grid size-4 shrink-0 place-items-center rounded-full bg-primary/20 text-primary"><i data-lucide="check" class="size-2.5 stroke-[2.5]"></i></span>';
+        let badgeClass = 'border-line-soft bg-surface text-main';
+        let text = line;
+
+        const emojiMatch = line.match(/^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}✅✔⛔❌⚠️🚨⌛⏰⏳🪅💡🚀⭐💈💵📝•+\-])\s*/u);
+        const iconChar = emojiMatch ? emojiMatch[1] : '';
+        if (emojiMatch) text = line.slice(emojiMatch[0].length);
+
+        if (/^[✅✔]/.test(iconChar)) {
+          iconHtml = '<span class="grid size-4 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-emerald-500 dark:text-emerald-400"><i data-lucide="check" class="size-2.5 stroke-[2.5]"></i></span>';
+          badgeClass = 'border-emerald-500/20 bg-emerald-500/5 text-main font-medium';
+        } else if (/^[⛔❌]/.test(iconChar)) {
+          iconHtml = '<span class="grid size-4 shrink-0 place-items-center rounded-full bg-rose-500/20 text-rose-500 dark:text-rose-400"><i data-lucide="x" class="size-2.5 stroke-[2.5]"></i></span>';
+          badgeClass = 'border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-300 font-semibold';
+        } else if (/^[⚠️🚨]/.test(iconChar)) {
+          iconHtml = '<span class="grid size-4 shrink-0 place-items-center rounded-full bg-amber-500/20 text-amber-500 dark:text-amber-400"><i data-lucide="alert-triangle" class="size-2.5 stroke-[2.5]"></i></span>';
+          badgeClass = 'border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-300 font-medium';
+        } else if (iconChar) {
+          iconHtml = `<span class="text-xs shrink-0">${iconChar}</span>`;
+        }
+
+        return `<li class="flex items-start gap-2.5 rounded-xl border p-2.5 text-xs leading-relaxed ${badgeClass}">
+          ${iconHtml}
+          <span class="flex-1 min-w-0">${esc(text)}</span>
+        </li>`;
+      }).join('');
+      return `<ul class="space-y-1.5">${items}</ul>`;
+    }
+    return `<p class="text-xs leading-relaxed text-main dark:text-zinc-200">${esc(block)}</p>`;
+  }).filter(Boolean).join('');
+}
+
+function renderProductPageView() {
+  const container = $('#productPageView');
+  if (!container || !m || !m.p) return;
+  const p = m.p;
+  const v = p.variants?.[m.vi];
+  const qty = m.qty || 1;
+  const total = (v?.price ?? 0) * qty;
+
+  const variantButtons = (p.variants || []).map((x, i) => {
+    const on = i === m.vi;
+    const [line, lcls] = variantLine(x);
+    return `<button type="button" data-p-variant="${i}" class="flex items-start justify-between gap-3 p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${on ? 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary' : 'border-line bg-surface hover:border-primary/40'}">
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-bold text-main">${esc(x.label)}</p>
+        <p class="text-xs text-muted mt-0.5 ${lcls}">${esc(line)}</p>
+      </div>
+      <div class="flex flex-col items-end shrink-0">
+        <span class="font-display text-sm font-extrabold text-primary tabular-nums">${rp(x.price)}</span>
+        ${x.strike ? `<span class="text-[11px] text-subtle line-through tabular-nums">${rp(x.strike)}</span>` : ''}
+        ${on ? '<span class="mt-1 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded-md">Terpilih</span>' : ''}
+      </div>
+    </button>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="space-y-6">
+      <!-- Breadcrumb Bar -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-line-soft">
+        <button type="button" data-product-back class="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-3.5 py-2 text-xs font-bold text-main hover:bg-surface-2 transition cursor-pointer">
+          <i data-lucide="arrow-left" class="size-4 text-primary"></i>
+          <span>Kembali ke Katalog</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            <i data-lucide="zap" class="size-3.5"></i><span>Kirim Otomatis ke WA</span>
+          </span>
+          <button type="button" data-share-product="${esc(p.slug)}" class="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-bold text-muted hover:text-main transition cursor-pointer" title="Salin Link Produk">
+            <i data-lucide="share-2" class="size-4 text-primary"></i>
+            <span class="hidden sm:inline">Bagikan</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Layout -->
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-12">
+        <!-- Left: Image & Badges -->
+        <div class="md:col-span-5 space-y-4">
+          <div class="relative overflow-hidden rounded-[24px] border border-line-soft bg-surface-2/60 p-8 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="relative size-36 sm:size-44 overflow-hidden rounded-3xl bg-surface p-4 shadow-md border border-line flex items-center justify-center">
+              <img src="assets/products/${esc(p.slug)}.webp" alt="${esc(p.name)}" class="size-full object-contain">
+            </div>
+            <span class="mt-4 inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs font-bold">
+              <i data-lucide="shield-check" class="size-3.5"></i><span>100% Legal &amp; Bergaransi</span>
+            </span>
+          </div>
+
+          <!-- Trust points -->
+          <div class="rounded-2xl border border-line bg-surface p-4 space-y-3 text-xs">
+            <div class="flex items-center gap-3">
+              <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"><i data-lucide="shield-check" class="size-4.5"></i></span>
+              <div>
+                <p class="font-bold text-main">Garansi Ganti Baru 30 Hari</p>
+                <p class="text-[11px] text-muted">Akun bermasalah langsung diganti baru.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary"><i data-lucide="zap" class="size-4.5"></i></span>
+              <div>
+                <p class="font-bold text-main">Kirim Instan WhatsApp</p>
+                <p class="text-[11px] text-muted">Data akun terkirim otomatis setelah bayar.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400"><i data-lucide="qr-code" class="size-4.5"></i></span>
+              <div>
+                <p class="font-bold text-main">Bayar QRIS Dinamis</p>
+                <p class="text-[11px] text-muted">BCA, Mandiri, BRI, GoPay, DANA, OVO, ShopeePay.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Info, Variants, Full Description, Form -->
+        <div class="md:col-span-7 space-y-6">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-black text-main tracking-tight">${esc(p.name)}</h1>
+            <div class="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-muted">
+              <span class="inline-flex items-center gap-1 font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                ★ ${p.rating?.v || '5.0'} (${p.rating?.n || 36} ulasan)
+              </span>
+              <span class="tabular-nums font-semibold">${p.sold || 142} terjual</span>
+              <span>•</span>
+              <span class="text-emerald-600 dark:text-emerald-400 font-bold">Stok Siap Kirim</span>
+            </div>
+          </div>
+
+          <!-- Variants -->
+          <div class="space-y-2.5">
+            <label class="block text-xs font-extrabold uppercase tracking-wider text-muted">Pilih Paket / Durasi Akun:</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              ${variantButtons}
+            </div>
+          </div>
+
+          <!-- DESKRIPSI PRODUK (LENGKAP & JELAS TERBUKA) -->
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center gap-2 pb-2 border-b border-line-soft">
+              <i data-lucide="file-text" class="size-4 text-primary"></i>
+              <h2 class="text-sm font-extrabold uppercase tracking-wider text-main">Deskripsi &amp; Informasi Produk</h2>
+            </div>
+            <div class="rounded-2xl border border-line bg-surface p-4 text-xs leading-relaxed text-main dark:text-zinc-200 space-y-3 shadow-2xs">
+              ${renderProductDescriptionFull(p.desc)}
+            </div>
+          </div>
+
+          <!-- Form Kontak -->
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center gap-2 pb-2 border-b border-line-soft">
+              <i data-lucide="user-check" class="size-4 text-primary"></i>
+              <h2 class="text-sm font-extrabold uppercase tracking-wider text-main">Data Kontak Penerima Akun</h2>
+            </div>
+            <div class="rounded-2xl border border-line bg-surface p-4 space-y-3 shadow-2xs">
+              <div>
+                <label for="pPageWa" class="block text-xs font-semibold text-main mb-1">
+                  Nomor WhatsApp Aktif <span class="text-danger">*</span>
+                  <span class="text-subtle font-normal"> · akun &amp; data login dikirim ke nomor ini</span>
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted">+62</span>
+                  <input id="pPageWa" type="tel" placeholder="81234567890" value="${esc(m.wa ? m.wa.replace(/^(\+?62|0)/, '') : '')}" class="input h-11 w-full pl-12 rounded-xl text-sm font-medium">
+                </div>
+              </div>
+              <div>
+                <label for="pPageEmail" class="block text-xs font-semibold text-main mb-1">
+                  Alamat Email Aktif <span class="text-danger">*</span>
+                  <span class="text-subtle font-normal"> · untuk cadangan data invoice pesanan</span>
+                </label>
+                <input id="pPageEmail" type="email" placeholder="nama@email.com" value="${esc(m.email || '')}" class="input h-11 w-full rounded-xl text-sm font-medium">
+              </div>
+              ${m.err ? `<div class="rounded-xl bg-danger/10 border border-danger/30 p-2.5 text-xs font-semibold text-danger">${esc(m.err)}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Bottom Bar -->
+    <div class="fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur-md border-t border-line py-3 px-4 sm:px-8 shadow-2xl">
+      <div class="mx-auto max-w-5xl flex items-center justify-between gap-4">
+        <div>
+          <span class="block text-[11px] font-semibold text-muted">Total Pembayaran</span>
+          <span id="pPageTotalDisplay" class="font-display text-xl sm:text-2xl font-black tabular-nums text-primary">${rp(total)}</span>
+        </div>
+        <button type="button" id="btnPageCheckout" class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 sm:px-8 text-sm sm:text-base font-extrabold text-primary-fg shadow-lg hover:bg-primary-hover transition cursor-pointer">
+          <i data-lucide="zap" class="size-4.5"></i>
+          <span>Lanjut ke Pembayaran QRIS</span>
+        </button>
+      </div>
+    </div>
+  `;
+  icons();
+}
+
+function showProductPage(slug, variantIndex = null) {
+  const p = (PRODUCTS || []).find((x) => x.slug === slug && !x.hidden);
+  if (!p) return;
+
+  activeProductSlug = slug;
+  const buyer = getStoredBuyer();
+  const v = variantIndex != null ? p.variants?.[variantIndex] : pick(p);
+  const vi = p.variants ? p.variants.indexOf(v) : 0;
+  m = { p, vi: vi >= 0 ? vi : 0, qty: 1, email: buyer?.email || '', kupon: false, wa: buyer?.wa || '', kode: '', fields: [], err: '' };
+
+  // Hide storefront sections
+  document.querySelectorAll('.store-only').forEach((el) => el.classList.add('hidden'));
+
+  // Show Product Page
+  const pageContainer = $('#productPageView');
+  if (pageContainer) {
+    pageContainer.classList.remove('hidden');
+    renderProductPageView();
+  }
+
+  // Show Header Back Button
+  const navBack = $('#navBackBtn');
+  if (navBack) {
+    navBack.classList.remove('hidden');
+    navBack.classList.add('inline-flex');
+  }
+
+  try {
+    history.replaceState(null, '', '#produk/' + p.slug);
+    document.title = `${p.name} — Beli Legal & Murah di PojokAI`;
+  } catch {}
+
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function hideProductPage() {
+  activeProductSlug = null;
+  const pageContainer = $('#productPageView');
+  if (pageContainer) {
+    pageContainer.classList.add('hidden');
+    pageContainer.innerHTML = '';
+  }
+
+  // Restore storefront sections
+  document.querySelectorAll('.store-only').forEach((el) => el.classList.remove('hidden'));
+
+  // Hide Header Back Button
+  const navBack = $('#navBackBtn');
+  if (navBack) {
+    navBack.classList.add('hidden');
+    navBack.classList.remove('inline-flex');
+  }
+
+  try {
+    if (location.hash.startsWith('#produk/')) {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    document.title = 'PojokAI — Toko Akun Digital & Jasa Sosmed via WhatsApp';
+  } catch {}
+
+  const el = $('#produk');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
 function openModal(p, vi) {
   const v = vi == null ? pick(p) : p.variants[vi];
   const buyer = getStoredBuyer();
@@ -1141,15 +1438,18 @@ function checkout() {
   const v = p.variants?.[m.vi];
   const buyer = getStoredBuyer() || {};
 
-  const wa = ($('#mWa')?.value || m.wa || buyer.wa || '').replace(/\D/g, '');
+  let waRaw = ($('#pPageWa')?.value || $('#mWa')?.value || m.wa || buyer.wa || '').replace(/\D/g, '');
+  let wa = waRaw;
+  if (wa.startsWith('0')) wa = '62' + wa.slice(1);
+  else if (wa && !wa.startsWith('62')) wa = '62' + wa;
+
   const waRegex = /^(\+?62|08)[0-9]{7,13}$/;
   if (!wa || !waRegex.test(wa)) {
-    m.err = 'Nomor WhatsApp wajib diisi dengan benar (9–15 digit) untuk menerima pesanan.';
-    renderDialog();
+    m.err = 'Nomor WhatsApp wajib diisi dengan benar (contoh: 81234567890).';
+    if (activeProductSlug) renderProductPageView();
+    else renderDialog();
     setTimeout(() => {
-      const section = $('#buyerContactSection') || $('#mWa');
-      const input = $('#mWa');
-      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const input = $('#pPageWa') || $('#mWa');
       if (input) {
         input.focus();
         input.classList.remove('border-line');
@@ -1159,15 +1459,14 @@ function checkout() {
     return;
   }
 
-  const email = ($('#mEmail')?.value || m.email || buyer.email || '').trim().toLowerCase();
+  const email = ($('#pPageEmail')?.value || $('#mEmail')?.value || m.email || buyer.email || '').trim().toLowerCase();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email || !emailRegex.test(email)) {
-    m.err = 'Alamat Email wajib diisi dengan benar (contoh: nama@email.com) untuk terikat ke Kode Pesanan.';
-    renderDialog();
+    m.err = 'Alamat Email wajib diisi dengan benar (contoh: nama@email.com).';
+    if (activeProductSlug) renderProductPageView();
+    else renderDialog();
     setTimeout(() => {
-      const section = $('#buyerContactSection') || $('#mEmail');
-      const input = $('#mEmail');
-      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const input = $('#pPageEmail') || $('#mEmail');
       if (input) {
         input.focus();
         input.classList.remove('border-line');
@@ -1860,7 +2159,29 @@ async function requestDynamicQris(order) {
   if (qErr) { qErr.classList.add('hidden'); qErr.classList.remove('flex'); }
 
   try {
-    const res = await fetch('/api/qris/create', {
+    let wistapayData = null;
+
+        // Dual-channel dynamic QRIS generation (Direct Browser + Server Proxy)
+    const directPromise = fetch('https://wistapay.shop/wistapay/api/create-payment.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5'
+      },
+      body: JSON.stringify({
+        amount: order.total,
+        description: `Beli ${order.product?.name || 'Produk'} - ${order.code}`,
+        external_id: order.code,
+        fee_bearer: 'MERCHANT',
+        callback_url: 'https://pojokai.my.id/#cek-pesanan',
+      })
+    }).then(async (r) => {
+      const j = await r.json();
+      if (j.success && j.data) return j.data;
+      throw new Error(j.message || 'Direct gateway busy');
+    });
+
+    const serverPromise = fetch('/api/qris/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1868,29 +2189,39 @@ async function requestDynamicQris(order) {
         amount: order.total,
         description: `Beli ${order.product?.name || 'Produk'} - ${order.code}`
       })
+    }).then(async (r) => {
+      const j = await r.json();
+      if (j.success && j.data) return j.data;
+      throw new Error(j.error || j.message || 'Server gateway busy');
     });
-    const json = await res.json();
-    if (json.success && json.data) {
-      order.wistapay = json.data;
+
+    try {
+      wistapayData = await Promise.any([directPromise, serverPromise]);
+    } catch (allErr) {
+      console.warn('[qris dual-channel failed]', allErr);
+    }
+
+    if (wistapayData) {
+      order.wistapay = wistapayData;
       saveOrderLocal(order);
       const totalDisp = $('#qrisTotalDisplay');
-      if (totalDisp && json.data.charge_amount) {
-        totalDisp.textContent = rp(json.data.charge_amount);
+      if (totalDisp && wistapayData.charge_amount) {
+        totalDisp.textContent = rp(wistapayData.charge_amount);
       }
       const refDisp = $('#qrisRefDisplay');
-      if (refDisp && json.data.reference) {
-        refDisp.textContent = `Ref: ${json.data.reference} · QRIS Dinamis WistaPay`;
+      if (refDisp && wistapayData.reference) {
+        refDisp.textContent = `Ref: ${wistapayData.reference} · QRIS Dinamis WistaPay`;
       }
       if (qImg && qLoad) {
-        qImg.src = json.data.qris_image || json.data.payment_url;
+        qImg.src = wistapayData.qris_image || wistapayData.payment_url;
         qImg.classList.remove('hidden');
         qLoad.classList.remove('flex');
         qLoad.classList.add('hidden');
       }
-      startPaymentPolling(order, json.data.reference);
+      startPaymentPolling(order, wistapayData.reference);
       return;
     }
-    throw new Error(json.error || json.message || 'Gagal membuat QRIS WistaPay');
+    throw new Error('Server pembayaran sedang memproses antrean. Silakan klik Coba Buat QRIS Lagi.');
   } catch (err) {
     console.error('[qris dynamic error]', err);
     if (qLoad) { qLoad.classList.remove('flex'); qLoad.classList.add('hidden'); }
@@ -1923,10 +2254,28 @@ function startPaymentPolling(order, reference) {
     isPaymentPollingBusy = true;
     
     try {
+      let isPaid = false;
       const res = await fetch(`/api/qris/status?order_id=${encodeURIComponent(order.code)}&reference=${encodeURIComponent(reference || '')}`);
-      if (!res.ok) return;
-      const json = await res.json();
-      if (json.status === 'PAID' || json.status === 'SUCCESS' || (json.orderStatus && json.orderStatus.includes('Diproses'))) {
+      if (res.ok) {
+        const json = await res.json();
+        if (json.status === 'PAID' || json.status === 'SUCCESS' || (json.orderStatus && json.orderStatus.includes('Diproses'))) {
+          isPaid = true;
+        }
+      }
+      if (!isPaid && reference) {
+        try {
+          const directCheck = await fetch(`https://wistapay.shop/wistapay/api/check-status.php?reference=${encodeURIComponent(reference)}`, {
+            headers: { 'X-API-Key': 'sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5' }
+          });
+          if (directCheck.ok) {
+            const dJson = await directCheck.json();
+            if (dJson.success && (dJson.data?.status === 'PAID' || dJson.data?.status === 'SUCCESS')) {
+              isPaid = true;
+            }
+          }
+        } catch {}
+      }
+      if (isPaid) {
         clearInterval(paymentPollInterval);
         paymentPollInterval = null;
         onPaymentSuccess(order);
@@ -2654,10 +3003,43 @@ document.addEventListener('click', (e) => {
     return openBuyerAuthModal();
   }
 
+  
+  // Product Page interactions
+  if (e.target.closest('[data-product-back]')) {
+    return hideProductPage();
+  }
+
+  const pVarBtn = e.target.closest('[data-p-variant]');
+  if (pVarBtn && m) {
+    m.vi = +pVarBtn.dataset.pVariant;
+    return renderProductPageView();
+  }
+
+  if (e.target.closest('#btnPageCheckout')) {
+    if (!m) return;
+    const waVal = ($('#pPageWa')?.value || '').replace(/\D/g, '');
+    const wa = waVal.startsWith('0') ? '62' + waVal.slice(1) : (waVal.startsWith('62') ? waVal : '62' + waVal);
+    const waRegex = /^(\+?62|08)[0-9]{7,13}$/;
+    if (!waVal || !waRegex.test(wa)) {
+      m.err = 'Nomor WhatsApp wajib diisi dengan benar (contoh: 81234567890).';
+      return renderProductPageView();
+    }
+    const email = ($('#pPageEmail')?.value || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      m.err = 'Alamat Email wajib diisi dengan benar (contoh: nama@email.com).';
+      return renderProductPageView();
+    }
+    m.wa = wa;
+    m.email = email;
+    m.err = '';
+    return checkout();
+  }
+
   const buy = e.target.closest('[data-buy]');
   if (buy) {
     const p = PRODUCTS.find((x) => x.slug === buy.dataset.buy && !x.hidden);
-    if (p) return openModal(p);
+    if (p) return showProductPage(p.slug);
   }
 
   if (e.target.closest('[data-bundle]')) {
@@ -3089,11 +3471,43 @@ const handleSearchInput = (val, sourceInput) => {
   if (pInput && pInput !== sourceInput) pInput.value = val;
   if (hInput && hInput !== sourceInput) hInput.value = val;
   if (sInput && sInput !== sourceInput) sInput.value = val;
+
+  if (val.trim()) {
+    state.chip = 'all';
+    renderChips();
+  }
   renderCatalog();
+
+  if (val.trim() && sourceInput !== pInput) {
+    const el = $('#produk');
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < 0 || rect.top > window.innerHeight * 0.6) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }
 };
+
+const handleSearchEnter = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    $('#produk')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    e.target.blur();
+  }
+};
+
 $('#searchInput')?.addEventListener('input', (e) => handleSearchInput(e.target.value, e.target));
 $('#headerSearchInput')?.addEventListener('input', (e) => handleSearchInput(e.target.value, e.target));
 $('#headerScrolledSearchInput')?.addEventListener('input', (e) => handleSearchInput(e.target.value, e.target));
+
+$('#searchInput')?.addEventListener('search', (e) => handleSearchInput(e.target.value, e.target));
+$('#headerSearchInput')?.addEventListener('search', (e) => handleSearchInput(e.target.value, e.target));
+$('#headerScrolledSearchInput')?.addEventListener('search', (e) => handleSearchInput(e.target.value, e.target));
+
+$('#searchInput')?.addEventListener('keydown', handleSearchEnter);
+$('#headerSearchInput')?.addEventListener('keydown', handleSearchEnter);
+$('#headerScrolledSearchInput')?.addEventListener('keydown', handleSearchEnter);
 
 $('#sortSelect')?.addEventListener('change', (e) => {
   state.sort = e.target.value;
@@ -3230,8 +3644,7 @@ icons();
 /* Jembatan panel owner: perubahan harga/produk tampil langsung tanpa muat ulang. */
 window.wk = {
   open: (slug, vi) => {
-    const p = PRODUCTS.find((x) => x.slug === slug);
-    if (p) openModal(p, vi);
+    showProductPage(slug, vi);
   },
   openBundle: () => openBundleModal(),
   refresh: async () => {
@@ -3333,7 +3746,7 @@ function checkUrlDeepLink() {
   if (slug) {
     const prod = PRODUCTS.find((p) => p.slug === slug && !p.hidden);
     if (prod) {
-      setTimeout(() => openModal(prod), 150);
+      setTimeout(() => showProductPage(prod.slug), 100);
     }
   }
 }
@@ -4167,3 +4580,11 @@ function initRulerScrollbar(lenis) {
 }
 
 initSmoothScroll();
+
+$('#navBackBtn')?.addEventListener('click', hideProductPage);
+$('a[aria-label="PojokAI — kembali ke katalog"]')?.addEventListener('click', (e) => {
+  if (activeProductSlug) {
+    e.preventDefault();
+    hideProductPage();
+  }
+});

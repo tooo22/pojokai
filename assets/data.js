@@ -84,28 +84,6 @@ var HERO_SLIDES = [
         "Gemini 2.5 Pro & ChatGPT"
       ]
     ]
-  },
-  {
-    "eyebrow": "Program Kemitraan",
-    "title": "Jadi reseller toko digital,",
-    "line2": "untung tiap jualan.",
-    "sub": "Punya web toko sendiri dengan harga modal reseller dan sistem bot otomatis.",
-    "cta": "Daftar reseller",
-    "href": "#reseller",
-    "items": [
-      [
-        "🏪",
-        "Web toko digital sendiri"
-      ],
-      [
-        "💸",
-        "Untung selisih harga modal"
-      ],
-      [
-        "📦",
-        "Kirim otomatis tanpa stok"
-      ]
-    ]
   }
 ];
 

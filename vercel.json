@@ -57,7 +57,8 @@
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": "data/db.json"
+      "includeFiles": "data/db.json",
+      "maxDuration": 30
     }
   }
 }
