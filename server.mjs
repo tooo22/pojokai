@@ -137,8 +137,14 @@ async function saveDbToBlob(dbData) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return;
   try {
     const { put } = await import('@vercel/blob');
-    const acc = blobAccess || 'private';
-    await put('data/db.json', JSON.stringify(dbData, null, 2), { access: acc, addRandomSuffix: false, allowOverwrite: true });
+    const acc = blobAccess || 'public';
+    try {
+      await put('data/db.json', JSON.stringify(dbData, null, 2), { access: acc, addRandomSuffix: false, allowOverwrite: true });
+    } catch {
+      const fallbackAcc = acc === 'public' ? 'private' : 'public';
+      await put('data/db.json', JSON.stringify(dbData, null, 2), { access: fallbackAcc, addRandomSuffix: false, allowOverwrite: true });
+      blobAccess = fallbackAcc;
+    }
   } catch (err) {
     console.warn('[blob] save error:', err.message);
   }
@@ -194,8 +200,9 @@ async function saveDbToCloud(dbData) {
 
 function save() {
   saveChain = saveChain.then(async () => {
-    saveDbToBlob(db).catch(() => {});
-    saveDbToCloud(db).catch(() => {});
+    try { await saveDbToBlob(db); } catch (e) { console.warn('[blob] save error:', e.message); }
+    try { await saveDbToCloud(db); } catch (e) { console.warn('[kv] save error:', e.message); }
+    lastCloudSync = Date.now();
     const content = JSON.stringify(db, null, 2);
     const tmp = DB_FILE + '.' + process.pid + '.' + Date.now() + '.tmp';
     try {
@@ -229,14 +236,7 @@ async function load() {
       const seed = vm.runInNewContext(code, {}, { filename: 'data.js' });
       if (seed && Array.isArray(seed.PRODUCTS)) {
         let modified = false;
-        const seedMap = new Map(seed.PRODUCTS.map(p => [p.slug, p]));
-        for (const p of db.products) {
-          const sp = seedMap.get(p.slug);
-          if (sp && !sp.hidden && p.hidden) {
-            p.hidden = false;
-            modified = true;
-          }
-        }
+        // Preserved product hidden states as set by owner
         const existingSlugs = new Set(db.products.map(p => p.slug));
         for (const sp of seed.PRODUCTS) {
           if (!existingSlugs.has(sp.slug)) {

@@ -70,8 +70,14 @@ async function saveDbToBlob(db) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return;
   try {
     const { put } = await import('@vercel/blob');
-    const acc = blobAccess || 'private';
-    await put('data/db.json', JSON.stringify(db, null, 2), { access: acc, addRandomSuffix: false, allowOverwrite: true });
+    const acc = blobAccess || 'public';
+    try {
+      await put('data/db.json', JSON.stringify(db, null, 2), { access: acc, addRandomSuffix: false, allowOverwrite: true });
+    } catch {
+      const fallbackAcc = acc === 'public' ? 'private' : 'public';
+      await put('data/db.json', JSON.stringify(db, null, 2), { access: fallbackAcc, addRandomSuffix: false, allowOverwrite: true });
+      blobAccess = fallbackAcc;
+    }
   } catch (err) {
     console.warn('[blob] save error:', err.message);
   }
@@ -136,14 +142,7 @@ async function getDb(forceRefresh = false) {
     if (!sourceProducts.length) return false;
     let modified = false;
     if (!Array.isArray(targetDb.products)) targetDb.products = [];
-    const sourceMap = new Map(sourceProducts.map(p => [p.slug, p]));
-    for (const p of targetDb.products) {
-      const sp = sourceMap.get(p.slug);
-      if (sp && !sp.hidden && p.hidden) {
-        p.hidden = false;
-        modified = true;
-      }
-    }
+    // Preserved product hidden states as set by owner
     const existingSlugs = new Set(targetDb.products.map(p => p.slug));
     for (const sp of sourceProducts) {
       if (!existingSlugs.has(sp.slug)) {
