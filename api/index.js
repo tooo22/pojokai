@@ -2667,7 +2667,7 @@ export default async function handler(req, res) {
             fee_bearer: 'MERCHANT',
             callback_url: 'https://pojokai.my.id/#cek-pesanan',
           }),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(25000),
         });
 
         const json = await wRes.json();
