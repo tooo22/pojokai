@@ -1,4 +1,5 @@
-data/
+data/*
+!data/db.json
 docs/
 *.bat
 PANDUAN_KEAMANAN_DAN_DEPLOY.md

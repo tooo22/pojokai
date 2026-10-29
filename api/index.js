@@ -186,6 +186,15 @@ async function getDb(forceRefresh = false) {
       await saveDb(dbCache);
     }
     await syncMissingProducts(dbCache);
+    if (!dbCache.catalogVersion || dbCache.catalogVersion < 2) {
+      const allowed = new Set(['google-gemini', 'google-mail', 'capcut-pro']);
+      for (const p of dbCache.products) {
+        p.hidden = !allowed.has(p.slug);
+      }
+      dbCache.catalogVersion = 2;
+      await saveDb(dbCache);
+      console.log('[db] catalogVersion 2 diterapkan di api');
+    }
     dbCacheTime = Date.now();
     return dbCache;
   }

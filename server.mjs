@@ -171,7 +171,16 @@ async function syncFromCloudIfNeeded(force = false) {
   lastCloudSync = Date.now();
   const blobDb = await getDbFromBlob();
   if (blobDb && Array.isArray(blobDb.products)) {
-    if (!db.updatedAt || !blobDb.updatedAt || blobDb.updatedAt >= db.updatedAt) {
+    if (!blobDb.catalogVersion || blobDb.catalogVersion < 2) {
+      const allowed = new Set(['google-gemini', 'google-mail', 'capcut-pro']);
+      for (const p of blobDb.products) {
+        p.hidden = !allowed.has(p.slug);
+      }
+      blobDb.catalogVersion = 2;
+      db = blobDb;
+      await save();
+      console.log('[db] catalogVersion 2 diterapkan di sync');
+    } else if (!db.updatedAt || !blobDb.updatedAt || blobDb.updatedAt >= db.updatedAt) {
       db = blobDb;
     }
   }
@@ -287,6 +296,15 @@ async function load() {
       }
     } catch (e) {
       console.warn('[db] sync seed error:', e.message);
+    }
+    if (!db.catalogVersion || db.catalogVersion < 2) {
+      const allowed = new Set(['google-gemini', 'google-mail', 'capcut-pro']);
+      for (const p of db.products) {
+        p.hidden = !allowed.has(p.slug);
+      }
+      db.catalogVersion = 2;
+      await save();
+      console.log('[db] catalogVersion 2 diterapkan di load');
     }
     console.log(`[db] dimuat dari Vercel Blob: ${db.products.length} produk (aktif: ${db.products.filter(p => !p.hidden).length})`);
     return;
