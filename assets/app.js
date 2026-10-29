@@ -13,11 +13,12 @@ const BUYER_ORDERS_KEY = 'wk_buyer_orders';
 function toast(msg, kind = 'ok') {
   const el = document.createElement('div');
   el.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold transition-all ' +
-    (kind === 'err' ? 'bg-danger text-white' : 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900');
+    (kind === 'err' ? 'bg-danger text-white' : kind === 'warn' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900');
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2600);
 }
+window.toast = toast;
 
 function getStoredBuyer() {
   try {
