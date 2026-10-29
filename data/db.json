@@ -295,7 +295,8 @@
           "label": "1 Bulan",
           "price": 10000,
           "stock": 999999,
-          "ful": "manual"
+          "ful": "manual",
+          "strike": 25000
         }
       ],
       "hidden": true
@@ -428,7 +429,8 @@
           "label": "1 Bulan",
           "price": 10000,
           "stock": 999999,
-          "ful": "manual"
+          "ful": "manual",
+          "strike": 25000
         },
         {
           "label": "1 Bulan · YouTube + One",
@@ -466,7 +468,8 @@
           "label": "1 Bulan",
           "price": 10000,
           "stock": 999999,
-          "ful": "manual"
+          "ful": "manual",
+          "strike": 25000
         },
         {
           "label": "1 Tahun",
@@ -678,8 +681,9 @@
         {
           "label": "1 Bulan Akun Toko",
           "price": 25000,
-          "stock": 0,
-          "ful": "auto"
+          "stock": 2,
+          "ful": "auto",
+          "strike": 40000
         }
       ],
       "hidden": true
@@ -737,7 +741,8 @@
           "label": "1 Tahun",
           "price": 50000,
           "stock": 999999,
-          "ful": "manual"
+          "ful": "manual",
+          "strike": 120000
         },
         {
           "label": "18 Bulan Link",
@@ -810,9 +815,10 @@
         {
           "label": "1 Bulan · Invite",
           "price": 75000,
-          "stock": 0,
+          "stock": 5,
           "ful": "manual",
-          "d": "No Garansi"
+          "d": "No Garansi",
+          "strike": 150000
         }
       ],
       "hidden": true

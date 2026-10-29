@@ -428,94 +428,59 @@ function startHero() {
 let bm = null;
 
 function renderBundle() {
-  const sec = $('#sec-paket-hemat');
-  const card = $('#paketHematCard');
-  if (!sec || !card) return;
-  if (!BUNDLE || BUNDLE.enabled === false) {
-    sec.classList.add('hidden');
-    return;
-  }
-  const p1 = PRODUCTS.find((p) => p.slug === BUNDLE.prod1 && !p.hidden);
-  const p2 = PRODUCTS.find((p) => p.slug === BUNDLE.prod2 && !p.hidden);
-  if (!p1 || !p2) {
-    sec.classList.add('hidden');
-    return;
-  }
-  sec.classList.remove('hidden');
-
-  const price = BUNDLE.price || 0;
-  const strike = BUNDLE.strike || 0;
-  const hemat = strike > price ? strike - price : 0;
-  const badge = BUNDLE.badge || (hemat && strike ? `-${Math.round((hemat / strike) * 100)}%` : '');
-  const items = Array.isArray(BUNDLE.items) ? BUNDLE.items : [];
-
-  card.innerHTML = `
-    <article class="card space-y-2 rounded-[12px] p-3">
-      <div class="flex min-w-0 items-center gap-2">
-        <div class="flex shrink-0 items-center gap-1">
-          <img src="assets/products/${esc(p1.slug)}.webp" data-fb="${esc(p1.name.slice(0, 2))}" alt="${esc(p1.name)}" class="size-9 rounded-[10px] bg-surface-2 object-cover">
-          <i data-lucide="plus" class="size-3 text-subtle"></i>
-          <img src="assets/products/${esc(p2.slug)}.webp" data-fb="${esc(p2.name.slice(0, 2))}" alt="${esc(p2.name)}" class="size-9 rounded-[10px] bg-surface-2 object-cover">
-        </div>
-        <p class="min-w-0 flex-1 text-sm font-bold leading-snug">${esc(BUNDLE.title || `${p1.name} + ${p2.name}`)}</p>
-        ${badge ? `<span class="pill shrink-0 rounded-full bg-danger px-1.5 py-px text-[10px] font-bold text-white">${esc(badge)}</span>` : ''}
-      </div>
-      ${items.length ? `<ul class="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted">
-        ${items.map((it) => `<li class="flex items-start gap-1"><i data-lucide="check" class="mt-0.5 size-3 shrink-0 text-success"></i>${esc(it)}</li>`).join('')}
-      </ul>` : ''}
-      <div class="flex items-end justify-between gap-2">
-        <div class="min-w-0">
-          <p class="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
-            <span class="text-lg font-bold tabular-nums text-danger">${rp(price)}</span>
-            ${strike > price ? `<span class="text-[11px] tabular-nums text-subtle line-through">${rp(strike)}</span>` : ''}
-            ${hemat > 0 ? `<span class="text-[11px] font-semibold tabular-nums text-success">Hemat ${rp(hemat)}</span>` : ''}
-          </p>
-          <p class="text-[11px] tabular-nums text-subtle"><span class="font-semibold text-success"><i data-lucide="zap" class="inline size-3 -translate-y-px"></i>${esc(BUNDLE.fulText || 'Otomatis')}</span> · ${esc(BUNDLE.soldText || '1 terjual hari ini')}</p>
-        </div>
-        <button type="button" data-bundle class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] bg-primary px-4 text-sm font-semibold text-primary-fg transition hover:opacity-90 cursor-pointer">
-          <i data-lucide="shopping-bag" class="size-4"></i>Beli paket
-        </button>
-      </div>
-    </article>
-  `;
-  icons();
-  icons();
+  // Paket hemat section is rendered 1:1 with Waroengkuy horizontal deal cards.
+  renderFlashSale();
 }
 
 function renderFlashSale() {
   const container = $('#flashSaleList');
   if (!container || !PRODUCTS) return;
 
+  // Filter products with active strike discount or top deals
   let deals = PRODUCTS.filter((p) => {
     if (p.hidden) return false;
-    const v = pick(p);
+    const v = (p.variants || []).find((x) => x.strike && x.strike > x.price) || pick(p);
     return v && v.strike && v.strike > v.price;
   });
 
   if (!deals.length) {
-    deals = PRODUCTS.filter((p) => !p.hidden).slice(0, 6);
+    deals = PRODUCTS.filter((p) => !p.hidden).slice(0, 8);
   }
 
   container.innerHTML = deals.map((p) => {
-    const v = pick(p);
+    const v = (p.variants || []).find((x) => x.strike && x.strike > x.price) || pick(p);
     const price = v ? v.price : 0;
     const strike = v?.strike || 0;
-    const disc = strike > price ? Math.round((1 - price / strike) * 100) : null;
-    const isAuto = p.auto || v?.ful === 'auto';
-    return `<div onclick="window.wk?.open('${p.slug}')" class="flex w-[140px] sm:w-[155px] shrink-0 snap-start flex-col overflow-hidden rounded-[14px] bg-white dark:bg-[#202020] text-[#0f2257] dark:text-[#f2f2f2] border border-transparent dark:border-[#333] shadow transition hover:scale-102 cursor-pointer">
-      <div class="relative aspect-square bg-slate-100 dark:bg-slate-800 flex items-center justify-center p-3">
-        ${disc ? `<span class="absolute top-1.5 right-1.5 rounded-md bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white">-${disc}%</span>` : ''}
-        <img src="assets/products/${esc(p.slug)}.webp" data-fb="${esc(p.name.slice(0, 2))}" alt="${esc(p.name)}" class="size-16 object-contain">
-      </div>
-      <div class="p-2.5 flex flex-col flex-1">
-        <p class="text-xs font-bold line-clamp-1">${esc(p.name)}</p>
-        <p class="text-sm font-black text-primary dark:text-white mt-1">${rp(price)}</p>
-        ${strike > price ? `<p class="text-[10px] line-through text-slate-400">${rp(strike)}</p>` : ''}
-        <div class="mt-auto pt-2 flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-          <i data-lucide="zap" class="size-3"></i><span>${isAuto ? 'Otomatis' : 'Proses Cepat'}</span>
-        </div>
-      </div>
-    </div>`;
+    const disc = strike > price ? Math.round(((strike - price) / strike) * 100) : null;
+    const isAuto = p.auto !== false && v?.ful !== 'manual';
+    const title = `${p.name} ${v?.label || ''}`.trim();
+    const stock = v?.stock != null ? v.stock : 99;
+    const isLimited = stock > 0 && stock <= 10;
+    const barPct = isLimited ? Math.max(8, stock * 10) : 0;
+
+    return `
+      <a aria-label="Lihat ${esc(title)}" class="flex w-[132px] shrink-0 snap-start flex-col overflow-hidden bg-surface text-left transition-transform active:scale-[.98] disabled:opacity-60 sm:w-40 rounded-[6px] cursor-pointer" style="--wp-r:6px" href="#produk/${esc(p.slug)}" data-buy="${esc(p.slug)}">
+        <span class="relative flex aspect-square w-full items-center justify-center bg-surface-2" data-flat="true">
+          <img alt="${esc(p.name)}" loading="lazy" decoding="async" class="size-full object-contain p-2 transition-transform duration-300 hover:scale-105" src="assets/products/${esc(p.slug)}.webp" data-fb="${esc(p.name.slice(0, 2))}">
+          ${disc ? `<span data-flat="true" class="absolute right-0 top-0 bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">-${disc}%</span>` : ''}
+        </span>
+        <span class="flex flex-1 flex-col gap-0.5 p-2">
+          <span class="line-clamp-2 text-xs font-semibold leading-snug text-main">${esc(title)}</span>
+          <span class="mt-0.5 font-display text-sm font-extrabold tabular-nums text-main">${rp(price)}</span>
+          ${strike > price ? `<span class="text-[11px] tabular-nums text-subtle line-through">${rp(strike)}</span>` : ''}
+          <span class="mt-auto pt-1">
+            ${isLimited ? `<div class="h-1 overflow-hidden bg-danger/15 rounded-full" aria-hidden="true"><div class="h-full bg-danger rounded-full" style="width:${barPct}%"></div></div>` : ''}
+          </span>
+          <p class="text-[11px] tabular-nums text-subtle flex items-center justify-between">
+            <span class="font-semibold text-success flex items-center gap-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap inline size-3 -translate-y-px"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
+              <span>${isAuto ? 'Otomatis' : 'Proses'}</span>
+            </span>
+            ${isLimited ? `<b class="font-semibold text-danger">Sisa ${stock}</b>` : ''}
+          </p>
+        </span>
+      </a>
+    `;
   }).join('');
   icons();
 }
