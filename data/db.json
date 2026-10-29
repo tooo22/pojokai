@@ -298,7 +298,7 @@
           "ful": "manual"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "alight-motion",
@@ -328,7 +328,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "hbo-max",
@@ -364,7 +364,7 @@
           "ful": "manual"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "netflix-premium",
@@ -397,7 +397,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "youtube",
@@ -438,7 +438,7 @@
           "d": "Google AI Pro (Gemini Pro + penyimpanan Google One) 16 bulan"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "canva",
@@ -475,7 +475,7 @@
           "ful": "manual"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "zoom-pro",
@@ -505,7 +505,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "wink",
@@ -535,7 +535,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "scribd-pro",
@@ -565,7 +565,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "vidio",
@@ -591,7 +591,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "remini-web",
@@ -621,7 +621,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "meitu",
@@ -657,7 +657,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "spotify",
@@ -682,7 +682,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "leonardo-ai",
@@ -707,7 +707,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "google-gemini",
@@ -763,7 +763,7 @@
         "Jangan ubah email/password akun"
       ],
       "desc": "Perplexity AI adalah mesin jawab berbasis AI yang mencari di web dan menyertakan sumber untuk setiap jawaban.",
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "claude-ai",
@@ -780,7 +780,7 @@
         "Jangan ubah email/password akun"
       ],
       "desc": "Claude adalah asisten AI dari Anthropic untuk menulis, merangkum, analisis dokumen, dan coding.",
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "chatgpt",
@@ -815,7 +815,7 @@
           "d": "No Garansi"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "clico-ai",
@@ -832,7 +832,7 @@
         "Diproses admin setelah bayar"
       ],
       "desc": "Clico AI adalah studio AI yang menggabungkan riset web mendalam (deep research), penulisan, serta pembuatan gambar dan video dalam satu tempat, dan bisa dipakai lewat web, ekstensi Chrome, maupun aplikasi Mac. Cocok untuk kamu yang sering menulis, riset, atau membuat konten visual. Kalau kamu ingin beli akun Clico AI premium tanpa ribet, paket di sini bisa jadi pilihan.\n\nPaket berbayarnya memberi kredit bulanan lebih banyak dan akses ke lebih banyak model AI. Secara umum Clico bisa dipakai untuk:\n• Riset mendalam dan ngobrol dengan beberapa model AI\n• Menulis draf lalu mengetiknya langsung ke kolom teks di browser\n• Membaca file seperti PDF, DOCX, PPTX, dan XLSX\n• Membuat dan mengedit gambar, serta mengubah gambar jadi video\n\nPilihan paket yang tersedia: 1 Bulan.\n\nCara pakai setelah beli: isi email kamu saat checkout, lalu bayar lewat QRIS. Setelah pembayaran terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp. Setelah itu masuk ke Clico lewat web, ekstensi Chrome, atau aplikasi Mac sesuai kebutuhan.\n\nTips aman:\n• Pastikan email yang kamu isi aktif dan bisa kamu buka.\n• Pantau sisa kredit di dasbor agar pemakaian tetap terkontrol.\n• Jangan bagikan data login ke orang lain.\n\nUntuk paket 1 bulan ini, isi email kamu saat checkout; setelah pembayaran QRIS terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp.",
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "creaa-ai",
@@ -851,7 +851,7 @@
         "Diproses admin setelah bayar"
       ],
       "desc": "Creaa AI adalah platform AI untuk membuat video dan gambar dari teks maupun gambar referensi. Cocok untuk kreator konten, pelaku UMKM, atau siapa pun yang butuh visual cepat. Kalau kamu mencari akun Creaa AI premium, paket Reguler ini bisa jadi pilihan.\n\nPaket berbayarnya memberi kredit bulanan untuk generate, dengan hasil tanpa watermark. Secara umum Creaa bisa dipakai untuk:\n• Text-to-video: menulis deskripsi lalu jadi video\n• Image-to-video: menghidupkan gambar referensi jadi video\n• Membuat gambar AI dari teks\n• Memilih beberapa model AI video dan gambar yang tersedia di platform\n\nPilihan paket yang tersedia: Reguler.\n\nCara pakai setelah beli: isi email kamu saat checkout, lalu bayar lewat QRIS. Setelah pembayaran terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp. Setelah itu masuk ke Creaa dan mulai generate dari menu video atau gambar.\n\nTips aman:\n• Tiap generate memakai kredit, jadi uji prompt singkat dulu sebelum membuat video panjang.\n• Simpan hasil yang kamu suka ke perangkat sendiri.\n• Jangan bagikan data login ke orang lain.\n\nUntuk paket Reguler ini, isi email kamu saat checkout; setelah pembayaran QRIS terverifikasi, admin memproses pesanan dan mengabari kamu lewat WhatsApp.",
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "higgsfield-plus",
@@ -881,7 +881,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "grok-ai",
@@ -904,7 +904,7 @@
         "Dikirim otomatis setelah bayar · bergaransi selama aktif"
       ],
       "desc": "Grok AI adalah asisten AI untuk chat, riset, serta pembuatan gambar dan video; paket SuperGrok menaikkan batas pemakaian dan membuka lebih banyak fitur dibanding akun gratis. Asisten ini berguna untuk pelajar, penulis konten, pemilik usaha, sampai programmer yang butuh teman diskusi cepat. Di sini kamu bisa beli akun Grok AI premium berupa akun SuperGrok yang disediakan toko, dengan beberapa pilihan durasi.\n\nDengan SuperGrok, umumnya kamu mendapat hal berikut, sesuai paket dari penyedia:\n• Batas chat yang lebih longgar dibanding akun gratis\n• Akses ke model Grok yang lebih baru untuk jawaban yang lebih mendalam\n• Pembuatan gambar dan video lewat fitur Imagine\n• Pencarian web dan X secara real-time untuk topik yang sedang ramai\n• Bisa dipakai di web maupun aplikasi iOS dan Android\n\nDurasi yang bisa kamu pilih: 7 Hari, 1 Bulan, 3 Bulan, dan 1 Tahun. Paket 7 Hari cocok untuk mencoba atau mengejar tenggat, sementara paket yang lebih panjang lebih praktis kalau Grok sudah jadi alat kerja harian.\n\nSetelah akun diterima, buka grok.com atau aplikasi Grok, lalu login dengan detail akun yang dikirim. Baca juga catatan yang menyertai akun sebelum mulai memakai.\n\nTips supaya pemakaian lancar:\n• Salin dan simpan hasil chat atau gambar penting di perangkatmu sendiri\n• Hindari memasukkan data pribadi sensitif ke dalam percakapan\n• Jangan ubah pengaturan akun di luar yang dijelaskan pada catatan\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan. Bergaransi selama masa aktif.",
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "venice-ai",
@@ -927,7 +927,7 @@
         "Dikirim otomatis setelah bayar · bergaransi full"
       ],
       "desc": "Venice AI adalah platform AI yang berfokus pada privasi untuk chat serta pembuatan gambar dan video, dengan pembatasan konten yang lebih longgar dibanding banyak layanan AI lain. Akun Venice AI premium cocok untuk kamu yang ingin memakai AI untuk menulis, riset, brainstorming, atau membuat visual, dengan fokus privasi (menurut Venice, riwayat percakapan disimpan di perangkatmu, bukan di server mereka). Di sini kamu bisa beli akun Venice AI berbayar yang disediakan toko.\n\nPaket berbayarnya membuka lebih banyak model dan fitur dengan batas pemakaian lebih tinggi. Yang umumnya didapat di versi Pro:\n• Akses model Pro dan model lanjutan, tidak hanya model dasar\n• Batas chat jauh lebih longgar dibanding akun gratis\n• Pencarian web, unggah dokumen, dan analisis gambar\n• Pembuatan gambar dengan kuota lebih besar, plus alat edit seperti upscale dan hapus latar\n• Pembuatan video dan musik memakai kredit\n\nPilihan paket: 1 bulan.\n\nCara pakai setelah beli: buka venice.ai lewat browser atau aplikasinya, masuk dengan detail akun yang kamu terima, lalu pilih model yang sesuai kebutuhan di menu pemilihan model.\n\nTips singkat:\n• Pakai model yang lebih ringan untuk tugas sederhana agar kuota fitur berbasis kredit tetap awet\n• Untuk gambar, jelaskan gaya, warna, pencahayaan, dan komposisi secara rinci di prompt agar hasilnya lebih sesuai\n• Riwayat chat Venice umumnya tersimpan di browser, jadi pakai perangkat yang sama bila ingin melanjutkan percakapan\n\nSetelah pembayaran QRIS terverifikasi, detail akun dikirim otomatis ke WhatsApp kamu dalam hitungan detik dan juga tampil di halaman status pesanan. Bergaransi full.",
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "google-mail",
@@ -1006,7 +1006,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     },
     {
       "slug": "surfshark-vpn",
@@ -1031,7 +1031,7 @@
           "ful": "auto"
         }
       ],
-      "hidden": false
+      "hidden": true
     }
   ],
   "owners": [
@@ -1444,5 +1444,6 @@
       "note": "Email: pembeli@gmail.com | WA: 081234567890",
       "status": "Dibatalkan (Waktu Habis)"
     }
-  ]
+  ],
+  "updatedAt": 1793290442738
 }

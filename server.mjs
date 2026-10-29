@@ -117,8 +117,23 @@ async function getDbFromBlob() {
         const res = await get('data/db.json', {
           access: acc,
           useCache: false,
-          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
         });
+        if (res && res.blob?.url) {
+          blobAccess = acc;
+          const cacheBusterUrl = res.blob.url + (res.blob.url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+          const freshRes = await fetch(cacheBusterUrl, {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              ...(acc === 'private' ? { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` } : {})
+            }
+          });
+          if (freshRes.ok) {
+            const parsed = await freshRes.json();
+            if (parsed && Array.isArray(parsed.products)) return parsed;
+          }
+        }
         if (res && res.stream) {
           blobAccess = acc;
           const text = await new Response(res.stream).text();
@@ -156,7 +171,9 @@ async function syncFromCloudIfNeeded(force = false) {
   lastCloudSync = Date.now();
   const blobDb = await getDbFromBlob();
   if (blobDb && Array.isArray(blobDb.products)) {
-    db = blobDb;
+    if (!db.updatedAt || !blobDb.updatedAt || blobDb.updatedAt >= db.updatedAt) {
+      db = blobDb;
+    }
   }
 }
 
@@ -199,6 +216,7 @@ async function saveDbToCloud(dbData) {
 }
 
 function save() {
+  db.updatedAt = Date.now();
   saveChain = saveChain.then(async () => {
     try { await saveDbToBlob(db); } catch (e) { console.warn('[blob] save error:', e.message); }
     try { await saveDbToCloud(db); } catch (e) { console.warn('[kv] save error:', e.message); }
@@ -227,10 +245,28 @@ function save() {
 }
 
 async function load() {
+  let localDb = null;
+  const repoDbFile = path.join(DATA_DIR, 'db.json');
+  if (existsSync(repoDbFile)) {
+    try { localDb = JSON.parse(await readFile(repoDbFile, 'utf8')); } catch {}
+  } else if (existsSync(DB_FILE)) {
+    try { localDb = JSON.parse(await readFile(DB_FILE, 'utf8')); } catch {}
+  }
+
   // 1. Coba baca dari Vercel Blob jika tersedia
   const blobDb = await getDbFromBlob();
   if (blobDb) {
     db = blobDb;
+    if (localDb && localDb.updatedAt && (!db.updatedAt || localDb.updatedAt > db.updatedAt)) {
+      console.log(`[db] local bundled db is newer (${localDb.updatedAt} > ${db.updatedAt || 0}), syncing to blob`);
+      const localMap = new Map((localDb.products || []).map(p => [p.slug, p]));
+      for (const p of db.products) {
+        const lp = localMap.get(p.slug);
+        if (lp && lp.hidden !== undefined) p.hidden = lp.hidden;
+      }
+      db.updatedAt = localDb.updatedAt;
+      await save();
+    }
     try {
       const code = (await readFile(SEED_FILE, 'utf8')) + ';({ PRODUCTS })';
       const seed = vm.runInNewContext(code, {}, { filename: 'data.js' });

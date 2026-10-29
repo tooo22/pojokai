@@ -50,8 +50,23 @@ async function getDbFromBlob() {
         const res = await get('data/db.json', {
           access: acc,
           useCache: false,
-          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
         });
+        if (res && res.blob?.url) {
+          blobAccess = acc;
+          const cacheBusterUrl = res.blob.url + (res.blob.url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+          const freshRes = await fetch(cacheBusterUrl, {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              ...(acc === 'private' ? { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` } : {})
+            }
+          });
+          if (freshRes.ok) {
+            const parsed = await freshRes.json();
+            if (parsed && Array.isArray(parsed.products)) return parsed;
+          }
+        }
         if (res && res.stream) {
           blobAccess = acc;
           const text = await new Response(res.stream).text();
@@ -161,6 +176,15 @@ async function getDb(forceRefresh = false) {
   const blobDb = await getDbFromBlob();
   if (blobDb) {
     dbCache = blobDb;
+    if (localDb && localDb.updatedAt && (!dbCache.updatedAt || localDb.updatedAt > dbCache.updatedAt)) {
+      const localMap = new Map((localDb.products || []).map(p => [p.slug, p]));
+      for (const p of dbCache.products) {
+        const lp = localMap.get(p.slug);
+        if (lp && lp.hidden !== undefined) p.hidden = lp.hidden;
+      }
+      dbCache.updatedAt = localDb.updatedAt;
+      await saveDb(dbCache);
+    }
     await syncMissingProducts(dbCache);
     dbCacheTime = Date.now();
     return dbCache;
@@ -170,6 +194,15 @@ async function getDb(forceRefresh = false) {
   const cloudDb = await getDbFromCloud();
   if (cloudDb) {
     dbCache = cloudDb;
+    if (localDb && localDb.updatedAt && (!dbCache.updatedAt || localDb.updatedAt > dbCache.updatedAt)) {
+      const localMap = new Map((localDb.products || []).map(p => [p.slug, p]));
+      for (const p of dbCache.products) {
+        const lp = localMap.get(p.slug);
+        if (lp && lp.hidden !== undefined) p.hidden = lp.hidden;
+      }
+      dbCache.updatedAt = localDb.updatedAt;
+      await saveDb(dbCache);
+    }
     await syncMissingProducts(dbCache);
     dbCacheTime = Date.now();
     return dbCache;
@@ -200,6 +233,7 @@ async function getDb(forceRefresh = false) {
 }
 
 async function saveDb(updatedDb) {
+  updatedDb.updatedAt = Date.now();
   dbCache = updatedDb;
   dbCacheTime = Date.now();
   // 1. Simpan ke /tmp/db.json (area writable di serverless Vercel)

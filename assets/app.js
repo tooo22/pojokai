@@ -410,9 +410,13 @@ function renderBundle() {
     sec.classList.add('hidden');
     return;
   }
+  const p1 = PRODUCTS.find((p) => p.slug === BUNDLE.prod1 && !p.hidden);
+  const p2 = PRODUCTS.find((p) => p.slug === BUNDLE.prod2 && !p.hidden);
+  if (!p1 || !p2) {
+    sec.classList.add('hidden');
+    return;
+  }
   sec.classList.remove('hidden');
-  const p1 = PRODUCTS.find((p) => p.slug === BUNDLE.prod1) || { name: 'Produk 1', slug: BUNDLE.prod1 };
-  const p2 = PRODUCTS.find((p) => p.slug === BUNDLE.prod2) || { name: 'Produk 2', slug: BUNDLE.prod2 };
 
   const price = BUNDLE.price || 0;
   const strike = BUNDLE.strike || 0;
@@ -458,12 +462,13 @@ function renderFlashSale() {
   if (!container || !PRODUCTS) return;
 
   let deals = PRODUCTS.filter((p) => {
+    if (p.hidden) return false;
     const v = pick(p);
     return v && v.strike && v.strike > v.price;
   });
 
   if (!deals.length) {
-    deals = PRODUCTS.slice(0, 6);
+    deals = PRODUCTS.filter((p) => !p.hidden).slice(0, 6);
   }
 
   container.innerHTML = deals.map((p) => {
