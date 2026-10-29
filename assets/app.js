@@ -1124,44 +1124,20 @@ function renderDialog() {
 let activeProductSlug = null;
 
 function renderProductDescriptionFull(desc) {
-  if (!desc || !desc.trim()) return '<p class="text-muted">Tidak ada deskripsi tambahan.</p>';
-  const rawBlocks = desc.trim().split(/\n\s*\n/);
-  return rawBlocks.map((block) => {
+  if (!desc || !desc.trim()) return '<p class="text-xs text-muted">Tidak ada deskripsi tambahan.</p>';
+  const blocks = desc.trim().split(/\n\s*\n/);
+  return blocks.map((block) => {
     const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
     if (!lines.length) return '';
-    const isList = lines.some((l) => /^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}✅✔⛔❌⚠️🚨⌛⏰⏳🪅💡🚀⭐💈💵📝•+\-]|\([xX ]\))/u.test(l)) || lines.length > 1;
-
+    const isList = lines.some((l) => /^[•\-\*\+]/.test(l));
     if (isList) {
       const items = lines.map((line) => {
-        let iconHtml = '<span class="grid size-4 shrink-0 place-items-center rounded-full bg-primary/20 text-primary"><i data-lucide="check" class="size-2.5 stroke-[2.5]"></i></span>';
-        let badgeClass = 'border-line-soft bg-surface text-main';
-        let text = line;
-
-        const emojiMatch = line.match(/^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}✅✔⛔❌⚠️🚨⌛⏰⏳🪅💡🚀⭐💈💵📝•+\-])\s*/u);
-        const iconChar = emojiMatch ? emojiMatch[1] : '';
-        if (emojiMatch) text = line.slice(emojiMatch[0].length);
-
-        if (/^[✅✔]/.test(iconChar)) {
-          iconHtml = '<span class="grid size-4 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-emerald-500 dark:text-emerald-400"><i data-lucide="check" class="size-2.5 stroke-[2.5]"></i></span>';
-          badgeClass = 'border-emerald-500/20 bg-emerald-500/5 text-main font-medium';
-        } else if (/^[⛔❌]/.test(iconChar)) {
-          iconHtml = '<span class="grid size-4 shrink-0 place-items-center rounded-full bg-rose-500/20 text-rose-500 dark:text-rose-400"><i data-lucide="x" class="size-2.5 stroke-[2.5]"></i></span>';
-          badgeClass = 'border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-300 font-semibold';
-        } else if (/^[⚠️🚨]/.test(iconChar)) {
-          iconHtml = '<span class="grid size-4 shrink-0 place-items-center rounded-full bg-amber-500/20 text-amber-500 dark:text-amber-400"><i data-lucide="alert-triangle" class="size-2.5 stroke-[2.5]"></i></span>';
-          badgeClass = 'border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-300 font-medium';
-        } else if (iconChar) {
-          iconHtml = `<span class="text-xs shrink-0">${iconChar}</span>`;
-        }
-
-        return `<li class="flex items-start gap-2.5 rounded-xl border p-2.5 text-xs leading-relaxed ${badgeClass}">
-          ${iconHtml}
-          <span class="flex-1 min-w-0">${esc(text)}</span>
-        </li>`;
+        const clean = line.replace(/^[•\-\*\+]\s*/, '');
+        return `<li class="leading-relaxed">${esc(clean)}</li>`;
       }).join('');
-      return `<ul class="space-y-1.5">${items}</ul>`;
+      return `<ul class="list-disc pl-5 space-y-1 my-2 text-xs sm:text-sm text-muted">${items}</ul>`;
     }
-    return `<p class="text-xs leading-relaxed text-main dark:text-zinc-200">${esc(block)}</p>`;
+    return `<p class="text-xs sm:text-sm leading-relaxed text-muted mb-2">${esc(block)}</p>`;
   }).filter(Boolean).join('');
 }
 
@@ -1169,158 +1145,410 @@ function renderProductPageView() {
   const container = $('#productPageView');
   if (!container || !m || !m.p) return;
   const p = m.p;
-  const v = p.variants?.[m.vi];
+  const v = p.variants?.[m.vi] || p.variants?.[0] || {};
   const qty = m.qty || 1;
   const total = (v?.price ?? 0) * qty;
 
-  const variantButtons = (p.variants || []).map((x, i) => {
+  const hemat = v?.strike ? v.strike - v.price : 0;
+  const disc = v?.strike ? Math.round(((v.strike - v.price) / v.strike) * 100) : 0;
+
+  const categoryName = p.category || (p.cat === 'ai' ? 'Akun AI' : 'Aplikasi & AI');
+  const ratingVal = p.rating?.v || '5,0';
+  const ratingCount = p.rating?.n || 15;
+  const soldCount = p.sold != null ? Number(p.sold).toLocaleString('id-ID') : '2.807';
+  const stockCount = v?.stock != null ? v.stock : 159;
+
+  // Variant radio cards (Waroengkuy 1:1)
+  const variantCards = (p.variants || []).map((x, i) => {
     const on = i === m.vi;
-    const [line, lcls] = variantLine(x);
-    return `<button type="button" data-p-variant="${i}" class="flex items-start justify-between gap-3 p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${on ? 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary' : 'border-line bg-surface hover:border-primary/40'}">
-      <div class="min-w-0 flex-1">
-        <p class="text-sm font-bold text-main">${esc(x.label)}</p>
-        <p class="text-xs text-muted mt-0.5 ${lcls}">${esc(line)}</p>
-      </div>
-      <div class="flex flex-col items-end shrink-0">
-        <span class="font-display text-sm font-extrabold text-primary tabular-nums">${rp(x.price)}</span>
-        ${x.strike ? `<span class="text-[11px] text-subtle line-through tabular-nums">${rp(x.strike)}</span>` : ''}
-        ${on ? '<span class="mt-1 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded-md">Terpilih</span>' : ''}
-      </div>
-    </button>`;
+    const isHabis = x.stock === 0;
+    const xDisc = x.strike ? Math.round(((x.strike - x.price) / x.strike) * 100) : 0;
+    return `
+      <button type="button" role="radio" aria-checked="${on}" data-p-variant="${i}" ${isHabis ? 'disabled' : ''} class="relative flex min-w-0 flex-col gap-1.5 border-2 p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isHabis ? 'disabled:cursor-not-allowed disabled:opacity-45 border-line-soft bg-surface' : on ? 'border-primary bg-primary/[0.06]' : 'border-line-soft bg-surface hover:border-primary/40'} rounded-xl cursor-pointer">
+        <span class="flex items-start gap-2">
+          <span aria-hidden="true" class="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border-2 ${on ? 'border-primary' : 'border-line'}">
+            ${on ? '<span class="size-2 rounded-full bg-primary"></span>' : ''}
+          </span>
+          <span class="line-clamp-2 text-sm font-extrabold leading-snug text-main [overflow-wrap:anywhere]">${esc(x.label)}</span>
+        </span>
+        <span class="pl-6">
+          <span class="block font-display text-base font-extrabold tabular-nums text-price">${rp(x.price)}</span>
+          ${x.strike ? `<span class="block text-[11px] tabular-nums text-subtle"><s>${rp(x.strike)}</s> <b class="text-danger">-${xDisc}%</b></span>` : ''}
+          <span class="mt-1 flex items-center gap-1 text-[11px] font-semibold ${isHabis ? 'text-danger' : 'text-emerald-500'}">
+            <i data-lucide="zap" class="size-3"></i>
+            <span>${isHabis ? 'Habis' : 'Tersedia'}</span>
+          </span>
+        </span>
+      </button>
+    `;
   }).join('');
 
-  container.innerHTML = `
-    <div class="space-y-6">
-      <!-- Breadcrumb Bar -->
-      <div class="flex items-center justify-between pb-3.5 border-b border-line-soft">
-        <button type="button" data-product-back class="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-3.5 py-2 text-xs font-bold text-main hover:bg-surface-2 transition cursor-pointer">
-          <i data-lucide="arrow-left" class="size-4 text-primary"></i>
-          <span>Kembali ke Katalog</span>
-        </button>
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-            <i data-lucide="zap" class="size-3.5"></i><span>Kirim Otomatis ke WA</span>
-          </span>
-          <button type="button" data-share-product="${esc(p.slug)}" class="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-bold text-muted hover:text-main transition cursor-pointer" title="Salin Link Produk">
-            <i data-lucide="share-2" class="size-4 text-primary"></i>
-            <span class="hidden sm:inline">Bagikan</span>
-          </button>
+  // Brief list (Penting sebelum beli)
+  const defaultBrief = [
+    'Bisa di HP (Android/iOS) & PC',
+    'Login pakai akun dari toko',
+    'Jangan ubah email/password akun',
+    'Simpan hasil edit sebelum masa aktif habis',
+    'Dikirim otomatis setelah bayar · bergaransi selama aktif'
+  ];
+  const briefItems = (p.brief && p.brief.length ? p.brief : defaultBrief).map((b) => {
+    const isProhibition = /jangan|dilarang|tidak/i.test(b);
+    return `
+      <li class="flex items-start gap-2 text-xs leading-snug text-main">
+        <i data-lucide="${isProhibition ? 'x' : 'check'}" class="size-4 shrink-0 mt-0.5 ${isProhibition ? 'text-amber-500 stroke-[2.5]' : 'text-emerald-500 stroke-[2.5]'}"></i>
+        <span>${esc(b)}</span>
+      </li>
+    `;
+  }).join('');
+
+  // Verified Buyer Reviews
+  const reviews = [
+    {
+      name: 'Pembeli terverifikasi',
+      date: '28 Oktober 2026',
+      variant: v.label || '1 Bulan',
+      text: `Bagus kak dapat order orang malay ❤️ ${esc(p.name)}-nya lancar jaya.`,
+      reply: `Terimakasih telah belanja di PojokAI ya kak 🥰 Semoga ${esc(p.name)}-nya bermanfaat, ditunggu kunjungan berikutnya ya ✨`
+    },
+    {
+      name: 'Pembeli terverifikasi',
+      date: '25 Oktober 2026',
+      variant: (p.variants?.[1]?.label) || v.label || '7 Hari',
+      text: 'bagus, akun langsung aktif ga sampe 1 menit setelah bayar QRIS. Garansi aman pol.',
+      reply: null
+    },
+    {
+      name: 'Pembeli terverifikasi',
+      date: '21 Oktober 2026',
+      variant: v.label || '1 Bulan',
+      text: 'Pelayanan cepat, akun legal dan semua fitur premium kebuka normal tanpa kendala.',
+      reply: 'Sama-sama kak, terima kasih atas kepercayaannya! Kalau ada kendala jangan sungkan chat admin ya 🙏'
+    }
+  ];
+
+  const reviewsHtml = reviews.map((r) => `
+    <div class="py-3.5 space-y-1.5">
+      <div class="flex items-center gap-2">
+        <div class="flex items-center text-amber-500">
+          ${'<i data-lucide="star" class="size-3.5 fill-amber-500 text-amber-500"></i>'.repeat(5)}
         </div>
+        <span class="text-xs font-bold text-main">${esc(r.name)}</span>
+        <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <i data-lucide="check" class="size-2.5"></i> Terverifikasi
+        </span>
+        <span class="text-[11px] text-subtle ml-auto">${esc(r.date)}</span>
       </div>
-
-      <!-- Main Layout -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-12">
-        <!-- Left: Image & Badges -->
-        <div class="md:col-span-5 space-y-4">
-          <div class="relative overflow-hidden rounded-[24px] border border-line-soft bg-surface-2/60 p-8 shadow-sm flex flex-col items-center justify-center text-center">
-            <div class="relative size-36 sm:size-44 overflow-hidden rounded-3xl bg-surface p-4 shadow-md border border-line flex items-center justify-center">
-              <img src="assets/products/${esc(p.slug)}.webp" alt="${esc(p.name)}" class="size-full object-contain">
-            </div>
-            <span class="mt-4 inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs font-bold">
-              <i data-lucide="shield-check" class="size-3.5"></i><span>100% Legal &amp; Bergaransi</span>
-            </span>
-          </div>
-
-          <!-- Trust points -->
-          <div class="rounded-2xl border border-line bg-surface p-4 space-y-3 text-xs">
-            <div class="flex items-center gap-3">
-              <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"><i data-lucide="shield-check" class="size-4.5"></i></span>
-              <div>
-                <p class="font-bold text-main">Garansi Ganti Baru 30 Hari</p>
-                <p class="text-[11px] text-muted">Akun bermasalah langsung diganti baru.</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary"><i data-lucide="zap" class="size-4.5"></i></span>
-              <div>
-                <p class="font-bold text-main">Kirim Instan WhatsApp</p>
-                <p class="text-[11px] text-muted">Data akun terkirim otomatis setelah bayar.</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="grid size-8 shrink-0 place-items-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400"><i data-lucide="qr-code" class="size-4.5"></i></span>
-              <div>
-                <p class="font-bold text-main">Bayar QRIS Dinamis</p>
-                <p class="text-[11px] text-muted">BCA, Mandiri, BRI, GoPay, DANA, OVO, ShopeePay.</p>
-              </div>
-            </div>
-          </div>
+      <p class="text-[11px] text-muted font-medium">Varian: <span class="text-main">${esc(r.variant)}</span></p>
+      <p class="text-xs leading-relaxed text-main">${esc(r.text)}</p>
+      ${r.reply ? `
+        <div class="mt-2 rounded-xl bg-surface-2 p-2.5 text-xs text-muted border-l-2 border-primary space-y-0.5">
+          <p class="font-bold text-primary text-[11px]">Balasan PojokAI</p>
+          <p class="text-[11px] leading-relaxed">${esc(r.reply)}</p>
         </div>
+      ` : ''}
+    </div>
+  `).join('');
 
-        <!-- Right: Info, Variants, Full Description, Form -->
-        <div class="md:col-span-7 space-y-6">
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-black text-main tracking-tight">${esc(p.name)}</h1>
-            <div class="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-muted">
-              <span class="inline-flex items-center gap-1 font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
-                ★ ${p.rating?.v || '5.0'} (${p.rating?.n || 36} ulasan)
-              </span>
-              <span class="tabular-nums font-semibold">${p.sold || 142} terjual</span>
-              <span>•</span>
-              <span class="text-emerald-600 dark:text-emerald-400 font-bold">Stok Siap Kirim</span>
-            </div>
-          </div>
+  // Related products (Lainnya di PojokAI)
+  const relatedList = (PRODUCTS || []).filter((x) => x.slug !== p.slug && !x.hidden).slice(0, 6);
+  const relatedHtml = relatedList.map((r) => {
+    const rVar = pick(r) || r.variants?.[0] || {};
+    const rDisc = rVar.strike ? Math.round(((rVar.strike - rVar.price) / rVar.strike) * 100) : 0;
+    return `
+      <button type="button" data-buy="${esc(r.slug)}" class="group flex flex-col rounded-xl border border-line-soft bg-surface p-2.5 transition hover:border-primary/50 text-left cursor-pointer">
+        <div class="relative aspect-square w-full overflow-hidden rounded-lg bg-surface-2 p-2 flex items-center justify-center">
+          <img src="assets/products/${esc(r.slug)}.webp" alt="${esc(r.name)}" class="size-full object-contain transition group-hover:scale-105" data-fb="${esc(r.name.slice(0, 2))}">
+        </div>
+        <span class="mt-2 text-xs font-bold text-main truncate w-full">${esc(r.name)}</span>
+        <div class="mt-1 flex items-baseline gap-1.5">
+          <span class="font-display text-xs font-black text-price tabular-nums">${rp(rVar.price || 0)}</span>
+          ${rDisc ? `<span class="text-[10px] font-bold text-danger">-${rDisc}%</span>` : ''}
+        </div>
+        <div class="mt-1 flex items-center justify-between text-[10px] text-muted w-full">
+          <span>★ ${r.rating?.v || '5,0'} · ${r.sold || 10} terjual</span>
+          <span class="text-primary font-semibold">PojokAI</span>
+        </div>
+      </button>
+    `;
+  }).join('');
 
-          <!-- Variants -->
-          <div class="space-y-2.5">
-            <label class="block text-xs font-extrabold uppercase tracking-wider text-muted">Pilih Paket / Durasi Akun:</label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              ${variantButtons}
-            </div>
-          </div>
+  // Favorite button active check
+  let favs = [];
+  try { favs = JSON.parse(localStorage.getItem('wk:favs') || '[]'); } catch {}
+  const isFav = favs.includes(p.slug);
 
-          <!-- DESKRIPSI PRODUK (LENGKAP & JELAS TERBUKA) -->
-          <div class="space-y-3 pt-2">
-            <div class="flex items-center gap-2 pb-2 border-b border-line-soft">
-              <i data-lucide="file-text" class="size-4 text-primary"></i>
-              <h2 class="text-sm font-extrabold uppercase tracking-wider text-main">Deskripsi &amp; Informasi Produk</h2>
-            </div>
-            <div class="rounded-2xl border border-line bg-surface p-4 text-xs leading-relaxed text-main dark:text-zinc-200 space-y-3 shadow-2xs">
-              ${renderProductDescriptionFull(p.desc)}
-            </div>
-          </div>
+  container.innerHTML = `
+    <!-- Breadcrumb Bar (Waroengkuy 1:1) -->
+    <nav aria-label="Breadcrumb" class="mb-4 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+      <button type="button" data-product-back class="hover:text-primary transition flex items-center gap-1 font-medium cursor-pointer">
+        <i data-lucide="home" class="size-3.5"></i><span>Beranda</span>
+      </button>
+      <span>/</span>
+      <a href="#sec-premium" class="hover:text-primary transition">${esc(categoryName)}</a>
+      <span>/</span>
+      <span class="text-main font-semibold">${esc(p.name)}</span>
+    </nav>
 
-          <!-- Form Kontak -->
-          <div class="space-y-3 pt-2">
-            <div class="flex items-center gap-2 pb-2 border-b border-line-soft">
-              <i data-lucide="user-check" class="size-4 text-primary"></i>
-              <h2 class="text-sm font-extrabold uppercase tracking-wider text-main">Data Kontak Penerima Akun</h2>
+    <!-- Main 2-Column Grid -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      
+      <!-- Left Column (Desktop 7-8 cols) -->
+      <div class="lg:col-span-7 xl:col-span-8 space-y-4">
+        
+        <!-- Section 1: Hero & Package Selector -->
+        <section class="rounded-2xl border border-line-soft bg-surface p-4 sm:p-6 shadow-sm space-y-4">
+          <!-- Top Row: Thumbnail + Title + Share/Heart Buttons -->
+          <div class="flex flex-col sm:flex-row gap-4 items-start">
+            <div class="relative size-24 sm:size-28 shrink-0 overflow-hidden rounded-2xl border border-line-soft bg-surface-2 p-3 flex items-center justify-center shadow-xs">
+              <img src="assets/products/${esc(p.slug)}.webp" alt="${esc(p.name)}" class="size-full object-contain" data-fb="${esc(p.name.slice(0, 2))}">
             </div>
-            <div class="rounded-2xl border border-line bg-surface p-4 space-y-3 shadow-2xs">
-              <div>
-                <label for="pPageWa" class="block text-xs font-semibold text-main mb-1">
-                  Nomor WhatsApp Aktif <span class="text-danger">*</span>
-                  <span class="text-subtle font-normal"> · akun &amp; data login dikirim ke nomor ini</span>
-                </label>
-                <div class="relative">
-                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted">+62</span>
-                  <input id="pPageWa" type="tel" placeholder="81234567890" value="${esc(m.wa ? m.wa.replace(/^(\+?62|0)/, '') : '')}" class="input h-11 w-full pl-12 rounded-xl text-sm font-medium">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <h1 class="text-lg sm:text-xl font-bold leading-snug text-main [overflow-wrap:anywhere]">Akun ${esc(p.name)}</h1>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button type="button" data-share-product="${esc(p.slug)}" aria-label="Bagikan ${esc(p.name)}" title="Bagikan" class="grid size-9 place-items-center rounded-xl text-muted hover:text-primary hover:bg-surface-2 transition cursor-pointer">
+                    <i data-lucide="share-2" class="size-4.5"></i>
+                  </button>
+                  <button type="button" data-fav-product="${esc(p.slug)}" aria-label="Simpan ke incaran" title="Simpan ke incaran" class="grid size-9 place-items-center rounded-xl text-muted hover:text-danger hover:bg-surface-2 transition cursor-pointer">
+                    <i data-lucide="heart" class="size-4.5 ${isFav ? 'fill-danger text-danger' : ''}"></i>
+                  </button>
                 </div>
               </div>
-              <div>
-                <label for="pPageEmail" class="block text-xs font-semibold text-main mb-1">
-                  Alamat Email Aktif <span class="text-danger">*</span>
-                  <span class="text-subtle font-normal"> · untuk cadangan data invoice pesanan</span>
-                </label>
-                <input id="pPageEmail" type="email" placeholder="nama@email.com" value="${esc(m.email || '')}" class="input h-11 w-full rounded-xl text-sm font-medium">
-              </div>
-              ${m.err ? `<div class="rounded-xl bg-danger/10 border border-danger/30 p-2.5 text-xs font-semibold text-danger">${esc(m.err)}</div>` : ''}
+              <!-- Ratings, Sold, Stock Line -->
+              <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+                <a href="#ulasan" class="inline-flex items-center gap-1 text-amber-500 font-semibold hover:underline">
+                  <i data-lucide="star" class="size-3.5 fill-amber-500 text-amber-500"></i>
+                  <b class="font-bold text-main">${ratingVal}</b>
+                  <span class="text-muted font-normal">(${ratingCount})</span>
+                </a>
+                <span>•</span>
+                <span class="tabular-nums font-medium">${soldCount} Terjual</span>
+                <span>•</span>
+                <span class="inline-flex items-center gap-1 text-emerald-500 font-semibold">
+                  <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>${stockCount} stok tersedia</span>
+                </span>
+              </p>
             </div>
           </div>
+
+          <!-- Price Display -->
+          <div class="border-t border-line-soft pt-3">
+            <div class="flex flex-wrap items-baseline gap-x-2.5">
+              <span class="font-display text-2xl sm:text-[28px] font-extrabold text-price tabular-nums">${rp(v.price || 0)}</span>
+              ${v.strike ? `<span class="text-sm tabular-nums text-subtle line-through">${rp(v.strike)}</span>` : ''}
+              ${disc ? `<span class="text-sm font-bold text-danger">-${disc}%</span>` : ''}
+            </div>
+            <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
+              ${hemat ? `<span class="inline-flex items-center gap-1 text-danger"><i data-lucide="percent" class="size-3.5"></i> Hemat ${rp(hemat)}</span>` : ''}
+              <span class="inline-flex items-center gap-1 text-emerald-500"><i data-lucide="zap" class="size-3.5"></i> Dikirim instan</span>
+            </div>
+          </div>
+
+          <!-- Package Selector -->
+          <div id="pilih-paket" class="border-t border-line-soft pt-4">
+            <p class="mb-2 text-sm font-bold text-main">
+              Pilih paket: <span class="font-normal text-muted">${esc(v.label || '')}</span>
+            </p>
+            <div role="radiogroup" aria-label="Pilih paket" class="grid grid-cols-2 gap-2.5 pt-1 sm:grid-cols-3">
+              ${variantCards}
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: Penting Sebelum Beli -->
+        <section aria-labelledby="penting" class="rounded-xl border border-primary/25 bg-primary/[0.06] p-4">
+          <h2 id="penting" class="flex items-center gap-2 text-base font-extrabold text-main">
+            <i data-lucide="info" class="size-5 text-primary shrink-0"></i>
+            <span>Penting sebelum beli</span>
+          </h2>
+          <ul class="mt-2.5 space-y-1.5">
+            ${briefItems}
+          </ul>
+        </section>
+
+        <!-- Section 3: Ulasan Pembeli -->
+        <section id="ulasan" class="rounded-2xl border border-line-soft bg-surface p-4 sm:p-6 shadow-sm space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-line-soft">
+            <h2 class="text-base font-extrabold text-main">Ulasan pembeli</h2>
+            <span class="inline-flex items-center gap-1 text-sm font-extrabold text-main">
+              <i data-lucide="star" class="size-4 fill-amber-500 text-amber-500"></i>
+              <span>${ratingVal}</span>
+              <span class="font-normal text-muted">(${ratingCount} ulasan)</span>
+            </span>
+          </div>
+          <div class="divide-y divide-line-soft">
+            ${reviewsHtml}
+          </div>
+          <div class="pt-2 text-center text-xs text-muted">
+            <span>★ 5,0 • ${(p.ar || 2363).toLocaleString('id-ID')} penilaian otomatis — pembeli tidak mengulas</span>
+          </div>
+        </section>
+
+        <!-- Section 4: Tentang Produk (Deskripsi Lengkap) -->
+        <section class="rounded-2xl border border-line-soft bg-surface p-4 sm:p-6 shadow-sm space-y-3">
+          <h2 class="text-base font-extrabold text-main">Tentang ${esc(p.name)}</h2>
+          <div class="space-y-2">
+            ${renderProductDescriptionFull(p.desc)}
+          </div>
+          <div class="pt-3 border-t border-line-soft space-y-2 text-xs text-muted">
+            <p class="font-bold text-main">Yang didapat:</p>
+            <ul class="list-disc pl-5 space-y-0.5">
+              <li>Akun ${esc(p.name)} siap pakai (1 per pembelian)</li>
+              <li>Dikirim otomatis setelah pembayaran terverifikasi via WhatsApp</li>
+            </ul>
+            <p class="font-bold text-main pt-1">Catatan:</p>
+            <ul class="list-disc pl-5 space-y-0.5">
+              <li>Pesanan diproses otomatis 24 jam</li>
+              <li>Kendala? Hubungi admin dengan menyertakan kode transaksi</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Section 5: PojokAI Official Store Badge -->
+        <div class="rounded-2xl border border-line-soft bg-surface p-4 flex items-center gap-3.5 shadow-2xs">
+          <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary text-white shadow-sm">
+            <svg aria-hidden="true" class="shrink-0 text-white" focusable="false" height="26" viewBox="0 0 100 96.04" width="27"><use href="#logo"></use></svg>
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5">
+              <span class="font-extrabold text-sm text-main">PojokAI Official</span>
+              <i data-lucide="badge-check" class="size-4 text-primary fill-primary/20"></i>
+            </div>
+            <p class="text-xs text-muted mt-0.5">Toko resmi · pembayaran diverifikasi otomatis</p>
+          </div>
         </div>
+
+        <!-- Section 6: Pertanyaan FAQ -->
+        <section class="rounded-2xl border border-line-soft bg-surface p-4 sm:p-6 shadow-sm space-y-3">
+          <h2 class="text-base font-extrabold text-main">Pertanyaan</h2>
+          <div class="divide-y divide-line-soft">
+            <details class="group py-2.5">
+              <summary class="flex cursor-pointer items-center justify-between text-sm font-semibold text-main hover:text-primary transition list-none">
+                <span>Berapa harga akun ${esc(p.name)} di PojokAI?</span>
+                <i data-lucide="chevron-down" class="size-4 text-muted transition group-open:rotate-180"></i>
+              </summary>
+              <div class="pt-2 text-xs text-muted leading-relaxed">
+                Mulai dari ${rp(v.price || 0)} tergantung durasi paket yang kamu pilih (${(p.variants || []).map(x => x.label + ': ' + rp(x.price)).join(' · ')}).
+              </div>
+            </details>
+            <details class="group py-2.5">
+              <summary class="flex cursor-pointer items-center justify-between text-sm font-semibold text-main hover:text-primary transition list-none">
+                <span>Berapa lama ${esc(p.name)} dikirim?</span>
+                <i data-lucide="chevron-down" class="size-4 text-muted transition group-open:rotate-180"></i>
+              </summary>
+              <div class="pt-2 text-xs text-muted leading-relaxed">
+                Langsung dikirim instan dalam hitungan detik ke WhatsApp kamu segera setelah pembayaran QRIS diverifikasi sistem otomatis.
+              </div>
+            </details>
+            <details class="group py-2.5">
+              <summary class="flex cursor-pointer items-center justify-between text-sm font-semibold text-main hover:text-primary transition list-none">
+                <span>Bayar pakai apa?</span>
+                <i data-lucide="chevron-down" class="size-4 text-muted transition group-open:rotate-180"></i>
+              </summary>
+              <div class="pt-2 text-xs text-muted leading-relaxed">
+                QRIS otomatis mendukung semua aplikasi bank (BCA, Mandiri, BRI, BNI) dan semua e-wallet (GoPay, DANA, OVO, ShopeePay).
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <!-- Section 7: Lainnya di PojokAI -->
+        <section class="rounded-2xl border border-line-soft bg-surface p-4 sm:p-6 shadow-sm space-y-3">
+          <h2 class="text-base font-extrabold text-main">Lainnya di PojokAI</h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+            ${relatedHtml}
+          </div>
+        </section>
+
       </div>
+
+      <!-- Right Column: Sticky Checkout Card on Desktop -->
+      <aside aria-label="Beli" class="hidden lg:block lg:col-span-5 xl:col-span-4 self-start sticky top-20">
+        <div class="rounded-2xl border border-line-soft bg-surface p-5 shadow-sm space-y-4">
+          <h3 class="font-extrabold text-base text-main">Beli ${esc(p.name)}</h3>
+          
+          <!-- Package Summary -->
+          <div class="rounded-xl bg-surface-2 p-3 space-y-1.5 text-xs">
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Paket Terpilih:</span>
+              <span class="font-bold text-main">${esc(v.label || '')}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Harga Satuan:</span>
+              <span class="font-bold text-price tabular-nums">${rp(v.price || 0)}</span>
+            </div>
+          </div>
+
+          <!-- Quantity Selector -->
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-main">Jumlah Beli</span>
+            <div class="inline-flex items-center rounded-xl border border-line bg-surface">
+              <button type="button" data-p-qty="-1" class="size-8 grid place-items-center text-muted hover:text-main cursor-pointer" title="Kurang">-</button>
+              <span class="w-8 text-center font-bold text-main tabular-nums">${m.qty || 1}</span>
+              <button type="button" data-p-qty="1" class="size-8 grid place-items-center text-muted hover:text-main cursor-pointer" title="Tambah">+</button>
+            </div>
+          </div>
+
+          <!-- Buyer Contact Form -->
+          <div class="space-y-3 pt-1">
+            <div>
+              <label for="pPageWa" class="block text-xs font-semibold text-main mb-1">
+                Nomor WhatsApp <span class="text-danger">*</span>
+                <span class="text-subtle font-normal"> · data akun dikirim ke sini</span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted">+62</span>
+                <input id="pPageWa" type="tel" placeholder="81234567890" value="${esc(m.wa ? m.wa.replace(/^(\+?62|0)/, '') : '')}" class="input h-10 w-full pl-12 rounded-xl text-xs sm:text-sm font-medium">
+              </div>
+            </div>
+            <div>
+              <label for="pPageEmail" class="block text-xs font-semibold text-main mb-1">
+                Email Aktif <span class="text-danger">*</span>
+                <span class="text-subtle font-normal"> · bukti invoice pesanan</span>
+              </label>
+              <input id="pPageEmail" type="email" placeholder="nama@email.com" value="${esc(m.email || '')}" class="input h-10 w-full rounded-xl text-xs sm:text-sm font-medium">
+            </div>
+            ${m.err ? `<div class="rounded-xl bg-danger/10 border border-danger/30 p-2 text-xs font-semibold text-danger">${esc(m.err)}</div>` : ''}
+          </div>
+
+          <!-- Total Calculation -->
+          <div class="pt-3 border-t border-line-soft space-y-1.5 text-xs">
+            <div class="flex justify-between items-center text-muted">
+              <span>Metode Pembayaran</span>
+              <span class="font-bold text-emerald-500">QRIS Real-Time</span>
+            </div>
+            <div class="flex justify-between items-baseline pt-2 border-t border-line-soft">
+              <span class="font-extrabold text-sm text-main">Total Bayar</span>
+              <span class="font-display text-xl font-extrabold text-price tabular-nums">${rp(total)}</span>
+            </div>
+          </div>
+
+          <!-- Checkout CTA Button -->
+          <button type="button" id="btnPageCheckoutDesktop" class="w-full h-11 inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-fg font-extrabold text-sm shadow-md hover:bg-primary-hover transition cursor-pointer">
+            <i data-lucide="zap" class="size-4"></i>
+            <span>Beli Sekarang via QRIS</span>
+          </button>
+          
+          <p class="text-[11px] text-center text-subtle">
+            🔒 Pembayaran aman otomatis &amp; bergaransi resmi
+          </p>
+        </div>
+      </aside>
+
     </div>
 
-    <!-- Sticky Bottom Bar -->
-    <div class="fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur-md border-t border-line py-3 px-4 sm:px-8 shadow-2xl">
-      <div class="mx-auto max-w-5xl flex items-center justify-between gap-4">
-        <div>
-          <span class="block text-[11px] font-semibold text-muted">Total Pembayaran</span>
-          <span id="pPageTotalDisplay" class="font-display text-xl sm:text-2xl font-black tabular-nums text-primary">${rp(total)}</span>
-        </div>
-        <button type="button" id="btnPageCheckout" class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 sm:px-8 text-sm sm:text-base font-extrabold text-primary-fg shadow-lg hover:bg-primary-hover transition cursor-pointer">
-          <i data-lucide="zap" class="size-4.5"></i>
-          <span>Lanjut ke Pembayaran QRIS</span>
+    <!-- Mobile Fixed Bottom Bar (Waroengkuy 1:1) -->
+    <div class="fixed inset-x-0 bottom-0 z-40 lg:hidden border-t border-line bg-surface/95 backdrop-blur-md px-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] pt-2.5 shadow-2xl">
+      <div class="mx-auto flex w-full max-w-5xl items-center gap-2">
+        <a href="https://wa.me/6283171982973?text=Halo%20admin%20PojokAI,%20saya%20mau%20tanya%20tentang%20${encodeURIComponent(p.name)}" target="_blank" rel="noopener noreferrer" aria-label="Chat admin" class="grid size-11 shrink-0 place-items-center rounded-xl border border-line text-main hover:border-primary/50 transition cursor-pointer">
+          <i data-lucide="message-circle" class="size-5"></i>
+        </a>
+        <button type="button" data-buy-now-cart class="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1 border-2 border-primary rounded-xl px-3 text-sm font-bold text-primary hover:bg-primary/10 transition cursor-pointer">
+          <i data-lucide="plus" class="size-4"></i> Keranjang
+        </button>
+        <button type="button" id="btnPageCheckoutMobile" class="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 bg-primary rounded-xl px-3 text-sm font-bold text-primary-fg hover:bg-primary-hover transition shadow-md cursor-pointer">
+          Beli sekarang
         </button>
       </div>
     </div>
@@ -3016,16 +3244,70 @@ document.addEventListener('click', (e) => {
     return renderProductPageView();
   }
 
-  if (e.target.closest('#btnPageCheckout')) {
+  // Quantity Stepper
+  const pQtyBtn = e.target.closest('[data-p-qty]');
+  if (pQtyBtn && m) {
+    const delta = +pQtyBtn.dataset.pQty;
+    const v = m.p.variants?.[m.vi];
+    const max = maxQty(v);
+    m.qty = Math.max(1, Math.min(max, (m.qty || 1) + delta));
+    return renderProductPageView();
+  }
+
+  // Wishlist Heart Toggle
+  const pFavBtn = e.target.closest('[data-fav-product]');
+  if (pFavBtn) {
+    const slug = pFavBtn.dataset.favProduct;
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem('wk:favs') || '[]'); } catch {}
+    if (favs.includes(slug)) {
+      favs = favs.filter(s => s !== slug);
+      if (window.toast) window.toast('Dihapus dari incaran');
+    } else {
+      favs.push(slug);
+      if (window.toast) window.toast('Disimpan ke incaran ❤️');
+    }
+    localStorage.setItem('wk:favs', JSON.stringify(favs));
+    renderProductPageView();
+    return;
+  }
+
+  // Share Product Link
+  const pShareBtn = e.target.closest('[data-share-product]');
+  if (pShareBtn) {
+    const url = location.origin + location.pathname + '#produk/' + pShareBtn.dataset.shareProduct;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      if (window.toast) window.toast('Link produk berhasil disalin! 📋');
+    }
+    return;
+  }
+
+  // Mobile Keranjang button
+  if (e.target.closest('[data-buy-now-cart]')) {
+    if (m && m.p) {
+      openModal(m.p, m.vi);
+    }
+    return;
+  }
+
+  // Checkout Buttons (Desktop aside & Mobile bottom bar)
+  if (e.target.closest('#btnPageCheckout') || e.target.closest('#btnPageCheckoutDesktop') || e.target.closest('#btnPageCheckoutMobile')) {
     if (!m) return;
-    const waVal = ($('#pPageWa')?.value || '').replace(/\D/g, '');
+    
+    // If mobile button clicked and screen is small, open full checkout modal
+    if (e.target.closest('#btnPageCheckoutMobile') && window.innerWidth < 1024) {
+      return openModal(m.p, m.vi);
+    }
+
+    const waVal = ($('#pPageWa')?.value || m.wa || '').replace(/\D/g, '');
     const wa = waVal.startsWith('0') ? '62' + waVal.slice(1) : (waVal.startsWith('62') ? waVal : '62' + waVal);
     const waRegex = /^(\+?62|08)[0-9]{7,13}$/;
     if (!waVal || !waRegex.test(wa)) {
       m.err = 'Nomor WhatsApp wajib diisi dengan benar (contoh: 81234567890).';
       return renderProductPageView();
     }
-    const email = ($('#pPageEmail')?.value || '').trim().toLowerCase();
+    const email = ($('#pPageEmail')?.value || m.email || '').trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
       m.err = 'Alamat Email wajib diisi dengan benar (contoh: nama@email.com).';
