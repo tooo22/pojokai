@@ -1902,27 +1902,39 @@ function renderOrderPageView(orderCode = null) {
                 </div>
 
                 <div id="qrisContainer" class="relative mx-auto w-full max-w-[260px] overflow-hidden rounded-xl bg-white flex flex-col items-center justify-center min-h-[250px]">
-                  <!-- Loading State -->
-                  <div id="qrisLoading" class="${order.wistapay?.qris_image ? 'hidden' : 'flex'} flex-col items-center justify-center py-10 space-y-3 text-zinc-500">
-                    <i data-lucide="loader-2" class="size-8 animate-spin text-primary"></i>
-                    <div>
-                      <p class="text-xs font-bold text-zinc-800">Menghubungkan ke WistaPay Gateway...</p>
-                      <p class="text-[11px] text-zinc-400 mt-0.5">Membuat QRIS Dinamis Otomatis</p>
+                  <!-- Loading State (Engaging Step Progress with Timer) -->
+                  <div id="qrisLoading" class="${order.wistapay?.qris_image ? 'hidden' : 'flex'} flex-col items-center justify-center py-7 px-4 text-center space-y-3 w-full text-zinc-600">
+                    <div class="relative flex items-center justify-center">
+                      <i data-lucide="loader-2" class="size-10 animate-spin text-primary"></i>
+                      <span id="qrisLoadCountdown" class="absolute text-[10px] font-mono font-black text-primary">12s</span>
                     </div>
+                    <div>
+                      <p id="qrisLoadStepTitle" class="text-xs font-bold text-zinc-800">Menghubungkan ke gateway pembayaran...</p>
+                      <p id="qrisLoadStepSub" class="text-[11px] text-zinc-500 mt-0.5">Mendaftarkan pesanan ke Bank Indonesia</p>
+                    </div>
+                    <div class="w-44 h-1.5 bg-zinc-100 rounded-full overflow-hidden mx-auto">
+                      <div id="qrisProgressBar" class="h-full bg-primary rounded-full transition-all duration-500 ease-out" style="width: 25%"></div>
+                    </div>
+                    <p class="text-[10px] text-zinc-400">QRIS resmi Bank Indonesia · Biaya 0%</p>
                   </div>
 
-                  <!-- Error State -->
+                  <!-- Error State with Fallback Option -->
                   <div id="qrisError" class="hidden flex-col items-center justify-center py-6 px-3 text-center space-y-2.5">
                     <div class="grid size-10 place-items-center rounded-full bg-rose-100 text-rose-600">
                       <i data-lucide="alert-circle" class="size-5"></i>
                     </div>
                     <div>
-                      <p class="text-xs font-bold text-zinc-800" id="qrisErrorMsg">Gagal memuat QRIS WistaPay</p>
-                      <p class="text-[10px] text-zinc-500 mt-0.5">Pastikan jaringan Anda lancar.</p>
+                      <p class="text-xs font-bold text-zinc-800" id="qrisErrorMsg">Gagal memuat QRIS Dinamis</p>
+                      <p class="text-[10px] text-zinc-500 mt-0.5">Antrean gateway perbankan sedang padat. Silakan coba lagi atau bayar via QRIS manual toko.</p>
                     </div>
-                    <button type="button" id="btnRetryQris" class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-fg hover:opacity-90 transition cursor-pointer">
-                      <i data-lucide="refresh-cw" class="size-3.5"></i><span>Coba Lagi</span>
-                    </button>
+                    <div class="flex items-center gap-2 pt-1">
+                      <button type="button" id="btnRetryQris" class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-fg hover:opacity-90 transition cursor-pointer">
+                        <i data-lucide="refresh-cw" class="size-3.5"></i><span>Coba Lagi</span>
+                      </button>
+                      <button type="button" id="btnFallbackQris" class="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-bold text-main hover:bg-surface transition cursor-pointer">
+                        <i data-lucide="qr-code" class="size-3.5"></i><span>QRIS Manual</span>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- QR Image -->
@@ -2326,7 +2338,7 @@ function checkout() {
       price: v ? v.price : 0,
     },
     note: noteItems.join(' | '),
-    status: isPatungan ? 'Menunggu Konfirmasi Patungan' : 'Menunggu Pengiriman',
+    status: isPatungan ? 'Menunggu Konfirmasi Patungan' : 'Menunggu Pembayaran',
   };
 
   saveOrderLocal(order);
@@ -2952,6 +2964,8 @@ function onPaymentExpired(order) {
     icons();
   }
 }
+const inFlightQrisMap = new Map();
+
 async function requestDynamicQris(order) {
   const qImg = $('#qrisImg');
   const qLoad = $('#qrisLoading');
@@ -2969,53 +2983,121 @@ async function requestDynamicQris(order) {
     return;
   }
 
-  // Reset to loading state
+  // 1. Instant Cache Check: If QRIS already generated, show IMMEDIATELY (0ms)
+  if (order.wistapay && (order.wistapay.qris_image || order.wistapay.payment_url)) {
+    if (qLoad) { qLoad.classList.remove('flex'); qLoad.classList.add('hidden'); }
+    if (qErr) { qErr.classList.add('hidden'); qErr.classList.remove('flex'); }
+    if (qImg) {
+      qImg.src = order.wistapay.qris_image || order.wistapay.payment_url;
+      qImg.classList.remove('hidden');
+    }
+    const totalDisp = $('#qrisTotalDisplay');
+    if (totalDisp && order.wistapay.charge_amount) {
+      totalDisp.textContent = rp(order.wistapay.charge_amount);
+    }
+    const refDisp = $('#qrisRefDisplay');
+    if (refDisp && order.wistapay.reference) {
+      refDisp.textContent = `Ref: ${order.wistapay.reference} · QRIS Dinamis WistaPay`;
+    }
+    startPaymentPolling(order, order.wistapay.reference);
+    return;
+  }
+
+  // Reset to loading state with live progress
   if (qLoad) { qLoad.classList.remove('hidden'); qLoad.classList.add('flex'); }
   if (qImg) { qImg.classList.add('hidden'); }
   if (qErr) { qErr.classList.add('hidden'); qErr.classList.remove('flex'); }
 
+  // 2. Animated progress bar & step feedback
+  let progressPct = 20;
+  let remainingSec = 14;
+  const pBar = $('#qrisProgressBar');
+  const pTitle = $('#qrisLoadStepTitle');
+  const pSub = $('#qrisLoadStepSub');
+  const pCount = $('#qrisLoadCountdown');
+
+  if (pBar) pBar.style.width = '20%';
+  if (pCount) pCount.textContent = '14s';
+  if (pTitle) pTitle.textContent = 'Menghubungkan ke gateway pembayaran...';
+  if (pSub) pSub.textContent = 'Mendaftarkan pesanan ke Bank Indonesia';
+
+  const progressInterval = setInterval(() => {
+    remainingSec = Math.max(1, remainingSec - 1);
+    if (pCount) pCount.textContent = `${remainingSec}s`;
+
+    if (remainingSec > 9) {
+      progressPct = Math.min(45, progressPct + 8);
+      if (pTitle) pTitle.textContent = 'Menghubungkan ke gateway pembayaran...';
+      if (pSub) pSub.textContent = 'Mendaftarkan pesanan ke Bank Indonesia';
+    } else if (remainingSec > 4) {
+      progressPct = Math.min(75, progressPct + 6);
+      if (pTitle) pTitle.textContent = 'Membuat QRIS Dinamis Otomatis...';
+      if (pSub) pSub.textContent = `Menyiapkan nominal ${rp(order.total)}`;
+    } else {
+      progressPct = Math.min(95, progressPct + 5);
+      if (pTitle) pTitle.textContent = 'Mengambil gambar QRIS resmi...';
+      if (pSub) pSub.textContent = 'Hampir selesai, memuat QR code';
+    }
+    if (pBar) pBar.style.width = `${progressPct}%`;
+  }, 1000);
+
   try {
     let wistapayData = null;
 
+    // Reuse existing in-flight promise if one is already running for this order code
+    if (inFlightQrisMap.has(order.code)) {
+      wistapayData = await inFlightQrisMap.get(order.code);
+    } else {
+      const qrisPromise = (async () => {
         // Dual-channel dynamic QRIS generation (Direct Browser + Server Proxy)
-    const directPromise = fetch('https://wistapay.shop/wistapay/api/create-payment.php', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': 'sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5'
-      },
-      body: JSON.stringify({
-        amount: order.total,
-        description: `Beli ${order.product?.name || 'Produk'} - ${order.code}`,
-        external_id: order.code,
-        fee_bearer: 'MERCHANT',
-        callback_url: 'https://pojokai.my.id/#cek-pesanan',
-      })
-    }).then(async (r) => {
-      const j = await r.json();
-      if (j.success && j.data) return j.data;
-      throw new Error(j.message || 'Direct gateway busy');
-    });
+        const directPromise = fetch('https://wistapay.shop/wistapay/api/create-payment.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': 'sk_cf912d66f2b3a109f689435d17947e576791bdf6d39858f5'
+          },
+          body: JSON.stringify({
+            amount: order.total,
+            description: `Beli ${order.product?.name || 'Produk'} - ${order.code}`,
+            external_id: order.code,
+            fee_bearer: 'MERCHANT',
+            callback_url: 'https://pojokai.my.id/#cek-pesanan',
+          }),
+          signal: AbortSignal.timeout(28000),
+        }).then(async (r) => {
+          const j = await r.json();
+          if (j.success && j.data) return j.data;
+          throw new Error(j.message || 'Direct gateway busy');
+        });
 
-    const serverPromise = fetch('/api/qris/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        order_id: order.code,
-        amount: order.total,
-        description: `Beli ${order.product?.name || 'Produk'} - ${order.code}`
-      })
-    }).then(async (r) => {
-      const j = await r.json();
-      if (j.success && j.data) return j.data;
-      throw new Error(j.error || j.message || 'Server gateway busy');
-    });
+        const serverPromise = fetch('/api/qris/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_id: order.code,
+            amount: order.total,
+            description: `Beli ${order.product?.name || 'Produk'} - ${order.code}`
+          }),
+          signal: AbortSignal.timeout(28000),
+        }).then(async (r) => {
+          const j = await r.json();
+          if (j.success && j.data) return j.data;
+          throw new Error(j.error || j.message || 'Server gateway busy');
+        });
 
-    try {
-      wistapayData = await Promise.any([directPromise, serverPromise]);
-    } catch (allErr) {
-      console.warn('[qris dual-channel failed]', allErr);
+        return await Promise.any([directPromise, serverPromise]);
+      })();
+
+      inFlightQrisMap.set(order.code, qrisPromise);
+      try {
+        wistapayData = await qrisPromise;
+      } finally {
+        inFlightQrisMap.delete(order.code);
+      }
     }
+
+    clearInterval(progressInterval);
+    if (pBar) pBar.style.width = '100%';
 
     if (wistapayData) {
       order.wistapay = wistapayData;
@@ -3039,6 +3121,7 @@ async function requestDynamicQris(order) {
     }
     throw new Error('Server pembayaran sedang memproses antrean. Silakan klik Coba Buat QRIS Lagi.');
   } catch (err) {
+    clearInterval(progressInterval);
     console.error('[qris dynamic error]', err);
     if (qLoad) { qLoad.classList.remove('flex'); qLoad.classList.add('hidden'); }
     if (qImg) { qImg.classList.add('hidden'); }
@@ -3790,6 +3873,32 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('#btnRetryQris')) {
     if (activePaymentOrder) {
       requestDynamicQris(activePaymentOrder);
+    }
+    return;
+  }
+  if (e.target.closest('#btnFallbackQris')) {
+    if (activePaymentOrder) {
+      const qImg = $('#qrisImg');
+      const qLoad = $('#qrisLoading');
+      const qErr = $('#qrisError');
+      if (qLoad) { qLoad.classList.remove('flex'); qLoad.classList.add('hidden'); }
+      if (qErr) { qErr.classList.remove('flex'); qErr.classList.add('hidden'); }
+      if (qImg) {
+        qImg.src = '/assets/qris.png';
+        qImg.classList.remove('hidden');
+      }
+      const statusText = $('#qrisStatusText');
+      if (statusText) {
+        statusText.innerHTML = `
+          <span class="inline-block size-2 rounded-full bg-amber-500"></span>
+          <span>QRIS Standar Toko · Konfirmasi via WhatsApp setelah bayar</span>
+        `;
+      }
+      const refDisp = $('#qrisRefDisplay');
+      if (refDisp) {
+        refDisp.textContent = `Ref: ${activePaymentOrder.code} · QRIS PojokAI Store`;
+      }
+      if (window.toast) window.toast('Beralih ke QRIS Standar Toko');
     }
     return;
   }

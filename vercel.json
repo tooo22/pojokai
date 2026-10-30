@@ -59,6 +59,10 @@
     "api/index.js": {
       "includeFiles": "data/db.json",
       "maxDuration": 30
+    },
+    "server.mjs": {
+      "includeFiles": "data/db.json",
+      "maxDuration": 30
     }
   }
 }

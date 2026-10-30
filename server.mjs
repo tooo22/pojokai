@@ -2672,7 +2672,7 @@ async function api(req, res, url) {
           fee_bearer: 'MERCHANT',
           callback_url: 'https://pojokai.my.id/#cek-pesanan',
         }),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(28000),
       });
 
       const json = await wRes.json();
