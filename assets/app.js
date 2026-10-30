@@ -1321,6 +1321,55 @@ function renderProductPageView() {
           </div>
         </section>
 
+        <!-- Section 1.5: Checkout Form on Mobile (Waroengkuy 1:1, lg:hidden) -->
+        <section id="mobileCheckoutBox" class="lg:hidden rounded-2xl border border-line-soft bg-surface p-4 shadow-sm space-y-3.5">
+          <div class="flex items-center justify-between pb-2 border-b border-line-soft">
+            <h3 class="font-bold text-sm text-main flex items-center gap-1.5">
+              <i data-lucide="shopping-bag" class="size-4 text-primary"></i>
+              <span>Data Pembeli &amp; Pembayaran</span>
+            </h3>
+            <span class="text-xs font-bold text-price tabular-nums">${rp(total)}</span>
+          </div>
+
+          <!-- Quantity Stepper on Mobile -->
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-main">Jumlah Beli</span>
+            <div class="inline-flex items-center rounded-xl border border-line bg-surface">
+              <button type="button" data-p-qty="-1" class="size-8 grid place-items-center text-muted hover:text-main cursor-pointer" title="Kurang">-</button>
+              <span class="w-8 text-center font-bold text-main tabular-nums">${m.qty || 1}</span>
+              <button type="button" data-p-qty="1" class="size-8 grid place-items-center text-muted hover:text-main cursor-pointer" title="Tambah">+</button>
+            </div>
+          </div>
+
+          <!-- Buyer Contact Form -->
+          <div class="space-y-3 pt-1">
+            <div>
+              <label for="pPageWaMobile" class="block text-xs font-semibold text-main mb-1">
+                Nomor WhatsApp <span class="text-danger">*</span>
+                <span class="text-subtle font-normal"> · data akun dikirim ke sini</span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted">+62</span>
+                <input id="pPageWaMobile" data-field="wa" type="tel" placeholder="81234567890" value="${esc(m.wa ? m.wa.replace(/^(\+?62|0)/, '') : '')}" class="input h-10 w-full pl-12 rounded-xl text-xs sm:text-sm font-medium">
+              </div>
+            </div>
+            <div>
+              <label for="pPageEmailMobile" class="block text-xs font-semibold text-main mb-1">
+                Email Aktif <span class="text-danger">*</span>
+                <span class="text-subtle font-normal"> · bukti invoice pesanan</span>
+              </label>
+              <input id="pPageEmailMobile" data-field="email" type="email" placeholder="nama@email.com" value="${esc(m.email || '')}" class="input h-10 w-full rounded-xl text-xs sm:text-sm font-medium">
+            </div>
+            ${m.err ? `<div class="rounded-xl bg-danger/10 border border-danger/30 p-2 text-xs font-semibold text-danger">${esc(m.err)}</div>` : ''}
+          </div>
+
+          <!-- Payment Info -->
+          <div class="pt-2.5 border-t border-line-soft flex items-center justify-between text-xs">
+            <span class="text-muted">Metode Pembayaran</span>
+            <span class="font-bold text-emerald-600 flex items-center gap-1"><i data-lucide="zap" class="size-3"></i>QRIS Dinamis Otomatis</span>
+          </div>
+        </section>
+
         <!-- Section 2: Penting Sebelum Beli -->
         <section aria-labelledby="penting" class="rounded-xl border border-primary/25 bg-primary/[0.06] p-4">
           <h2 id="penting" class="flex items-center gap-2 text-base font-extrabold text-main">
@@ -1585,6 +1634,578 @@ function hideProductPage() {
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 }
 
+
+/* ---------- Dedicated Order & Payment Page (Waroengkuy 1:1) ---------- */
+function formatOrderTime(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffSec = Math.floor((now - d) / 1000);
+    if (diffSec < 60) return 'Baru saja';
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)} menit lalu`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} jam lalu`;
+    const days = Math.floor(diffSec / 86400);
+    if (days < 30) return `${days} hari lalu`;
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  } catch {
+    return '-';
+  }
+}
+
+let activeOrderPageCode = null;
+
+function showOrderPage(orderCode = null) {
+  // Hide product page if open
+  activeProductSlug = null;
+  const productContainer = $('#productPageView');
+  if (productContainer) {
+    productContainer.classList.add('hidden');
+    productContainer.innerHTML = '';
+  }
+
+  // Hide storefront sections
+  document.querySelectorAll('.store-only').forEach((el) => el.classList.add('hidden'));
+
+  // Show order page container
+  const orderContainer = $('#orderPageView');
+  if (orderContainer) {
+    orderContainer.classList.remove('hidden');
+  }
+
+  // Show Header Back Button
+  const navBack = $('#navBackBtn');
+  if (navBack) {
+    navBack.classList.remove('hidden');
+    navBack.classList.add('inline-flex');
+  }
+
+  activeOrderPageCode = orderCode || null;
+
+  try {
+    if (orderCode) {
+      history.replaceState(null, '', '#pesanan/' + orderCode);
+      document.title = `Pesanan ${orderCode} — PojokAI`;
+    } else {
+      history.replaceState(null, '', '#pesanan');
+      document.title = 'Pesanan Saya — PojokAI';
+    }
+  } catch {}
+
+  renderOrderPageView(orderCode);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function hideOrderPage() {
+  activeOrderPageCode = null;
+  clearInterval(paymentTimerInterval);
+  paymentTimerInterval = null;
+  clearInterval(paymentPollInterval);
+  paymentPollInterval = null;
+  activePaymentOrder = null;
+
+  const orderContainer = $('#orderPageView');
+  if (orderContainer) {
+    orderContainer.classList.add('hidden');
+    orderContainer.innerHTML = '';
+  }
+
+  // Restore storefront sections
+  document.querySelectorAll('.store-only').forEach((el) => el.classList.remove('hidden'));
+
+  // Hide Header Back Button
+  const navBack = $('#navBackBtn');
+  if (navBack) {
+    navBack.classList.add('hidden');
+    navBack.classList.remove('inline-flex');
+  }
+
+  try {
+    if (location.hash.startsWith('#pesanan') || location.hash === '#cek-pesanan') {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    document.title = 'PojokAI — Toko Akun Digital & Jasa Sosmed via WhatsApp';
+  } catch {}
+
+  const el = $('#produk');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+function handleOrderSearch(query) {
+  const q = (query || '').trim();
+  const resContainer = $('#orderSearchResults');
+  if (!resContainer) return;
+  if (!q) {
+    resContainer.classList.add('hidden');
+    resContainer.innerHTML = '';
+    return;
+  }
+
+  const isCode = /^[a-zA-Z0-9\-]+$/.test(q) && (q.toUpperCase().startsWith('POJOK') || q.length > 5);
+  const qClean = q.replace(/\D/g, '');
+
+  const localOrders = getStoredOrders();
+  let matches = localOrders.filter(o => {
+    if (isCode && o.code.toUpperCase().includes(q.toUpperCase())) return true;
+    const oWa = (o.buyer?.wa || '').replace(/\D/g, '');
+    if (qClean && oWa.includes(qClean)) return true;
+    if (o.buyer?.email && o.buyer.email.toLowerCase().includes(q.toLowerCase())) return true;
+    return false;
+  });
+
+  const renderResults = (list) => {
+    resContainer.classList.remove('hidden');
+    if (list.length === 0) {
+      resContainer.innerHTML = `
+        <div class="flex items-start gap-2.5 rounded-[10px] border border-amber-500/30 bg-amber-500/5 p-3">
+          <i data-lucide="inbox" class="mt-0.5 size-4 shrink-0 text-amber-500"></i>
+          <div>
+            <p class="text-sm font-medium text-main">Tidak ada pesanan ditemukan</p>
+            <p class="mt-0.5 text-xs text-muted">Periksa lagi nomor telepon atau kode pesanannya — pastikan sama dengan yang dipakai saat membeli.</p>
+          </div>
+        </div>
+      `;
+      icons();
+      return;
+    }
+
+    resContainer.innerHTML = `
+      <p class="text-[11px] font-bold uppercase tracking-wide text-subtle mb-1.5">${list.length} pesanan ditemukan:</p>
+      <div class="space-y-2">
+        ${list.map(o => {
+          const isRowPending = !o.status || o.status.includes('Menunggu') || o.status.toLowerCase().includes('pending');
+          return `
+            <div class="group flex items-center gap-3 rounded-[12px] border p-3 transition-all cursor-pointer ${isRowPending ? 'border-amber-500/30 bg-amber-500/5' : 'border-line-soft bg-surface hover:border-primary/40'}" data-select-order="${esc(o.code)}">
+              <span class="flex size-8 shrink-0 items-center justify-center rounded-[8px] ${isRowPending ? 'bg-amber-500/15 text-amber-600' : 'bg-surface-2 text-muted'}">
+                <i data-lucide="receipt" class="size-4"></i>
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-xs sm:text-sm font-semibold text-main">${esc(o.product?.name || 'Produk')} <span class="font-normal text-muted">(${esc(o.product?.variant || '')})</span></p>
+                <p class="text-[10px] text-subtle tabular-nums">${rp(o.wistapay?.charge_amount || o.total)} · No. ${esc(o.code)}</p>
+              </div>
+              <span class="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold ${isRowPending ? 'text-amber-600' : 'text-primary'}">
+                <span>${isRowPending ? 'Bayar' : 'Buka'}</span>
+                <i data-lucide="chevron-right" class="size-3.5"></i>
+              </span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    icons();
+  };
+
+  if (matches.length > 0) {
+    renderResults(matches);
+  }
+
+  fetch(`/api/orders?code=${encodeURIComponent(q)}&phone=${encodeURIComponent(qClean)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.orders && data.orders.length > 0) {
+        data.orders.forEach(ro => saveOrderLocal(ro));
+        const combined = getStoredOrders().filter(o => {
+          if (isCode && o.code.toUpperCase().includes(q.toUpperCase())) return true;
+          const oWa = (o.buyer?.wa || '').replace(/\D/g, '');
+          if (qClean && oWa.includes(qClean)) return true;
+          return false;
+        });
+        renderResults(combined);
+      } else if (matches.length === 0) {
+        renderResults([]);
+      }
+    })
+    .catch(() => {
+      if (matches.length === 0) renderResults([]);
+    });
+}
+
+function renderOrderPageView(orderCode = null) {
+  const container = $('#orderPageView');
+  if (!container) return;
+
+  const localOrders = getStoredOrders();
+  let order = null;
+  if (orderCode) {
+    order = localOrders.find(o => o.code === orderCode || o.code.toUpperCase() === orderCode.toUpperCase()) || (activePaymentOrder && activePaymentOrder.code === orderCode ? activePaymentOrder : null);
+  }
+
+  // If orderCode given but not found locally, fetch from API
+  if (orderCode && !order) {
+    fetch(`/api/orders?code=${encodeURIComponent(orderCode)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.orders?.[0]) {
+          saveOrderLocal(data.orders[0]);
+          renderOrderPageView(orderCode);
+        }
+      })
+      .catch(() => {});
+  }
+
+  const isPending = order ? (!order.status || order.status.includes('Menunggu') || order.status.toLowerCase().includes('pending')) : false;
+  const total = order ? (order.wistapay?.charge_amount || order.total || 0) : 0;
+  const pName = order ? esc(order.product?.name || 'Produk') : '';
+  const pVar = order ? esc(order.product?.variant || '') : '';
+  const qty = order ? (order.product?.qty || 1) : 1;
+  const buyerWa = order ? esc(order.buyer?.wa || '-') : '-';
+  const buyerEmail = order ? esc(order.buyer?.email || '-') : '-';
+
+  container.innerHTML = `
+    <!-- Top Back to Store Button (Waroengkuy 1:1) -->
+    <nav class="mb-3">
+      <button type="button" data-order-back class="-ml-2 inline-flex items-center gap-1.5 p-1.5 rounded-[8px] text-sm font-medium text-muted transition-colors hover:text-primary cursor-pointer">
+        <i data-lucide="arrow-left" class="size-4"></i>
+        <span>Kembali ke toko</span>
+      </button>
+    </nav>
+
+    <!-- Page Header (Waroengkuy 1:1) -->
+    <header class="mb-5">
+      <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-main">Pesanan saya</h1>
+      <p class="mt-1 text-xs sm:text-sm text-muted">Cek status, lanjutkan pembayaran, atau buka invoice — tanpa perlu daftar.</p>
+    </header>
+
+    <div class="space-y-5">
+      ${order ? `
+        <!-- ACTIVE ORDER CARD -->
+        ${isPending ? `
+          <!-- 1. Menunggu Pembayaran Card (Waroengkuy 1:1) -->
+          <div class="rounded-2xl border border-amber-500/30 bg-surface shadow-md overflow-hidden">
+            <!-- Warning Header -->
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/20 bg-amber-500/10 p-3.5 sm:p-4">
+              <div class="flex items-center gap-2">
+                <span class="relative flex size-2.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full size-2.5 bg-amber-500"></span>
+                </span>
+                <span class="text-xs sm:text-sm font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Menunggu Pembayaran</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium">
+                <span>Batas waktu bayar:</span>
+                <span id="qrisTimer" class="font-mono text-sm font-extrabold tracking-wider tabular-nums bg-surface px-2.5 py-0.5 rounded-lg border border-amber-500/35 text-amber-600 dark:text-amber-400 shadow-2xs">05:00</span>
+              </div>
+            </div>
+
+            <div class="p-4 sm:p-6 space-y-4">
+              <!-- Dynamic QRIS Box (White card) -->
+              <div class="rounded-2xl border border-line bg-white p-4 text-center shadow-xs text-zinc-900 max-w-sm mx-auto">
+                <!-- QRIS & GPN Header -->
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-zinc-100">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-black text-rose-600 tracking-tighter text-sm font-sans">QRIS</span>
+                    <span class="text-[9.5px] font-medium text-zinc-500 leading-tight text-left">QR Code Standar<br>Pembayaran Nasional</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <span class="rounded px-1.5 py-0.5 bg-rose-600 text-white font-black text-[10px] tracking-wider">GPN</span>
+                  </div>
+                </div>
+
+                <div id="qrisContainer" class="relative mx-auto w-full max-w-[260px] overflow-hidden rounded-xl bg-white flex flex-col items-center justify-center min-h-[250px]">
+                  <!-- Loading State -->
+                  <div id="qrisLoading" class="${order.wistapay?.qris_image ? 'hidden' : 'flex'} flex-col items-center justify-center py-10 space-y-3 text-zinc-500">
+                    <i data-lucide="loader-2" class="size-8 animate-spin text-primary"></i>
+                    <div>
+                      <p class="text-xs font-bold text-zinc-800">Menghubungkan ke WistaPay Gateway...</p>
+                      <p class="text-[11px] text-zinc-400 mt-0.5">Membuat QRIS Dinamis Otomatis</p>
+                    </div>
+                  </div>
+
+                  <!-- Error State -->
+                  <div id="qrisError" class="hidden flex-col items-center justify-center py-6 px-3 text-center space-y-2.5">
+                    <div class="grid size-10 place-items-center rounded-full bg-rose-100 text-rose-600">
+                      <i data-lucide="alert-circle" class="size-5"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-bold text-zinc-800" id="qrisErrorMsg">Gagal memuat QRIS WistaPay</p>
+                      <p class="text-[10px] text-zinc-500 mt-0.5">Pastikan jaringan Anda lancar.</p>
+                    </div>
+                    <button type="button" id="btnRetryQris" class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-fg hover:opacity-90 transition cursor-pointer">
+                      <i data-lucide="refresh-cw" class="size-3.5"></i><span>Coba Lagi</span>
+                    </button>
+                  </div>
+
+                  <!-- QR Image -->
+                  <img id="qrisImg" src="${order.wistapay?.qris_image || ''}" alt="QRIS Dinamis WistaPay" class="${order.wistapay?.qris_image ? '' : 'hidden'} mx-auto block size-60 rounded-xl object-contain p-1 border border-zinc-100 bg-white shadow-2xs">
+                </div>
+
+                <!-- QR Info & Download Button -->
+                <div class="mt-3 border-t border-zinc-100 pt-3 space-y-2">
+                  <button type="button" id="btnDownloadQris" class="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 px-3 py-2 text-xs font-bold text-zinc-800 transition cursor-pointer">
+                    <i data-lucide="download" class="size-3.5"></i><span>Unduh QRIS</span>
+                  </button>
+                  <p id="qrisStatusText" class="text-xs font-bold text-emerald-600 flex items-center justify-center gap-1.5">
+                    <span class="inline-block size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Menunggu Pembayaran (Otomatis Terverifikasi)</span>
+                  </p>
+                  <p id="qrisRefDisplay" class="text-[10px] text-zinc-400 font-mono">
+                    ${order.wistapay?.reference ? `Ref: ${esc(order.wistapay.reference)} · WistaPay Dynamic` : 'QRIS Dinamis Otomatis · WistaPay Gateway'}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Total Pembayaran Card -->
+              <div class="rounded-xl border border-primary/25 bg-primary/[0.04] p-3.5 flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-semibold text-muted">Total Pembayaran</p>
+                  <p id="qrisTotalDisplay" class="text-2xl font-black font-display text-price tabular-nums mt-0.5">${rp(total)}</p>
+                  <p class="text-[10px] text-muted mt-0.5">Bebas Biaya Admin · Biaya Ditanggung Toko</p>
+                </div>
+                <button type="button" data-copy="${total}" class="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-fg hover:opacity-90 transition cursor-pointer shadow-xs">
+                  <i data-lucide="copy" class="size-3.5"></i><span>Salin</span>
+                </button>
+              </div>
+
+              <!-- Rincian Pesanan Box -->
+              <div class="rounded-xl border border-line-soft bg-surface-2/40 p-4 space-y-2.5 text-xs">
+                <div class="flex items-center justify-between pb-2 border-b border-line-soft">
+                  <span class="font-bold text-main flex items-center gap-1.5">
+                    <i data-lucide="receipt" class="size-4 text-primary"></i>
+                    <span>Rincian Pesanan</span>
+                  </span>
+                  <div class="flex items-center gap-1">
+                    <span class="font-mono font-bold text-primary">${esc(order.code)}</span>
+                    <button type="button" data-copy="${esc(order.code)}" class="grid size-6 place-items-center rounded-md border border-line hover:bg-surface-2 transition cursor-pointer" title="Salin Kode">
+                      <i data-lucide="copy" class="size-3 text-muted"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-center text-muted">
+                  <span>Produk:</span>
+                  <b class="text-main font-semibold">${pName}</b>
+                </div>
+                <div class="flex justify-between items-center text-muted">
+                  <span>Paket:</span>
+                  <span class="text-main">${pVar} (${qty} akun)</span>
+                </div>
+                <div class="flex justify-between items-center text-muted">
+                  <span>WhatsApp:</span>
+                  <span class="text-main font-mono">${buyerWa}</span>
+                </div>
+                ${buyerEmail !== '-' ? `<div class="flex justify-between items-center text-muted"><span>Email:</span><span class="text-main">${buyerEmail}</span></div>` : ''}
+                <div class="flex justify-between items-center text-muted">
+                  <span>Waktu Pesan:</span>
+                  <span class="text-main">${order.createdAt ? new Date(order.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}</span>
+                </div>
+              </div>
+
+              <!-- Cek Status Button -->
+              <button type="button" id="btnManualCheckStatus" class="w-full inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-primary-fg text-sm font-bold shadow-md hover:bg-primary-hover active:scale-[0.99] transition cursor-pointer">
+                <i data-lucide="refresh-cw" class="size-4 shrink-0"></i>
+                <span>Cek Status Pembayaran Sekarang</span>
+              </button>
+
+              <!-- Panduan Cara Bayar QRIS -->
+              <div class="rounded-xl border border-line-soft bg-surface-2/30 p-3.5 space-y-2 text-xs">
+                <p class="font-bold text-main flex items-center gap-1.5">
+                  <i data-lucide="info" class="size-4 text-primary"></i>
+                  <span>Cara Pembayaran:</span>
+                </p>
+                <ol class="list-decimal list-inside space-y-1 text-muted leading-relaxed">
+                  <li>Buka aplikasi m-Banking (BCA, Mandiri, BRI, BNI) atau e-Wallet (GoPay, OVO, DANA, ShopeePay).</li>
+                  <li>Pilih menu <b>Scan / Bayar QRIS</b> lalu arahkan ke gambar QR di atas (atau klik <b>Unduh QRIS</b> lalu buka dari galeri).</li>
+                  <li>Periksa nominal transaksi harus pas <b>${rp(total)}</b> dan konfirmasi PIN Anda.</li>
+                  <li>Setelah bayar, halaman ini otomatis terverifikasi dan detail akun dikirim instan ke WhatsApp Anda!</li>
+                </ol>
+              </div>
+
+              <!-- Bantuan Admin WhatsApp -->
+              <div class="flex items-center justify-between pt-1 px-1 text-xs text-muted">
+                <span>Ada kendala transaksi?</span>
+                <a href="${waLink(`Halo admin PojokAI, saya butuh bantuan untuk pesanan ${order.code}`)}" target="_blank" rel="noopener noreferrer" class="font-bold text-primary hover:underline inline-flex items-center gap-1">
+                  <i data-lucide="message-circle" class="size-3.5"></i>
+                  <span>Hubungi Admin WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <!-- 2. Pembayaran Terverifikasi / Selesai Card (Emerald 1:1) -->
+          <div class="rounded-2xl border border-emerald-500/30 bg-surface shadow-md overflow-hidden">
+            <div class="flex items-center gap-2.5 border-b border-emerald-500/20 bg-emerald-500/10 p-3.5 sm:p-4">
+              <i data-lucide="check-circle-2" class="size-5 text-emerald-500 shrink-0"></i>
+              <span class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Pembayaran Terverifikasi!</span>
+            </div>
+
+            <div class="p-4 sm:p-6 space-y-4">
+              <div class="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-xs text-emerald-800 dark:text-emerald-300 space-y-1.5">
+                <p class="font-bold text-sm">Terima kasih atas pesananmu!</p>
+                <p class="leading-relaxed">Detail akun &amp; bukti transaksi otomatis dikirimkan ke nomor WhatsApp <b>${buyerWa}</b>.</p>
+              </div>
+
+              ${order.credential ? `
+                <div class="rounded-xl border border-line-soft bg-surface-2/50 p-4 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-main">Detail Akun:</span>
+                    <button type="button" data-copy="${esc(order.credential)}" class="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-fg hover:opacity-90 transition cursor-pointer">
+                      <i data-lucide="copy" class="size-3"></i><span>Salin Akun</span>
+                    </button>
+                  </div>
+                  <pre class="rounded-lg bg-surface border border-line p-3 font-mono text-xs text-main overflow-x-auto select-all whitespace-pre-wrap">${esc(order.credential)}</pre>
+                </div>
+              ` : `
+                <div class="rounded-xl border border-line-soft bg-surface-2/40 p-3.5 text-xs text-muted">
+                  <p class="font-bold text-main">Akun Sedang Diproses Admin</p>
+                  <p class="mt-0.5">Admin kami segera mengirimkan detail akun ke WhatsApp Anda dalam hitungan menit.</p>
+                </div>
+              `}
+
+              <!-- Rincian Pesanan Box -->
+              <div class="rounded-xl border border-line-soft bg-surface-2/40 p-4 space-y-2 text-xs">
+                <div class="flex items-center justify-between pb-2 border-b border-line-soft">
+                  <span class="font-bold text-main">Rincian Transaksi</span>
+                  <span class="font-mono font-bold text-primary">${esc(order.code)}</span>
+                </div>
+                <div class="flex justify-between items-center text-muted">
+                  <span>Produk:</span><b class="text-main font-semibold">${pName}</b>
+                </div>
+                <div class="flex justify-between items-center text-muted">
+                  <span>Paket:</span><span class="text-main">${pVar} (${qty}x)</span>
+                </div>
+                <div class="flex justify-between items-center text-muted">
+                  <span>Total Bayar:</span><span class="text-price font-bold tabular-nums">${rp(total)}</span>
+                </div>
+                <div class="flex justify-between items-center text-muted">
+                  <span>Status:</span><span class="rounded-full px-2 py-0.5 text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Lunas · Terverifikasi</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-1 px-1 text-xs text-muted">
+                <span>Perlu bantuan aktivasi?</span>
+                <a href="${waLink(`Halo admin PojokAI, saya butuh bantuan untuk pesanan lunas ${order.code}`)}" target="_blank" rel="noopener noreferrer" class="font-bold text-primary hover:underline inline-flex items-center gap-1">
+                  <i data-lucide="message-circle" class="size-3.5"></i>
+                  <span>Chat WhatsApp Admin</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        `}
+      ` : ''}
+
+      <!-- Section: Di perangkat ini (Waroengkuy 1:1) -->
+      ${localOrders.length > 0 ? `
+        <section aria-labelledby="lokal-title" class="rounded-2xl border border-line-soft bg-surface p-4 sm:p-5 shadow-sm">
+          <div class="flex items-center gap-2.5">
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-primary/10 text-primary">
+              <i data-lucide="smartphone" class="size-[18px]"></i>
+            </span>
+            <div class="min-w-0">
+              <h2 id="lokal-title" class="text-sm sm:text-base font-bold text-main">Di perangkat ini <span class="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">${localOrders.length}</span></h2>
+              <p class="text-xs text-muted">Tersimpan di browser ini — buka untuk lihat status &amp; detail akun.</p>
+            </div>
+          </div>
+
+          <div class="mt-4 space-y-2.5">
+            ${localOrders.map(o => {
+              const isRowPending = !o.status || o.status.includes('Menunggu') || o.status.toLowerCase().includes('pending');
+              const isSelected = order && order.code === o.code;
+              return `
+                <div class="group flex items-center gap-3 rounded-[12px] border p-3.5 transition-all cursor-pointer ${isSelected ? 'border-primary ring-2 ring-primary/20 bg-primary/[0.04]' : (isRowPending ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50' : 'border-line-soft bg-surface hover:border-primary/40')}" data-select-order="${esc(o.code)}">
+                  <span class="flex size-9 shrink-0 items-center justify-center rounded-[10px] ${isRowPending ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-surface-2 text-muted'}">
+                    <i data-lucide="receipt" class="size-4"></i>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-main">${esc(o.product?.name || 'Produk')} <span class="text-xs font-normal text-muted">· ${esc(o.product?.variant || '')}</span></p>
+                    <p class="text-[11px] text-subtle tabular-nums">${rp(o.wistapay?.charge_amount || o.total)} · ${formatOrderTime(o.createdAt)}</p>
+                    <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span class="rounded-full px-2 py-0.5 text-[10px] font-medium ${isRowPending ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}">
+                        ${isRowPending ? 'Menunggu pembayaran' : 'Diproses / Lunas'}
+                      </span>
+                      <span class="font-mono text-[10px] text-subtle">No. ${esc(o.code)}</span>
+                    </div>
+                  </div>
+                  <span class="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold ${isRowPending ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}">
+                    <span class="hidden sm:inline">${isRowPending ? 'Bayar' : 'Lihat akun'}</span>
+                    <i data-lucide="chevron-right" class="size-4"></i>
+                  </span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      ` : ''}
+
+      <!-- Section: Cari pesanan (Waroengkuy 1:1) -->
+      <section aria-labelledby="cari-title" class="rounded-2xl border border-line-soft bg-surface p-4 sm:p-5 shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-primary/10 text-primary">
+            <i data-lucide="search" class="size-[18px]"></i>
+          </span>
+          <div class="min-w-0">
+            <h2 id="cari-title" class="text-sm sm:text-base font-bold text-main">Cari pesanan</h2>
+            <p class="text-xs text-muted">Pakai nomor WhatsApp saat membeli, atau nomor pesanan (POJOK-...).</p>
+          </div>
+        </div>
+
+        <form id="orderSearchForm" class="mt-3.5 flex gap-2">
+          <input 
+            id="orderSearchInput"
+            type="text" 
+            placeholder="0812xxxxxxxx atau POJOK-..." 
+            class="min-w-0 flex-1 rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-sm text-main outline-none focus:border-primary/50"
+            autocomplete="off"
+          >
+          <button type="submit" id="btnOrderSearchSubmit" class="inline-flex h-[42px] shrink-0 items-center gap-1.5 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-fg hover:opacity-90 transition cursor-pointer">
+            <i data-lucide="search" class="size-4"></i>
+            <span class="hidden sm:inline">Cari</span>
+          </button>
+        </form>
+        <p class="mt-1.5 text-[11px] text-subtle">
+          Nomor pesanan tertera di riwayat pembelian &amp; pesan WhatsApp.
+        </p>
+
+        <div id="orderSearchResults" class="mt-3 hidden space-y-2"></div>
+      </section>
+
+      <!-- Section: Cara kerjanya (Waroengkuy 1:1) -->
+      <section aria-labelledby="alur-title" class="rounded-2xl border border-line-soft bg-surface p-4 sm:p-5 shadow-sm">
+        <h2 id="alur-title" class="text-sm sm:text-base font-bold text-main">Cara kerjanya</h2>
+        <ol class="mt-3.5 space-y-3.5">
+          <li class="flex gap-3">
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-surface-2 text-primary">
+              <i data-lucide="clock" class="size-4"></i>
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-main">Bayar sekali tanpa login</p>
+              <p class="text-xs text-muted mt-0.5 leading-relaxed">Cukup isi nomor WhatsApp saat beli — pesanan otomatis tersimpan di sini.</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-surface-2 text-primary">
+              <i data-lucide="message-circle" class="size-4"></i>
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-main">Akun dikirim ke WhatsApp</p>
+              <p class="text-xs text-muted mt-0.5 leading-relaxed">Ke nomor yang diisi saat membeli. Produk manual diproses admin.</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-surface-2 text-primary">
+              <i data-lucide="receipt" class="size-4"></i>
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-main">Invoice kapan saja</p>
+              <p class="text-xs text-muted mt-0.5 leading-relaxed">Cari pesananmu di halaman ini untuk membuka invoice.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+    </div>
+  `;
+
+  icons();
+
+  if (order && isPending) {
+    activePaymentOrder = order;
+    startPaymentTimer(order);
+    requestDynamicQris(order);
+  }
+}
+window.showOrderPage = showOrderPage;
+window.hideOrderPage = hideOrderPage;
+
+
 function openModal(p, vi) {
   const v = vi == null ? pick(p) : p.variants[vi];
   const buyer = getStoredBuyer();
@@ -1718,7 +2339,8 @@ function checkout() {
   if (isPatungan) {
     openPatunganModal(order);
   } else {
-    openPaymentModal(order);
+    closeModal();
+    showOrderPage(order.code);
   }
 }
 
@@ -2439,7 +3061,7 @@ function startPaymentPolling(order, reference) {
       paymentPollInterval = null;
       return;
     }
-    if (currentModalView !== 'payment' || !activePaymentOrder || activePaymentOrder.code !== order.code) {
+    if (!activePaymentOrder || activePaymentOrder.code !== order.code) {
       clearInterval(paymentPollInterval);
       paymentPollInterval = null;
       return;
@@ -2592,8 +3214,12 @@ function onPaymentSuccess(order) {
   playSuccessChime();
   launchSuccessConfetti();
 
-  // Langsung tampilkan popup transaksi berhasil tanpa delay/kedip
-  openPaymentSuccessModal(order);
+  const orderPageView = document.getElementById('orderPageView');
+  if (orderPageView && !orderPageView.classList.contains('hidden')) {
+    renderOrderPageView(order.code);
+  } else {
+    openPaymentSuccessModal(order);
+  }
 }
 
 function openPaymentSuccessModal(order) {
@@ -2781,24 +3407,8 @@ function openPatunganModal(order) {
 }
 
 function openPaymentModal(order) {
-  paymentSuccessHandled = false;
-  isPaymentPollingBusy = false;
-  currentModalView = 'payment';
-  activePaymentOrder = order;
-  const box = $('#dialog');
-  if (!box) return;
-  box.style.transition = '';
-  box.style.transform = '';
-  box.style.opacity = '';
-  box.innerHTML = paymentDialogHTML(order);
-  icons();
-  $('#modal').classList.replace('hidden', 'flex');
-  document.documentElement.style.overflow = 'hidden';
-  setTimeout(() => $('#dialog')?.focus({ preventScroll: true }), 60);
-  
-  // Start 5-Minute Timer & Request Dynamic QRIS
-  startPaymentTimer(order);
-  requestDynamicQris(order);
+  closeModal();
+  showOrderPage(order ? order.code : null);
 }
 window.openPaymentSuccessModal = openPaymentSuccessModal;
 window.openPaymentModal = openPaymentModal;
@@ -3198,6 +3808,39 @@ document.addEventListener('click', (e) => {
   }
 
   
+  // Order & Payment Page interactions (Waroengkuy 1:1)
+  if (e.target.closest('[data-order-back]')) {
+    return hideOrderPage();
+  }
+
+  const selectOrderEl = e.target.closest('[data-select-order]');
+  if (selectOrderEl) {
+    const code = selectOrderEl.dataset.selectOrder;
+    if (code) return showOrderPage(code);
+  }
+
+  const downloadQrisBtn = e.target.closest('#btnDownloadQris');
+  if (downloadQrisBtn) {
+    const qrisImg = $('#qrisImg');
+    if (qrisImg && qrisImg.src) {
+      const link = document.createElement('a');
+      link.href = qrisImg.src;
+      link.download = `QRIS-PojokAI-${activePaymentOrder?.code || 'bayar'}.png`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (window.toast) window.toast('Mengunduh QRIS pembayaran...');
+    }
+    return;
+  }
+
+  const cekPesananNav = e.target.closest('a[href="#cek-pesanan"], a[href="#pesanan"]');
+  if (cekPesananNav) {
+    e.preventDefault();
+    return showOrderPage();
+  }
+
   // Product Page interactions
   if (e.target.closest('[data-product-back]')) {
     return hideProductPage();
@@ -3260,23 +3903,28 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('#btnPageCheckout') || e.target.closest('#btnPageCheckoutDesktop') || e.target.closest('#btnPageCheckoutMobile')) {
     if (!m) return;
     
-    // If mobile button clicked and screen is small, open full checkout modal
-    if (e.target.closest('#btnPageCheckoutMobile') && window.innerWidth < 1024) {
-      return openModal(m.p, m.vi);
-    }
+    // Mobile button proceeds with on-page validation and checkout (no modal)
 
-    const waVal = ($('#pPageWa')?.value || m.wa || '').replace(/\D/g, '');
+    const waVal = ($('#pPageWaMobile')?.value || $('#pPageWa')?.value || m.wa || '').replace(/\D/g, '');
     const wa = waVal.startsWith('0') ? '62' + waVal.slice(1) : (waVal.startsWith('62') ? waVal : '62' + waVal);
     const waRegex = /^(\+?62|08)[0-9]{7,13}$/;
     if (!waVal || !waRegex.test(wa)) {
       m.err = 'Nomor WhatsApp wajib diisi dengan benar (contoh: 81234567890).';
-      return renderProductPageView();
+      renderProductPageView();
+      const targetInput = $('#pPageWaMobile') || $('#pPageWa');
+      targetInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      targetInput?.focus();
+      return;
     }
-    const email = ($('#pPageEmail')?.value || m.email || '').trim().toLowerCase();
+    const email = ($('#pPageEmailMobile')?.value || $('#pPageEmail')?.value || m.email || '').trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
       m.err = 'Alamat Email wajib diisi dengan benar (contoh: nama@email.com).';
-      return renderProductPageView();
+      renderProductPageView();
+      const targetInput = $('#pPageEmailMobile') || $('#pPageEmail');
+      targetInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      targetInput?.focus();
+      return;
     }
     m.wa = wa;
     m.email = email;
@@ -3518,12 +4166,34 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('submit', (e) => {
+  if (e.target.id === 'orderSearchForm') {
+    e.preventDefault();
+    const q = $('#orderSearchInput')?.value || '';
+    handleOrderSearch(q);
+    return;
+  }
   if (e.target.id === 'buyerAuthForm') {
     handleBuyerAuthSubmit(e);
   }
 });
 
 document.addEventListener('input', (e) => {
+  if (e.target.id === 'orderSearchInput') {
+    handleOrderSearch(e.target.value);
+    return;
+  }
+  if (e.target.id === 'pPageWa' || e.target.id === 'pPageWaMobile') {
+    if (m) m.wa = e.target.value;
+    const other = e.target.id === 'pPageWa' ? $('#pPageWaMobile') : $('#pPageWa');
+    if (other && other.value !== e.target.value) other.value = e.target.value;
+    return;
+  }
+  if (e.target.id === 'pPageEmail' || e.target.id === 'pPageEmailMobile') {
+    if (m) m.email = e.target.value;
+    const other = e.target.id === 'pPageEmail' ? $('#pPageEmailMobile') : $('#pPageEmail');
+    if (other && other.value !== e.target.value) other.value = e.target.value;
+    return;
+  }
   if (bm && currentModalView === 'bundle') {
     if (e.target.id === 'bmWa') {
       bm.wa = e.target.value;
@@ -3986,6 +4656,16 @@ function checkUrlDeepLink() {
     setTimeout(() => {
       onPaymentSuccess(demoOrder);
     }, 200);
+    return;
+  }
+  const orderMatch = hash.match(/^#\/?pesanan(?:\/([a-zA-Z0-9\-]+))?/i);
+  if (orderMatch) {
+    const code = orderMatch[1] || null;
+    setTimeout(() => showOrderPage(code), 50);
+    return;
+  }
+  if (hash === '#cek-pesanan') {
+    setTimeout(() => showOrderPage(), 50);
     return;
   }
   const match = hash.match(/^#\/?produk\/([a-z0-9\-]+)/i);
@@ -4829,7 +5509,12 @@ function initRulerScrollbar(lenis) {
 
 initSmoothScroll();
 
-$('#navBackBtn')?.addEventListener('click', hideProductPage);
+$('#navBackBtn')?.addEventListener('click', () => {
+  if (activeOrderPageCode || ($('#orderPageView') && !$('#orderPageView').classList.contains('hidden'))) {
+    return hideOrderPage();
+  }
+  return hideProductPage();
+});
 $('a[aria-label="PojokAI — kembali ke katalog"]')?.addEventListener('click', (e) => {
   if (activeProductSlug) {
     e.preventDefault();
