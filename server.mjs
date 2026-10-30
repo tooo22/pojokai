@@ -2695,7 +2695,7 @@ async function api(req, res, url) {
       console.warn('[wistapay create error]', json);
       return send(res, 400, { error: json.message || 'Gagal membuat QRIS WistaPay', fallback: true });
     } catch (err) {
-      console.error('[wistapay fetch error]', err.message);
+      console.error('[wistapay fetch error]', err.message, err.cause ? (err.cause.message || err.cause.code || err.cause) : '');
       return send(res, 502, { error: 'Koneksi gateway WistaPay terganggu', fallback: true });
     }
   }
